@@ -2,7 +2,7 @@
  
 Single-page **TradingSmart.AI** command center on its own subdomain, using the **same Supabase Auth + database** as [`chartmate-trading-widget`](../chartmate-trading-widget).
 ## TradingSmart Algo frontend bundle
-
+ 
 The repo [`tradingsmartalgo`](../tradingsmartalgo) is copied into **`public/tradingsmartalgo/`** (served as static files, same visual assets)
 | Path | Source |
 |------|--------|
