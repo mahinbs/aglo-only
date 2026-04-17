@@ -878,7 +878,7 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
           </div>
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 18, padding: "0 8px", lineHeight: 1.5 }}>
-            <strong>Live</strong> rows only (<code style={{ fontSize: 10 }}>is_paper_trade</code> excluded). Totals and the strategy table use trades from the last <strong>60 days</strong> plus any still-open position (stale seed rows from older dates are dropped). INR is the source currency; USD uses <code style={{ fontSize: 10 }}>VITE_USD_PER_INR</code> for display. Strategy P&amp;L only includes rows whose <code style={{ fontSize: 10 }}>strategy_id</code> equals that strategy’s UUID — preset strategies without linked orders show 0 until executions carry <code style={{ fontSize: 10 }}>strategy_id</code>.
+            <strong>INR-only live mode</strong>. Broker metrics/order feed use live broker snapshot data. Strategy table remains strategy metadata and does not attribute broker tradebook rows back to strategy IDs.
           </div>
 
           {/* STATS — only show real numbers when broker session is live */}

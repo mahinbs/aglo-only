@@ -66,12 +66,9 @@ function convertBetweenInrUsd(
   amount: number,
   from: FiatCurrency,
   to: FiatCurrency,
-  usdPerInr: number | null,
 ): number {
   if (!Number.isFinite(amount) || from === to) return amount;
-  if (!usdPerInr || usdPerInr <= 0) return amount;
-  if (from === "INR" && to === "USD") return amount * usdPerInr;
-  if (from === "USD" && to === "INR") return amount / usdPerInr;
+  // INR-only mode in algo-only.
   return amount;
 }
 
@@ -98,7 +95,6 @@ export function OptionsStrategyActivateDialog({
   const [ltp, setLtp] = useState<number | null>(null);
   const [ltpLoading, setLtpLoading] = useState(false);
   const ltpTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [usdPerInr, setUsdPerInr] = useState<number | null>(null);
   const [investmentCurrency, setInvestmentCurrency] = useState<FiatCurrency>("INR");
   const [investmentAmount, setInvestmentAmount] = useState("");
 
@@ -108,10 +104,7 @@ export function OptionsStrategyActivateDialog({
     () => (strategy ? lotUnitsForUnderlying(strategy.underlying) : 75),
     [strategy],
   );
-  const assetCurrency = useMemo<FiatCurrency>(() => {
-    const ex = String(strategy?.exchange ?? "").toUpperCase();
-    return ex === "NSE" || ex === "BSE" ? "INR" : "USD";
-  }, [strategy?.exchange]);
+  const assetCurrency = useMemo<FiatCurrency>(() => "INR", []);
 
   const reset = useCallback(() => {
     setExpiries([]);
@@ -128,25 +121,6 @@ export function OptionsStrategyActivateDialog({
     setInvestmentCurrency("INR");
     if (ltpTimerRef.current) { clearInterval(ltpTimerRef.current); ltpTimerRef.current = null; }
   }, []);
-
-  useEffect(() => {
-    if (!open || usdPerInr != null) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("https://open.er-api.com/v6/latest/INR");
-        if (!res.ok) return;
-        const json = await res.json();
-        const rate = Number(json?.rates?.USD);
-        if (!cancelled && Number.isFinite(rate) && rate > 0) setUsdPerInr(rate);
-      } catch {
-        // optional conversion helper only
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, usdPerInr]);
 
   // ── Live LTP polling (every 5 s while dialog open and symbol selected) ──
   useEffect(() => {
@@ -244,20 +218,9 @@ export function OptionsStrategyActivateDialog({
       amountInAsset,
       assetCurrency,
       investmentCurrency,
-      usdPerInr,
     );
     setInvestmentAmount(amountDisplay.toFixed(2));
   }, [ltp, lots, lotUnits, investmentCurrency, assetCurrency, usdPerInr]);
-
-  const handleInvestmentCurrencyChange = (next: FiatCurrency) => {
-    if (next === investmentCurrency) return;
-    const current = Number(investmentAmount);
-    if (Number.isFinite(current) && current > 0) {
-      const converted = convertBetweenInrUsd(current, investmentCurrency, next, usdPerInr);
-      setInvestmentAmount(converted.toFixed(2));
-    }
-    setInvestmentCurrency(next);
-  };
 
   const handleInvestmentAmountChange = (raw: string) => {
     setInvestmentAmount(raw);
@@ -267,7 +230,6 @@ export function OptionsStrategyActivateDialog({
       amountDisplay,
       investmentCurrency,
       assetCurrency,
-      usdPerInr,
     );
     const perLotNotional = ltp * lotUnits;
     if (!Number.isFinite(perLotNotional) || perLotNotional <= 0) return;
@@ -565,20 +527,7 @@ export function OptionsStrategyActivateDialog({
             <Label className="text-sm">Investment amount</Label>
             <div className="flex items-center gap-2">
               <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => handleInvestmentCurrencyChange("INR")}
-                  className={`px-2 py-1 text-xs rounded ${investmentCurrency === "INR" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  ₹ INR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInvestmentCurrencyChange("USD")}
-                  className={`px-2 py-1 text-xs rounded ${investmentCurrency === "USD" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  $ USD
-                </button>
+                <span className="px-2 py-1 text-xs rounded bg-primary text-primary-foreground">₹ INR</span>
               </div>
               <Input
                 type="number"
@@ -590,7 +539,7 @@ export function OptionsStrategyActivateDialog({
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Default currency follows instrument market ({assetCurrency}).
+              INR only.
             </p>
           </div>
 

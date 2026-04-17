@@ -204,26 +204,12 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [connectBusy, setConnectBusy] = useState(false);
-  const [currencyMode, setCurrencyMode] = useState<"INR" | "USD">(() => {
-    try {
-      const v = localStorage.getItem("algo-only-currency");
-      return v === "INR" || v === "USD" ? v : "INR";
-    } catch {
-      return "INR";
-    }
-  });
+  // INR-only mode for now.
+  const currencyMode: "INR" = "INR";
   const [optBusy, setOptBusy] = useState(false);
   const [optMsg, setOptMsg] = useState<string | null>(null);
 
   const useChartmate = Boolean(session?.access_token);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("algo-only-currency", currencyMode);
-    } catch {
-      /* ignore */
-    }
-  }, [currencyMode]);
 
   const refresh = useCallback(async () => {
     if (!session?.access_token) return;
@@ -629,7 +615,7 @@ export default function DashboardPage() {
         strategiesTable={summary?.active_strategies_table ?? null}
         chartmateActions={chartmateActions}
         currencyMode={currencyMode}
-        setCurrencyMode={setCurrencyMode}
+        setCurrencyMode={null}
         optionsPanel={import.meta.env.VITE_OPTIONS_API_URL || bffConfigured() ? optionsPanel : null}
         onSignOut={() => void signOut()}
       />
