@@ -13,8 +13,32 @@ import { friendlyBrokerMarketDataError } from "@/lib/brokerMarketDataErrors";
 // In algo-only, prefer direct options API if configured, else use BFF proxy.
 const DIRECT_OPTIONS_API_BASE = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const BFF_OPTIONS_PROXY_BASE = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const EXPLICIT_OPTIONS_WS_BASE = (import.meta.env.VITE_OPTIONS_WS_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const API_BASE = DIRECT_OPTIONS_API_BASE || BFF_OPTIONS_PROXY_BASE;
 const EXPIRY_CACHE_TTL_MS = 90_000;
+
+function wsServiceBase(): string {
+  if (EXPLICIT_OPTIONS_WS_BASE) {
+    if (EXPLICIT_OPTIONS_WS_BASE.startsWith("ws://") || EXPLICIT_OPTIONS_WS_BASE.startsWith("wss://")) {
+      return EXPLICIT_OPTIONS_WS_BASE;
+    }
+    return EXPLICIT_OPTIONS_WS_BASE.replace(/^http/, "ws");
+  }
+  // WS endpoint is hosted on options API, not the BFF proxy.
+  if (DIRECT_OPTIONS_API_BASE) return DIRECT_OPTIONS_API_BASE;
+  try {
+    const bff = BFF_OPTIONS_PROXY_BASE;
+    if (!bff) return "";
+    const u = new URL(bff);
+    if (u.hostname.startsWith("algoapi.")) {
+      u.hostname = `options.${u.hostname.slice("algoapi.".length)}`;
+      return u.toString().replace(/^http/, "ws").replace(/\/$/, "");
+    }
+  } catch {
+    // ignore and fall through
+  }
+  return "";
+}
 
 type ExpiryResponse = {
   symbol: string;
@@ -709,9 +733,9 @@ export function createPositionsWebSocket(
   onMessage: (positions: unknown[]) => void,
   onError?: (e: Event) => void
 ): WebSocket | null {
-  if (!API_BASE) return null;
+  const wsBase = wsServiceBase();
+  if (!wsBase) return null;
 
-  const wsBase = API_BASE.replace(/^http/, "ws");
   const ws     = new WebSocket(`${wsBase}/ws/options/positions/${userId}?token=${token}`);
 
   ws.onmessage = (e) => {
@@ -730,8 +754,8 @@ export function createOptionChainWebSocket(
   onMessage: (data: unknown) => void,
   onError?: (e: Event) => void
 ): WebSocket {
-  if (!API_BASE) throw new Error("Options API URL not configured (VITE_OPTIONS_API_URL)");
-  const wsBase = API_BASE.replace(/^http/, "ws");
+  const wsBase = wsServiceBase();
+  if (!wsBase) throw new Error("Options websocket URL not configured (set VITE_OPTIONS_API_URL or VITE_OPTIONS_WS_URL)");
   const q = new URLSearchParams({
     token,
     underlying: params.underlying,

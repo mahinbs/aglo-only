@@ -7,10 +7,31 @@ function httpBaseToWs(base: string): string {
   return b;
 }
 
-function optionsServiceBase(): string {
-  const direct = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+function deriveOptionsWsFromBff(): string {
   const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-  return direct || bff;
+  if (!bff) return "";
+  try {
+    const u = new URL(bff);
+    // trading setup convention: algoapi.<domain> serves BFF, options.<domain> serves options API/WS.
+    if (u.hostname.startsWith("algoapi.")) {
+      u.hostname = `options.${u.hostname.slice("algoapi.".length)}`;
+      return httpBaseToWs(u.toString().replace(/\/$/, ""));
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}
+
+function optionsWsBase(): string {
+  const explicit = (import.meta.env.VITE_OPTIONS_WS_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+  if (explicit) {
+    if (explicit.startsWith("ws://") || explicit.startsWith("wss://")) return explicit;
+    return httpBaseToWs(explicit);
+  }
+  const direct = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+  if (direct) return direct;
+  return deriveOptionsWsFromBff();
 }
 
 export type OptionsPositionsFrame = {
@@ -21,7 +42,8 @@ export type OptionsPositionsFrame = {
 
 /**
  * WebSocket stream for `/ws/options/positions/{userId}` with exponential backoff reconnect.
- * Requires a reachable options API (VITE_OPTIONS_API_URL or BFF); WS is not proxied through BFF-only HTTP.
+ * Requires a reachable options API websocket endpoint.
+ * BFF HTTP proxy does not support websocket passthrough for this stream.
  */
 export function useOptionsPositionsStream(opts: {
   enabled: boolean;
@@ -44,7 +66,7 @@ export function useOptionsPositionsStream(opts: {
 
   const connect = useCallback(() => {
     clearTimer();
-    const base = optionsServiceBase();
+    const base = optionsWsBase();
     if (!opts.enabled || !base || !opts.userId || !opts.token) {
       setConnected(false);
       return;
