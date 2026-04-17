@@ -5,6 +5,7 @@ import { ModalShell } from "./ModalShell.jsx";
 import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
+import { lifecycleLabel, normalizeLifecycleState } from "@/lib/lifecycle";
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
 const DEFAULT_USD_PER_INR = 1 / 83;
@@ -286,6 +287,11 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .strategy-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; letter-spacing:1px; }
 .tag-active { background:rgba(52,211,153,0.12); color:var(--accent-green); }
 .tag-paused { background:rgba(251,191,36,0.12); color:var(--accent-yellow); }
+.tag-waiting { background:rgba(251,191,36,0.12); color:var(--accent-orange); }
+.tag-triggered { background:rgba(56,189,248,0.12); color:var(--accent-cyan); }
+.tag-completed { background:rgba(148,163,184,0.16); color:#cbd5e1; }
+.tag-failed { background:rgba(244,63,94,0.12); color:var(--accent-red); }
+.tag-cancelled { background:rgba(113,113,122,0.18); color:#d4d4d8; }
 
 /* ORDER FEED */
 .order-feed { display:flex; flex-direction:column; gap:8px; max-height:380px; overflow-y:auto; }
@@ -749,7 +755,20 @@ export default function TradingSmartDashboard(props = {}) {
   );
   const strategiesData =
     strategiesTable && strategiesTable.length ? strategiesTable : [emptyStrategyRow];
-  const activeStrategiesCount = strategiesData.filter((s) => s.status === "active").length;
+  const activeStrategiesCount = strategiesData.filter((s) => {
+    const st = normalizeLifecycleState(s.status, String(s.status).toLowerCase() === "active");
+    return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+  }).length;
+  const strategyTagClass = (status) => {
+    const st = normalizeLifecycleState(status, String(status).toLowerCase() === "active");
+    if (st === "ACTIVE") return "tag-active";
+    if (st === "WAITING_MARKET_OPEN") return "tag-waiting";
+    if (st === "TRIGGERED") return "tag-triggered";
+    if (st === "COMPLETED") return "tag-completed";
+    if (st === "FAILED") return "tag-failed";
+    if (st === "CANCELLED") return "tag-cancelled";
+    return "tag-paused";
+  };
 
   return (
     <>
@@ -1019,7 +1038,18 @@ export default function TradingSmartDashboard(props = {}) {
                   {strategiesData.map((s, idx) => (
                     <tr key={`${s.name}-${idx}`}>
                       <td><span className="strategy-name">{s.name}</span></td>
-                      <td><span className={`strategy-tag ${s.status === "active" ? "tag-active" : "tag-paused"}`}>{s.status.toUpperCase()}</span></td>
+                      <td>
+                        <span
+                          className={`strategy-tag ${strategyTagClass(s.status)}`}
+                          title={
+                            s.lifecycle_reason || s.lifecycle_updated_at
+                              ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
+                              : undefined
+                          }
+                        >
+                          {lifecycleLabel(normalizeLifecycleState(s.status, String(s.status).toLowerCase() === "active"))}
+                        </span>
+                      </td>
                       <td>{sessLive ? s.trades.toLocaleString() : "—"}</td>
                       <td style={{ color: sessLive ? s.pnlColor : "var(--text-muted)" }}>{sessLive ? s.pnl : "—"}</td>
                       <td style={{ color: sessLive ? s.winColor : "var(--text-muted)" }}>{sessLive ? s.win : "—"}</td>

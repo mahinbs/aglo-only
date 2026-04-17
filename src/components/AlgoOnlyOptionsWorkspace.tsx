@@ -43,6 +43,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { bffConfigured, bffFetch } from "@/lib/api";
+import {
+  isMarketClosedReason,
+  lifecycleBadgeClass,
+  lifecycleLabel,
+  normalizeLifecycleState,
+} from "@/lib/lifecycle";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";
@@ -130,7 +136,11 @@ export function AlgoOnlyOptionsWorkspace(props?: {
   const { accountCaps, positionsStreamStale = false } = props ?? {};
   const { user, session } = useAuth();
 
-  const [strategies, setStrategies] = useState<OptionsStrategy[]>([]);
+  const [strategies, setStrategies] = useState<Array<OptionsStrategy & {
+    lifecycle_state?: string | null;
+    lifecycle_reason?: string | null;
+    lifecycle_updated_at?: string | null;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editStrategy, setEditStrategy] = useState<OptionsStrategy | null>(null);
@@ -273,8 +283,12 @@ export function AlgoOnlyOptionsWorkspace(props?: {
           session.access_token,
         );
         if (!pf.can_execute) {
-          toast.error(pf.reason ?? "Preflight blocked activation.");
-          return;
+          const reason = pf.reason ?? "Preflight blocked activation.";
+          if (!isMarketClosedReason(reason)) {
+            toast.error(reason);
+            return;
+          }
+          toast.info("Activation accepted. Strategy will wait for market open.");
         }
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Preflight failed");
@@ -370,7 +384,15 @@ export function AlgoOnlyOptionsWorkspace(props?: {
             </Card>
           ) : (
             <div className="space-y-3">
-              {strategies.map((s) => (
+              {strategies.map((s) => {
+                const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
+                const lcReason = String(s.lifecycle_reason ?? "").trim();
+                const lcUpdated = String(s.lifecycle_updated_at ?? "").trim();
+                const badgeTitle =
+                  lcReason || lcUpdated
+                    ? `${lcReason || "No reason"}${lcUpdated ? `\nUpdated: ${lcUpdated}` : ""}`
+                    : undefined;
+                return (
                 <Card key={s.id} className={`transition-all ${s.is_active ? "border-primary/30" : "opacity-75"}`}>
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
@@ -392,8 +414,12 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge variant={s.is_active ? "default" : "secondary"} className="text-[10px]">
-                          {s.is_active ? "Active" : "Paused"}
+                        <Badge
+                          variant="secondary"
+                          className={`text-[10px] ${lifecycleBadgeClass(lcState)}`}
+                          title={badgeTitle}
+                        >
+                          {lifecycleLabel(lcState)}
                         </Badge>
                       </div>
                     </div>
@@ -492,7 +518,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              )})}
             </div>
           )}
         </div>

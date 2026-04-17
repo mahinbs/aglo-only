@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TradingSmartDashboard from "../components/TradingSmartDashboard.jsx";
 import { useAuth } from "@/hooks/useAuth";
 import { bffConfigured, bffFetch } from "@/lib/api";
+import { isMarketClosedReason, normalizeLifecycleState } from "@/lib/lifecycle";
 import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
@@ -58,6 +59,9 @@ type Summary = {
     deployed: boolean;
     is_intraday?: boolean;
     position_config?: Record<string, unknown>;
+    lifecycle_state?: string | null;
+    lifecycle_reason?: string | null;
+    lifecycle_updated_at?: string | null;
   }>;
   active_strategies_table?: Array<{
     name: string;
@@ -67,6 +71,8 @@ type Summary = {
     win: string;
     pnlColor: string;
     winColor: string;
+      lifecycle_reason?: string | null;
+      lifecycle_updated_at?: string | null;
   }>;
 };
 
@@ -174,7 +180,7 @@ function buildStrategyTableRows(
     const winStr = wr != null ? `${wr}%` : "—";
     return {
       name: String(s.name),
-      status: s.is_active ? "active" : "paused",
+      status: normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active)).toLowerCase(),
       trades: tc,
       pnl: pnlStr,
       win: winStr,
@@ -182,6 +188,8 @@ function buildStrategyTableRows(
         pnlSum > 0 ? "var(--accent-green)" : pnlSum < 0 ? "var(--accent-red)" : "var(--text-muted)",
       winColor:
         wr != null && wr >= 50 ? "var(--accent-green)" : wr != null ? "var(--accent-orange)" : "var(--text-muted)",
+      lifecycle_reason: (s.lifecycle_reason as string | undefined) ?? null,
+      lifecycle_updated_at: (s.lifecycle_updated_at as string | undefined) ?? null,
     };
   });
 }
@@ -241,7 +249,7 @@ export default function DashboardPage() {
             .limit(200),
           supabase
             .from("user_strategies")
-            .select("id,name,description,is_active,risk_per_trade_pct,stop_loss_pct,take_profit_pct,symbols,position_config,is_intraday,trading_mode,start_time,end_time,squareoff_time,entry_conditions,exit_conditions,risk_config,chart_config,execution_days,paper_strategy_type,market_type,created_at")
+            .select("id,name,description,is_active,risk_per_trade_pct,stop_loss_pct,take_profit_pct,symbols,position_config,is_intraday,trading_mode,start_time,end_time,squareoff_time,entry_conditions,exit_conditions,risk_config,chart_config,execution_days,paper_strategy_type,market_type,lifecycle_state,lifecycle_reason,lifecycle_updated_at,created_at")
             .eq("user_id", uid)
             .order("created_at", { ascending: false })
             .limit(50),
@@ -289,6 +297,7 @@ export default function DashboardPage() {
             .join(", ");
           const tm = String(s.trading_mode ?? "LONG").toUpperCase();
           const pc = s.position_config;
+          const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
           return {
             id: String(s.id),
             name: String(s.name),
@@ -302,6 +311,9 @@ export default function DashboardPage() {
             deployed: Boolean(s.is_active),
             is_intraday: s.is_intraday !== false,
             position_config: pc && typeof pc === "object" ? (pc as Record<string, unknown>) : {},
+            lifecycle_state: lcState,
+            lifecycle_reason: typeof s.lifecycle_reason === "string" ? s.lifecycle_reason : null,
+            lifecycle_updated_at: typeof s.lifecycle_updated_at === "string" ? s.lifecycle_updated_at : null,
             // Full raw row for AlgoStrategyBuilder edit mode
             _raw: s,
           };
@@ -459,7 +471,10 @@ export default function DashboardPage() {
             can_execute: boolean;
             reason?: string | null;
           }>(`/api/account/preflight?strategy_id=${encodeURIComponent(strategyId)}`, session.access_token);
-          if (!pf.can_execute) return pf.reason ?? "Preflight blocked activation.";
+          if (!pf.can_execute) {
+            const reason = pf.reason ?? "Preflight blocked activation.";
+            if (!isMarketClosedReason(reason)) return reason;
+          }
         } catch (e: unknown) {
           return e instanceof Error ? e.message : "Preflight request failed";
         }
