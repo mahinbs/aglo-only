@@ -1,8 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { getChartmateWidgetSrc } from "./chartmate-widget-resolve";
 
-const widget = path.resolve(__dirname, "../chartmate-trading-widget/src");
+const widget = getChartmateWidgetSrc(__dirname);
 const algoOnly = path.resolve(__dirname, "src");
 
 export default defineConfig({
@@ -30,6 +31,9 @@ export default defineConfig({
       { find: /^@\/hooks\/useSubscription$/, replacement: path.resolve(algoOnly, "stubs/useSubscription.ts") },
       { find: /^@\/hooks\/usePaperTrades$/, replacement: path.resolve(algoOnly, "stubs/usePaperTrades.ts") },
       { find: /^@\/components\/layout\/DashboardSidebar$/, replacement: path.resolve(algoOnly, "stubs/DashboardSidebar.tsx") },
+
+      // ChartMate global CSS (avoid hard-coded ../ so Vercel standalone clone can build)
+      { find: "chartmate-widget-entry", replacement: path.join(widget, "index.css") },
 
       // ── catch-all: everything else (@/) resolves into the ChartMate widget ──
       { find: "@", replacement: widget },

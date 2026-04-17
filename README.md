@@ -25,6 +25,16 @@ The repo [`tradingsmartalgo`](../tradingsmartalgo) is copied into **`public/trad
 | [**openalgo**](../openalgo) | Used via Edge + options-api (user API keys); no algo-only–specific OpenAlgo patches required |
 | [**chartmate-strategy-engine**](../chartmate-strategy-engine) / [**chartmate-monitor**](../chartmate-monitor) | Same DB rows (`pending_conditional_orders`, `active_trades`, …); run workers as today — no repo changes required for hosting algo-only |
 
+## ChartMate widget source (required for build)
+
+Imports resolve into [`chartmate-trading-widget`](../chartmate-trading-widget) (`AlgoStrategyBuilder`, options UI, Tailwind, etc.).
+
+| Layout | How it resolves |
+|--------|-----------------|
+| **Monorepo** (this `trading` repo) | `../chartmate-trading-widget/src` next to `algo-only/` |
+| **Standalone repo** (e.g. GitHub + Vercel) | Set **Vercel env** `CHARTMATE_WIDGET_REPO` to the **git HTTPS URL** of `chartmate-trading-widget`. On each build, `npm run build` runs `scripts/vercel-clone-widget.mjs`, which shallow-clones into `vendor/chartmate-trading-widget/`. Private repo: use a URL with a deploy token, e.g. `https://x-access-token:TOKEN@github.com/org/chartmate-trading-widget.git`. |
+| **Override** | Set `CHARTMATE_WIDGET_SRC` to an absolute path to that repo’s `src` folder. |
+
 ## Local dev
 
 ```bash

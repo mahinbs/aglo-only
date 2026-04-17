@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 *.local
+# Fetched on CI (e.g. Vercel) when CHARTMATE_WIDGET_REPO is set
+vendor/chartmate-trading-widget
