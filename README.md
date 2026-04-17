@@ -1,5 +1,5 @@
 # ChartMate — Algo-only dashboard
-
+ 
 Single-page **TradingSmart.AI** command center on its own subdomain, using the **same Supabase Auth + database** as [`chartmate-trading-widget`](../chartmate-trading-widget).
 
 ## TradingSmartAlgo frontend bundle
