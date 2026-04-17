@@ -1,8 +1,7 @@
 import type { Config } from "tailwindcss";
 import path from "node:path";
-import { getChartmateWidgetSrc } from "./chartmate-widget-resolve";
 
-const widgetSrc = getChartmateWidgetSrc(process.cwd());
+const widgetSrc = path.resolve(process.cwd(), "vendor/chartmate-trading-widget");
 
 export default {
   darkMode: ["class"],
