@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TradingSmartDashboard from "../components/TradingSmartDashboard.jsx";
 import { useAuth } from "@/hooks/useAuth";
 import { bffConfigured, bffFetch } from "@/lib/api";
+import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
 
@@ -21,6 +22,9 @@ type Summary = {
   open_positions_count?: number;
   /** When true, order feed is cleared until broker day session is live (avoids stale DB rows looking like “live”). */
   feed_paused?: boolean;
+  limits?: { orders: number; strategies: number };
+  active_live_orders_for_cap?: number;
+  active_strategies_for_cap?: number;
   pending_executions?: Array<{
     id: string;
     strategy_id: string;
@@ -364,7 +368,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void refresh();
-    const id = window.setInterval(() => void refresh(), 25_000);
+    const id = window.setInterval(() => void refresh(), 60_000);
     return () => window.clearInterval(id);
   }, [refresh]);
 
@@ -429,6 +433,16 @@ export default function DashboardPage() {
   );
 
   /** ChartMate flow: update symbol/qty/product then toggle on — requires live broker session. */
+  const { lastFrame: positionsWsFrame } = useOptionsPositionsStream({
+    enabled: Boolean(summary?.broker_session_live && session?.access_token),
+    userId: user?.id,
+    token: session?.access_token,
+  });
+
+  useEffect(() => {
+    if (positionsWsFrame) void refresh();
+  }, [positionsWsFrame, refresh]);
+
   const onConfirmGoLive = useCallback(
     async (
       strategyId: string,
@@ -438,6 +452,17 @@ export default function DashboardPage() {
       if (!session?.access_token) return "Not signed in";
       if (!summary?.broker_session_live) {
         return "Connect your broker (live session) before activating a strategy.";
+      }
+      if (bffConfigured()) {
+        try {
+          const pf = await bffFetch<{
+            can_execute: boolean;
+            reason?: string | null;
+          }>(`/api/account/preflight?strategy_id=${encodeURIComponent(strategyId)}`, session.access_token);
+          if (!pf.can_execute) return pf.reason ?? "Preflight blocked activation.";
+        } catch (e: unknown) {
+          return e instanceof Error ? e.message : "Preflight request failed";
+        }
       }
       const sym = payload.symbol.trim().toUpperCase();
       const qty = Math.floor(Number(payload.quantity));
@@ -516,6 +541,21 @@ export default function DashboardPage() {
       if (!summary?.broker_session_live) {
         setOptMsg("Connect your broker (live session) before running options.");
         return;
+      }
+      if (bffConfigured()) {
+        try {
+          const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
+            "/api/account/preflight",
+            session.access_token,
+          );
+          if (!pf.can_execute) {
+            setOptMsg(pf.reason ?? "Preflight blocked options execution.");
+            return;
+          }
+        } catch (e: unknown) {
+          setOptMsg(e instanceof Error ? e.message : "Preflight failed");
+          return;
+        }
       }
       setOptBusy(true);
       setOptMsg(null);
@@ -609,6 +649,7 @@ export default function DashboardPage() {
       <TradingSmartDashboard
         useChartmate={useChartmate}
         brokerConnected={summary?.broker_connected ?? null}
+        positionsStreamStale={Boolean(positionsWsFrame?.stale)}
         summary={summary}
         orderFeed={summary?.orders ?? null}
         strategyCards={summary?.user_strategies ?? null}

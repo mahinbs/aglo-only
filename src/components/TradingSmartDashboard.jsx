@@ -460,6 +460,7 @@ export default function TradingSmartDashboard(props = {}) {
   const {
     useChartmate = true,
     brokerConnected = null,
+    positionsStreamStale = false,
     summary = null,
     orderFeed = null,
     strategyCards = null,
@@ -710,6 +711,14 @@ export default function TradingSmartDashboard(props = {}) {
     sessLive && Number.isFinite(brokerOpenOrdersCount) ? brokerOpenOrdersCount : null;
   const liveCashAvailable =
     sessLive && Number.isFinite(brokerCashAvailable) ? brokerCashAvailable : null;
+  const capOrdersLimit = summary?.limits?.orders ?? 10;
+  const capStrategiesLimit = summary?.limits?.strategies ?? 10;
+  const activeOrdersCap = summary?.active_live_orders_for_cap;
+  const activeStrategiesCap = summary?.active_strategies_for_cap;
+  const atOrderCap =
+    typeof activeOrdersCap === "number" && activeOrdersCap >= capOrdersLimit;
+  const atStrategyCap =
+    typeof activeStrategiesCap === "number" && activeStrategiesCap >= capStrategiesLimit;
   // Only show real numbers when broker session is live — avoid showing paper/stale data as real values.
   const displayPortfolio = sessLive && typeof summary?.portfolio_value === "number" ? summary.portfolio_value : 0;
   const displayCumulative = sessLive && typeof summary?.cumulative_pnl === "number" ? summary.cumulative_pnl : 0;
@@ -777,6 +786,11 @@ export default function TradingSmartDashboard(props = {}) {
                     : "Exchange connected"}
             </div>
             <div className="status-item"><div className={`status-dot ${useChartmate ? "live" : "live"}`} /> {useChartmate ? "ChartMate data" : "WebSocket Active"}</div>
+            {positionsStreamStale && (
+              <div className="status-item" style={{ color: "var(--accent-orange)", fontSize: 11 }}>
+                Options stream: stale
+              </div>
+            )}
             <div className="status-item">
               <div className={`status-dot ${(liveTradesCount ?? orders.length) > 0 ? "live" : "warn"}`} />
               {useChartmate ? `Trades ${liveTradesCount ?? 0} · Open ${liveOpenPositionsCount ?? 0}` : "Live feed"}
@@ -970,6 +984,8 @@ export default function TradingSmartDashboard(props = {}) {
                     <div className="metric-row"><span className="metric-label">Order history (tradebook)</span><span className="metric-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? (liveTradesCount ?? 0) : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Open broker orders</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? (liveOpenOrdersCount ?? "—") : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Available cash</span><span className="metric-value" style={{ color: "var(--accent-green)" }}>{sessLive && liveCashAvailable != null ? formatUnsignedDisplay(liveCashAvailable, currencyMode) : "—"}</span></div>
+                    <div className="metric-row"><span className="metric-label">Live orders (cap)</span><span className="metric-value" style={{ color: atOrderCap ? "var(--accent-orange)" : "var(--text-primary)" }}>{sessLive && typeof activeOrdersCap === "number" ? `${activeOrdersCap} / ${capOrdersLimit}` : "—"}</span></div>
+                    <div className="metric-row"><span className="metric-label">Active strategies (cap)</span><span className="metric-value" style={{ color: atStrategyCap ? "var(--accent-orange)" : "var(--text-primary)" }}>{sessLive && typeof activeStrategiesCap === "number" ? `${activeStrategiesCap} / ${capStrategiesLimit}` : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Feed preview rows</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? orders.length : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Strategies deployed</span><span className="metric-value" style={{ color: "var(--accent-yellow)" }}>{sessLive ? (summary?.active_strategies_deployed ?? 0) : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Broker session</span><span className="metric-value" style={{ color: sessLive ? "var(--accent-green)" : "var(--accent-orange)" }}>{sessLive ? "Live" : "Reconnect (IST day token)"}</span></div>
@@ -1224,7 +1240,15 @@ export default function TradingSmartDashboard(props = {}) {
                 <span className="card-badge badge-green">Live · chartmate-options-api</span>
               </div>
               {/* AlgoOnlyOptionsWorkspace — live-only, broker-gated, no paper/backtest buttons */}
-              <AlgoOnlyOptionsWorkspace />
+              <AlgoOnlyOptionsWorkspace
+                accountCaps={{
+                  activeOrders: activeOrdersCap,
+                  activeStrategies: activeStrategiesCap,
+                  limits: { orders: capOrdersLimit, strategies: capStrategiesLimit },
+                  cash: brokerSnap?.cash_available,
+                }}
+                positionsStreamStale={positionsStreamStale}
+              />
             </div>
 
             <div className="card" style={{ gridColumn: "1 / -1" }}>

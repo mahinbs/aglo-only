@@ -17,6 +17,7 @@ export default defineConfig({
       { find: /^@\/components\/RequireAuth$/, replacement: path.resolve(algoOnly, "components/RequireAuth.tsx") },
       { find: /^@\/components\/RequireBrokerConnected$/, replacement: path.resolve(algoOnly, "components/RequireBrokerConnected.tsx") },
       { find: /^@\/hooks\/useAuth$/, replacement: path.resolve(algoOnly, "hooks/useAuth.ts") },
+      { find: /^@\/hooks\/useRealtimeStrategy$/, replacement: path.resolve(algoOnly, "hooks/useRealtimeStrategy.ts") },
       { find: /^@\/hooks\/useBrokerIntegration$/, replacement: path.resolve(algoOnly, "hooks/useBrokerIntegration.ts") },
       { find: /^@\/lib\/supabase$/, replacement: path.resolve(algoOnly, "lib/supabase.ts") },
       { find: /^@\/lib\/zerodhaOAuth$/, replacement: path.resolve(algoOnly, "lib/zerodhaOAuth.ts") },

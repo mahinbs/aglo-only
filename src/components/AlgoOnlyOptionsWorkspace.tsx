@@ -42,6 +42,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { bffConfigured, bffFetch } from "@/lib/api";
+import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";
 import { OptionChainViewer } from "@/components/options/OptionChainViewer";
@@ -112,10 +114,21 @@ function directionIcon(dir: string) {
   return <BarChart2 className="h-4 w-4 text-yellow-400" />;
 }
 
+export type AccountCaps = {
+  activeOrders?: number;
+  activeStrategies?: number;
+  limits?: { orders: number; strategies: number };
+  cash?: number | null;
+};
+
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function AlgoOnlyOptionsWorkspace() {
-  const { user } = useAuth();
+export function AlgoOnlyOptionsWorkspace(props?: {
+  accountCaps?: AccountCaps;
+  positionsStreamStale?: boolean;
+}) {
+  const { accountCaps, positionsStreamStale = false } = props ?? {};
+  const { user, session } = useAuth();
 
   const [strategies, setStrategies] = useState<OptionsStrategy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,6 +211,33 @@ export function AlgoOnlyOptionsWorkspace() {
       toast.error("Connect your broker (live session) before executing.");
       return;
     }
+    const lo = accountCaps?.limits?.orders ?? 10;
+    const ao = accountCaps?.activeOrders;
+    if (typeof ao === "number" && ao >= lo) {
+      toast.error(`Live order cap reached (${ao}/${lo}). Pause or close trades before new execution.`);
+      return;
+    }
+    const ls = accountCaps?.limits?.strategies ?? 10;
+    const ast = accountCaps?.activeStrategies;
+    if (typeof ast === "number" && ast >= ls) {
+      toast.error(`Active strategy cap reached (${ast}/${ls}).`);
+      return;
+    }
+    if (bffConfigured() && session?.access_token) {
+      try {
+        const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
+          "/api/account/preflight",
+          session.access_token,
+        );
+        if (!pf.can_execute) {
+          toast.error(pf.reason ?? "Preflight blocked execution.");
+          return;
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Preflight failed");
+        return;
+      }
+    }
     if (!isOptionsApiConfigured()) {
       toast.error("Set VITE_OPTIONS_API_URL to execute options strategies.");
       return;
@@ -215,10 +255,31 @@ export function AlgoOnlyOptionsWorkspace() {
     }
   };
 
-  const openActivateLive = (strategy: OptionsStrategy) => {
+  const openActivateLive = async (strategy: OptionsStrategy) => {
     if (!brokerConnected) {
       toast.error("Connect your broker (live session) before activating a live options strategy.", { description: "Click 'Connect broker' in the top nav bar to authenticate with your broker." });
       return;
+    }
+    const ls = accountCaps?.limits?.strategies ?? 10;
+    const ast = accountCaps?.activeStrategies;
+    if (typeof ast === "number" && ast >= ls) {
+      toast.error(`Active strategy cap reached (${ast}/${ls}). Pause a strategy first.`);
+      return;
+    }
+    if (bffConfigured() && session?.access_token) {
+      try {
+        const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
+          "/api/account/preflight",
+          session.access_token,
+        );
+        if (!pf.can_execute) {
+          toast.error(pf.reason ?? "Preflight blocked activation.");
+          return;
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Preflight failed");
+        return;
+      }
     }
     setActivateTarget(strategy);
   };
@@ -245,13 +306,32 @@ export function AlgoOnlyOptionsWorkspace() {
               )}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-end gap-1 text-right">
+            {accountCaps?.limits && (
+              <div className="text-[10px] text-muted-foreground font-mono">
+                Active{" "}
+                <span className="text-foreground">
+                  {typeof accountCaps.activeStrategies === "number" ? accountCaps.activeStrategies : "—"}/
+                  {accountCaps.limits.strategies}
+                </span>{" "}
+                strategies · Live orders{" "}
+                <span className="text-foreground">
+                  {typeof accountCaps.activeOrders === "number" ? accountCaps.activeOrders : "—"}/
+                  {accountCaps.limits.orders}
+                </span>
+                {typeof accountCaps.cash === "number" && Number.isFinite(accountCaps.cash) ? (
+                  <> · Cash ₹{accountCaps.cash.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</>
+                ) : null}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={fetchStrategies}>
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Button size="sm" onClick={() => { setEditStrategy(null); setShowBuilder(true); }}>
               <Plus className="h-4 w-4 mr-1" />New Strategy
             </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -302,6 +382,13 @@ export function AlgoOnlyOptionsWorkspace() {
                             {s.underlying} · {s.exchange} · {styleLabel(s.strategy_style)} ·{" "}
                             <span className={directionColor(s.trade_direction)}>{s.trade_direction}</span>
                           </CardDescription>
+                          <div className="mt-2">
+                            <StrategyConditionPanel
+                              strategyName={s.name}
+                              brokerLive={brokerConnected}
+                              streamStale={positionsStreamStale}
+                            />
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -366,7 +453,12 @@ export function AlgoOnlyOptionsWorkspace() {
                         variant="outline" size="sm"
                         className="text-xs h-7 px-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
                         onClick={() => void handleExecuteNow(s)}
-                        disabled={!brokerConnected}
+                        disabled={
+                          !brokerConnected ||
+                          (typeof accountCaps?.activeOrders === "number" &&
+                            typeof accountCaps?.limits?.orders === "number" &&
+                            accountCaps.activeOrders >= accountCaps.limits.orders)
+                        }
                         title={brokerConnected ? "Execute live now" : "Connect broker to execute"}
                       >
                         <Zap className="h-3 w-3 mr-1" />Execute Now
@@ -381,7 +473,13 @@ export function AlgoOnlyOptionsWorkspace() {
                         <Button
                           size="sm"
                           className={`text-xs h-7 px-2 ${brokerConnected ? "bg-primary/90 hover:bg-primary" : "bg-muted/50 text-muted-foreground cursor-not-allowed"}`}
-                          onClick={() => openActivateLive(s)}
+                          onClick={() => void openActivateLive(s)}
+                          disabled={
+                            !brokerConnected ||
+                            (typeof accountCaps?.activeStrategies === "number" &&
+                              typeof accountCaps?.limits?.strategies === "number" &&
+                              accountCaps.activeStrategies >= accountCaps.limits.strategies)
+                          }
                           title={brokerConnected ? "Activate for real live orders today" : "Connect broker first"}
                         >
                           <Zap className="h-3 w-3 mr-1" />Activate Live
