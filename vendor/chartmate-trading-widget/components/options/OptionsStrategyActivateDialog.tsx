@@ -220,7 +220,7 @@ export function OptionsStrategyActivateDialog({
       investmentCurrency,
     );
     setInvestmentAmount(amountDisplay.toFixed(2));
-  }, [ltp, lots, lotUnits, investmentCurrency, assetCurrency, usdPerInr]);
+  }, [ltp, lots, lotUnits, investmentCurrency, assetCurrency]);
 
   const handleInvestmentAmountChange = (raw: string) => {
     setInvestmentAmount(raw);
