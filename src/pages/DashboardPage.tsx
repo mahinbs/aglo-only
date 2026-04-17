@@ -1,0 +1,638 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import TradingSmartDashboard from "../components/TradingSmartDashboard.jsx";
+import { useAuth } from "@/hooks/useAuth";
+import { bffConfigured, bffFetch } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
+import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
+
+type Summary = {
+  configured?: boolean;
+  broker_connected?: boolean;
+  broker_credentials_configured?: boolean;
+  broker_session_live?: boolean;
+  token_expires_at?: string | null;
+  portfolio_value?: number;
+  today_pnl?: number;
+  cumulative_pnl?: number;
+  win_rate_pct?: number | null;
+  open_positions_pct_mtm?: number | null;
+  recent_orders_count?: number;
+  active_strategies_deployed?: number;
+  open_positions_count?: number;
+  /** When true, order feed is cleared until broker day session is live (avoids stale DB rows looking like “live”). */
+  feed_paused?: boolean;
+  pending_executions?: Array<{
+    id: string;
+    strategy_id: string;
+    symbol: string;
+    action: string;
+    status: string;
+    created_at: string;
+    last_checked_at?: string | null;
+    error_message?: string | null;
+  }>;
+  orders?: Array<{
+    id: string;
+    type: string;
+    symbol: string;
+    strategy: string;
+    price: string;
+    qty: string;
+    pnl: number;
+    time: string;
+  }>;
+  user_strategies?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    pairs: string;
+    timeframe: string;
+    riskPerTrade: string;
+    stopLoss: string;
+    takeProfit: string;
+    maxPositions: string;
+    deployed: boolean;
+    is_intraday?: boolean;
+    position_config?: Record<string, unknown>;
+  }>;
+  active_strategies_table?: Array<{
+    name: string;
+    status: string;
+    trades: number;
+    pnl: string;
+    win: string;
+    pnlColor: string;
+    winColor: string;
+  }>;
+};
+
+function brokerSessionLiveFromIntegration(integ: {
+  openalgo_api_key?: string | null;
+  openalgo_username?: string | null;
+  token_expires_at?: string | null;
+} | null): { live: boolean; hasCreds: boolean; tokenExpiresAt: string | null } {
+  if (!integ) return { live: false, hasCreds: false, tokenExpiresAt: null };
+  const key = String(integ.openalgo_api_key ?? "").trim();
+  const user = String(integ.openalgo_username ?? "").trim();
+  const hasCreds = Boolean(key || user);
+  const raw = integ.token_expires_at;
+  const tokenExpiresAt = raw != null && String(raw).trim() ? String(raw).trim() : null;
+  if (!hasCreds) return { live: false, hasCreds: false, tokenExpiresAt };
+  if (!tokenExpiresAt) return { live: true, hasCreds: true, tokenExpiresAt: null };
+  const exp = new Date(tokenExpiresAt);
+  if (Number.isNaN(exp.getTime())) return { live: true, hasCreds: true, tokenExpiresAt };
+  return { live: exp.getTime() > Date.now(), hasCreds: true, tokenExpiresAt };
+}
+
+/** Ignore ancient seed rows in KPIs/feed; always keep open/monitoring trades. */
+const LIVE_TRADE_LOOKBACK_DAYS = 60;
+
+function tradeEntryMs(entryTime: unknown): number | null {
+  const raw = entryTime != null ? String(entryTime) : "";
+  if (!raw) return null;
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function isOpenLikeTrade(t: Record<string, unknown>): boolean {
+  const st = String(t.status || "").toLowerCase();
+  return ["active", "monitoring", "exit_zone", "open"].includes(st);
+}
+
+function tradeInLiveScope(t: Record<string, unknown>, nowMs: number): boolean {
+  if (isOpenLikeTrade(t)) return true;
+  const ms = tradeEntryMs(t.entry_time);
+  if (ms == null) return false;
+  return ms >= nowMs - LIVE_TRADE_LOOKBACK_DAYS * 86_400_000;
+}
+
+function formatEntryTimeShort(entryTime: unknown): string {
+  const raw = entryTime != null ? String(entryTime) : "";
+  if (!raw) return "—";
+  const ms = Date.parse(raw);
+  if (!Number.isFinite(ms)) return raw.slice(0, 16);
+  return new Date(ms).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatLiveMoney(amount: number, cur: "INR" | "USD"): string {
+  const sign = amount >= 0 ? "+" : "-";
+  const a = Math.abs(amount);
+  if (cur === "INR") {
+    return `${sign}₹${a.toLocaleString("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`;
+  }
+  return `${sign}$${a.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}`;
+}
+
+function buildStrategyTableRows(
+  strats: Record<string, unknown>[] | undefined,
+  trades: Record<string, unknown>[] | undefined,
+  cur: "INR" | "USD",
+): Summary["active_strategies_table"] {
+  const closed = new Set(["closed", "exited", "completed", "squareoff", "square_off"]);
+  const bySid = new Map<string, Record<string, unknown>[]>();
+  for (const t of trades ?? []) {
+    const sid = String(t.strategy_id ?? "").trim();
+    if (!sid) continue;
+    const arr = bySid.get(sid) ?? [];
+    arr.push(t);
+    bySid.set(sid, arr);
+  }
+  /* Only attribute trades with user_strategies.id — loose matching inflated P&L across rows. */
+  const slice = (strats ?? []).slice(0, 8);
+  if (!slice.length) {
+    return [
+      {
+        name: "No strategies yet",
+        status: "paused",
+        trades: 0,
+        pnl: formatLiveMoney(0, cur),
+        win: "—",
+        pnlColor: "var(--text-muted)",
+        winColor: "var(--text-muted)",
+      },
+    ];
+  }
+  return slice.map((s) => {
+    const sid = String(s.id ?? "");
+    const matched = bySid.get(sid) ?? [];
+    const tc = matched.length;
+    const pnlSum = matched.reduce((a, t) => a + Number(t.current_pnl || 0), 0);
+    const closedM = matched.filter((t) => closed.has(String(t.status ?? "").toLowerCase()));
+    const wins = closedM.filter((t) => Number(t.current_pnl || 0) > 0).length;
+    const wr = closedM.length >= 1 ? Math.round((100 * wins) / closedM.length) : null;
+    const pnlStr = formatLiveMoney(pnlSum, cur);
+    const winStr = wr != null ? `${wr}%` : "—";
+    return {
+      name: String(s.name),
+      status: s.is_active ? "active" : "paused",
+      trades: tc,
+      pnl: pnlStr,
+      win: winStr,
+      pnlColor:
+        pnlSum > 0 ? "var(--accent-green)" : pnlSum < 0 ? "var(--accent-red)" : "var(--text-muted)",
+      winColor:
+        wr != null && wr >= 50 ? "var(--accent-green)" : wr != null ? "var(--accent-orange)" : "var(--text-muted)",
+    };
+  });
+}
+
+function symbolsFromPairs(pairs: string) {
+  return pairs
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((sym) => {
+      const upper = sym.toUpperCase().replace(/\/USDT|\/USD/gi, "");
+      const crypto = /^(BTC|ETH|SOL|BNB|XRP|DOGE|AVAX)/i.test(upper);
+      return {
+        symbol: upper,
+        exchange: crypto ? "CRYPTO" : "NSE",
+        quantity: 1,
+        product_type: crypto ? "CNC" : "MIS",
+      };
+    });
+}
+
+export default function DashboardPage() {
+  const { user, session, loading, signOut } = useAuth();
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [connectBusy, setConnectBusy] = useState(false);
+  const [currencyMode, setCurrencyMode] = useState<"INR" | "USD">(() => {
+    try {
+      const v = localStorage.getItem("algo-only-currency");
+      return v === "INR" || v === "USD" ? v : "INR";
+    } catch {
+      return "INR";
+    }
+  });
+  const [optBusy, setOptBusy] = useState(false);
+  const [optMsg, setOptMsg] = useState<string | null>(null);
+
+  const useChartmate = Boolean(session?.access_token);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("algo-only-currency", currencyMode);
+    } catch {
+      /* ignore */
+    }
+  }, [currencyMode]);
+
+  const refresh = useCallback(async () => {
+    if (!session?.access_token) return;
+    setLoadErr(null);
+    try {
+      if (bffConfigured()) {
+        const s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
+        setSummary(s);
+        return;
+      }
+        const uid = user?.id;
+        if (!uid) return;
+        const [{ data: integ }, { data: trades }, { data: strats }, { data: pendingRows }] = await Promise.all([
+          supabase
+            .from("user_trading_integration")
+            .select("openalgo_api_key,openalgo_username,token_expires_at")
+            .eq("user_id", uid)
+            .eq("is_active", true)
+            .maybeSingle(),
+          supabase
+            .from("active_trades")
+            .select("id,symbol,action,status,entry_price,shares,current_pnl,strategy_type,strategy_id,is_paper_trade,entry_time")
+            .eq("user_id", uid)
+            .order("entry_time", { ascending: false })
+            .limit(200),
+          supabase
+            .from("user_strategies")
+            .select("id,name,description,is_active,risk_per_trade_pct,stop_loss_pct,take_profit_pct,symbols,position_config,is_intraday,trading_mode,start_time,end_time,squareoff_time,entry_conditions,exit_conditions,risk_config,chart_config,execution_days,paper_strategy_type,market_type,created_at")
+            .eq("user_id", uid)
+            .order("created_at", { ascending: false })
+            .limit(50),
+          supabase
+            .from("pending_conditional_orders")
+            .select("id,strategy_id,symbol,action,status,created_at,last_checked_at,error_message")
+            .eq("user_id", uid)
+            .order("created_at", { ascending: false })
+            .limit(20),
+        ]);
+        const gate = brokerSessionLiveFromIntegration(
+          integ as {
+            openalgo_api_key?: string | null;
+            openalgo_username?: string | null;
+            token_expires_at?: string | null;
+          } | null,
+        );
+        const broker_connected = gate.live;
+        const nowMs = Date.now();
+        const liveTrades = (trades ?? []).filter((t) => !Boolean(t.is_paper_trade)) as Record<string, unknown>[];
+        const scopedLive = liveTrades.filter((t) => tradeInLiveScope(t, nowMs));
+        const orders = gate.live
+          ? scopedLive.slice(0, 20).map((t: Record<string, unknown>) => {
+              const act = String(t.action || "BUY").toUpperCase();
+              const ep = Number(t.entry_price || 0);
+              const sh = Number(t.shares || 0);
+              return {
+                id: String(t.id),
+                type: act === "BUY" ? "buy" : "sell",
+                symbol: String(t.symbol || "—"),
+                strategy: String(t.strategy_type || "ChartMate"),
+                price: ep > 0 ? ep.toFixed(2) : "0",
+                qty: sh > 0 ? String(sh) : "1",
+                pnl: Number(t.current_pnl || 0),
+                time: formatEntryTimeShort(t.entry_time),
+              };
+            })
+          : [];
+        const feed_paused = !gate.live;
+        const user_strategies = (strats ?? []).map((s: Record<string, unknown>) => {
+          const syms = (s.symbols as unknown[]) || [];
+          const pairs = syms
+            .map((x) => (typeof x === "string" ? x : (x as { symbol?: string })?.symbol || ""))
+            .filter(Boolean)
+            .join(", ");
+          const tm = String(s.trading_mode ?? "LONG").toUpperCase();
+          const pc = s.position_config;
+          return {
+            id: String(s.id),
+            name: String(s.name),
+            type: tm,
+            pairs: pairs || "—",
+            timeframe: "5m",
+            riskPerTrade: `${Number(s.risk_per_trade_pct ?? 1)}%`,
+            stopLoss: `${Number(s.stop_loss_pct ?? 1)}%`,
+            takeProfit: `${Number(s.take_profit_pct ?? 2)}%`,
+            maxPositions: "3",
+            deployed: Boolean(s.is_active),
+            is_intraday: s.is_intraday !== false,
+            position_config: pc && typeof pc === "object" ? (pc as Record<string, unknown>) : {},
+            // Full raw row for AlgoStrategyBuilder edit mode
+            _raw: s,
+          };
+        });
+        const openRows = liveTrades.filter((t: Record<string, unknown>) =>
+          ["active", "monitoring", "exit_zone", "open"].includes(String(t.status || "").toLowerCase()),
+        );
+        const open_mtm = openRows.reduce((a: number, t: Record<string, unknown>) => a + Number(t.current_pnl || 0), 0);
+        const portfolio_value = openRows.reduce(
+          (a: number, t: Record<string, unknown>) => a + Number(t.entry_price || 0) * Number(t.shares || 0),
+          0,
+        );
+        const allT = scopedLive;
+        const cumulative_pnl = allT.reduce((a, t) => a + Number(t.current_pnl || 0), 0);
+        const closed = allT.filter((t) =>
+          ["closed", "exited", "completed", "squareoff", "square_off"].includes(String(t.status || "").toLowerCase()),
+        );
+        const win_rate_pct =
+          closed.length >= 1
+            ? Math.round(
+                (100 * closed.filter((t) => Number(t.current_pnl || 0) > 0).length) / closed.length * 100,
+              ) / 100
+            : null;
+        const pct_mtm =
+          portfolio_value > 0 ? Math.round((100 * open_mtm) / portfolio_value) : null;
+        const deployed = (strats ?? []).filter((s: Record<string, unknown>) => s.is_active).length;
+        const pending_executions = (pendingRows ?? []).map((r: Record<string, unknown>) => ({
+          id: String(r.id ?? ""),
+          strategy_id: String(r.strategy_id ?? ""),
+          symbol: String(r.symbol ?? ""),
+          action: String(r.action ?? ""),
+          status: String(r.status ?? "pending"),
+          created_at: formatEntryTimeShort(r.created_at),
+          last_checked_at: r.last_checked_at ? formatEntryTimeShort(r.last_checked_at) : null,
+          error_message: r.error_message ? String(r.error_message) : null,
+        }));
+        setSummary({
+          broker_connected,
+          broker_credentials_configured: gate.hasCreds,
+          broker_session_live: gate.live,
+          token_expires_at: gate.tokenExpiresAt,
+          portfolio_value: portfolio_value || 0,
+          today_pnl: open_mtm,
+          cumulative_pnl,
+          win_rate_pct,
+          open_positions_pct_mtm: pct_mtm,
+          recent_orders_count: scopedLive.length,
+          active_strategies_deployed: deployed,
+          open_positions_count: openRows.length,
+          orders,
+          feed_paused,
+          pending_executions,
+          user_strategies,
+          active_strategies_table: buildStrategyTableRows(
+            (strats ?? []) as Record<string, unknown>[],
+            scopedLive,
+            currencyMode,
+          ),
+        });
+    } catch (e: unknown) {
+      setLoadErr(e instanceof Error ? e.message : "Failed to load dashboard");
+    }
+  }, [session?.access_token, user?.id, currencyMode]);
+
+  useEffect(() => {
+    void refresh();
+    const id = window.setInterval(() => void refresh(), 25_000);
+    return () => window.clearInterval(id);
+  }, [refresh]);
+
+  const onConnectBroker = useCallback(async () => {
+    if (!session?.access_token) return;
+    setLoadErr(null);
+    setConnectBusy(true);
+    try {
+      await startZerodhaKiteConnect();
+    } catch (e: unknown) {
+      setLoadErr(e instanceof Error ? e.message : "Broker connect failed");
+      setConnectBusy(false);
+    }
+  }, [session?.access_token]);
+
+  const onCreateStrategy = useCallback(
+    async (stratForm: Record<string, string>) => {
+      if (!session?.access_token) return "Not signed in";
+      const rawSyms = (stratForm.symbols_raw ?? stratForm.pairs ?? "").trim();
+      const symbols = symbolsFromPairs(rawSyms || "RELIANCE");
+      if (!symbols.length) return "Add at least one symbol (comma-separated, e.g. RELIANCE, TCS)";
+      const risk = Number(stratForm.risk_per_trade_pct ?? stratForm.riskPerTrade);
+      const sl = Number(stratForm.stop_loss_pct ?? stratForm.stopLoss);
+      const tp = Number(stratForm.take_profit_pct ?? stratForm.takeProfit);
+      if (!Number.isFinite(risk) || risk <= 0) return "Invalid risk %";
+      if (!Number.isFinite(sl) || sl <= 0) return "Invalid stop loss %";
+      if (!Number.isFinite(tp) || tp <= 0) return "Invalid take profit %";
+      const trading_mode = (stratForm.trading_mode || "LONG").toUpperCase();
+      const is_intraday = stratForm.is_intraday !== "false";
+      const res = await supabase.functions.invoke("manage-strategy", {
+        body: {
+          action: "create",
+          name: stratForm.name.trim(),
+          description: (stratForm.description ?? "").trim() || "Created from TradingSmart algo-only",
+          trading_mode,
+          is_intraday,
+          start_time: stratForm.start_time || "09:15",
+          end_time: stratForm.end_time || "15:15",
+          squareoff_time: stratForm.squareoff_time || "15:15",
+          risk_per_trade_pct: risk,
+          stop_loss_pct: sl,
+          take_profit_pct: tp,
+          symbols,
+          paper_strategy_type: null,
+          market_type: "stocks",
+          entry_conditions: {
+            rawExpression: (stratForm.entry_rule ?? "").trim() || "true",
+          },
+          exit_conditions: {
+            rawExpression: (stratForm.exit_rule ?? "").trim() || "",
+            autoExitEnabled: true,
+          },
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const err = (res.data as { error?: string; error_code?: string } | null)?.error;
+      if (res.error) return res.error.message;
+      if (err) return err;
+      return null;
+    },
+    [session?.access_token],
+  );
+
+  /** ChartMate flow: update symbol/qty/product then toggle on — requires live broker session. */
+  const onConfirmGoLive = useCallback(
+    async (
+      strategyId: string,
+      positionConfigBase: Record<string, unknown> | undefined,
+      payload: { symbol: string; exchange: string; quantity: number; product: string },
+    ) => {
+      if (!session?.access_token) return "Not signed in";
+      if (!summary?.broker_session_live) {
+        return "Connect your broker (live session) before activating a strategy.";
+      }
+      const sym = payload.symbol.trim().toUpperCase();
+      const qty = Math.floor(Number(payload.quantity));
+      const ex = payload.exchange.trim().toUpperCase() || "NSE";
+      const product = payload.product.trim().toUpperCase() || "MIS";
+      if (!sym) return "Enter a trading symbol";
+      if (!Number.isFinite(qty) || qty < 1) return "Quantity must be at least 1";
+      const symbolsPayload = [{ symbol: sym, exchange: ex, quantity: qty, product_type: product }];
+      const prevPc = positionConfigBase && typeof positionConfigBase === "object" ? positionConfigBase : {};
+      const position_config = {
+        ...prevPc,
+        quantity: qty,
+        exchange: ex,
+        orderProduct: product,
+      };
+      const up = await supabase.functions.invoke("manage-strategy", {
+        body: {
+          action: "update",
+          strategy_id: strategyId,
+          symbols: symbolsPayload,
+          position_config,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const upErr = (up.data as { error?: string } | null)?.error;
+      if (up.error) return up.error.message;
+      if (upErr) return upErr;
+      const tog = await supabase.functions.invoke("manage-strategy", {
+        body: { action: "toggle", strategy_id: strategyId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const togErr = (tog.data as { error?: string } | null)?.error;
+      if (tog.error) return tog.error.message;
+      if (togErr) return togErr;
+      return null;
+    },
+    [session?.access_token, summary?.broker_session_live],
+  );
+
+  const onToggleDeploy = useCallback(
+    async (strategyId: string, deploying: boolean) => {
+      if (!session?.access_token) return "Not signed in";
+      if (deploying) {
+        return "Use Activate strategy in the popup to set symbol and quantity.";
+      }
+      const res = await supabase.functions.invoke("manage-strategy", {
+        body: { action: "toggle", strategy_id: strategyId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const err = (res.data as { error?: string } | null)?.error;
+      if (res.error) return res.error.message;
+      if (err) return err;
+      return null;
+    },
+    [session?.access_token],
+  );
+
+  const onDeleteStrategy = useCallback(
+    async (strategyId: string, _name: string) => {
+      if (!session?.access_token) return "Not signed in";
+      const res = await supabase.functions.invoke("manage-strategy", {
+        body: { action: "delete", strategy_id: strategyId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const err = (res.data as { error?: string } | null)?.error;
+      if (res.error) return res.error.message;
+      if (err) return err;
+      return null;
+    },
+    [session?.access_token],
+  );
+
+  const onOptionsExecuteBody = useCallback(
+    async (body: { strategy_type: string; params: Record<string, unknown> }) => {
+      if (!session?.access_token) return;
+      if (!summary?.broker_session_live) {
+        setOptMsg("Connect your broker (live session) before running options.");
+        return;
+      }
+      setOptBusy(true);
+      setOptMsg(null);
+      try {
+        if (bffConfigured()) {
+          const q = new URLSearchParams({ is_paper: "false" });
+          const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
+          const res = await fetch(`${bff}/api/options/strategies/execute?${q}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setOptMsg(typeof data.error === "string" ? data.error : JSON.stringify(data.detail ?? data));
+            return;
+          }
+          setOptMsg(data.executed === false ? (data.reason ?? "No signal") : "Live execute completed (check active_trades).");
+        } else {
+          const optBase = (import.meta.env.VITE_OPTIONS_API_URL ?? "").replace(/\/$/, "");
+          if (!optBase) {
+            setOptMsg("Set VITE_ALGO_ONLY_BFF_URL or VITE_OPTIONS_API_URL for options execute.");
+            return;
+          }
+          const res = await fetch(`${optBase}/api/options/strategies/execute?is_paper=false`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setOptMsg(typeof data.detail === "string" ? data.detail : JSON.stringify(data));
+            return;
+          }
+          setOptMsg(data.executed === false ? (data.reason ?? "No signal") : "Live execute completed.");
+        }
+        void refresh();
+      } catch (e: unknown) {
+        setOptMsg(e instanceof Error ? e.message : "Options request failed");
+      } finally {
+        setOptBusy(false);
+      }
+    },
+    [session?.access_token, summary?.broker_session_live, refresh],
+  );
+
+  const chartmateActions = useMemo(
+    () => ({
+      onConnectBroker,
+      connectBusy,
+      onRefresh: refresh,
+      onCreateStrategy,
+      onToggleDeploy,
+      onConfirmGoLive,
+      onDeleteStrategy,
+    }),
+    [onConnectBroker, connectBusy, refresh, onCreateStrategy, onToggleDeploy, onConfirmGoLive, onDeleteStrategy],
+  );
+
+  const optionsPanel = useMemo(
+    () => ({
+      onExecuteBody: onOptionsExecuteBody,
+      busy: optBusy,
+      message: optMsg,
+      locked: !summary?.broker_session_live,
+    }),
+    [onOptionsExecuteBody, optBusy, optMsg, summary?.broker_session_live],
+  );
+
+  if (loading || !session) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#06080d", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        Loading…
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      {loadErr && (
+        <div style={{ position: "fixed", top: 8, right: 8, zIndex: 200, background: "rgba(127,29,29,0.9)", color: "#fecaca", padding: "8px 12px", borderRadius: 8, fontSize: 12 }}>
+          {loadErr}
+        </div>
+      )}
+      <TradingSmartDashboard
+        useChartmate={useChartmate}
+        brokerConnected={summary?.broker_connected ?? null}
+        summary={summary}
+        orderFeed={summary?.orders ?? null}
+        strategyCards={summary?.user_strategies ?? null}
+        strategiesTable={summary?.active_strategies_table ?? null}
+        chartmateActions={chartmateActions}
+        currencyMode={currencyMode}
+        setCurrencyMode={setCurrencyMode}
+        optionsPanel={import.meta.env.VITE_OPTIONS_API_URL || bffConfigured() ? optionsPanel : null}
+        onSignOut={() => void signOut()}
+      />
+    </div>
+  );
+}

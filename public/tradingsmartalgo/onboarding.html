@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingSmart.AI — Onboarding</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+:root{--bg-primary:#06080d;--bg-secondary:#0a0e17;--bg-card:rgba(12,17,28,0.85);--border-color:rgba(56,189,248,0.08);--border-glow:rgba(56,189,248,0.2);--accent-cyan:#38bdf8;--accent-blue:#6366f1;--accent-purple:#a78bfa;--accent-green:#34d399;--accent-red:#f43f5e;--accent-orange:#fb923c;--accent-yellow:#fbbf24;--text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#475569}
+*{margin:0;padding:0;box-sizing:border-box}
+html{overflow-x:hidden}
+body{font-family:'Inter',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+.onboard-wrapper{overflow-x:hidden;width:100%}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px);background-size:60px 60px;animation:gridMove 20s linear infinite}
+@keyframes gridMove{to{background-position:60px 60px}}
+.bg-orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.1;animation:orbFloat 15s ease-in-out infinite}
+.orb-1{width:500px;height:500px;background:var(--accent-cyan);top:-10%;right:-5%}
+.orb-2{width:400px;height:400px;background:var(--accent-purple);bottom:-10%;left:-5%;animation-delay:-7s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.05)}}
+.scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px)}
+
+/* LAYOUT */
+.onboard-wrapper{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column}
+.onboard-header{padding:16px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-color);background:rgba(6,8,13,0.8);backdrop-filter:blur(20px)}
+.onboard-logo{display:flex;align-items:center;gap:10px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:15px;letter-spacing:2px;color:var(--accent-cyan);text-decoration:none}
+.onboard-logo-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,rgba(56,189,248,0.15),rgba(99,102,241,0.15));display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(56,189,248,0.2)}
+.onboard-back{font-size:13px;color:var(--text-secondary);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.3s}
+.onboard-back:hover{color:var(--accent-cyan)}
+
+/* PROGRESS BAR */
+.progress-header{padding:24px 32px 0;max-width:900px;margin:0 auto;width:100%}
+.progress-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.progress-step-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent-cyan);font-weight:600}
+.progress-pct{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted)}
+.progress-track{height:4px;border-radius:2px;background:rgba(255,255,255,0.05);overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-purple));transition:width 0.5s ease}
+.progress-dots{display:flex;justify-content:space-between;margin-bottom:24px}
+.progress-dot{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.progress-dot-circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--border-color);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text-muted);transition:all 0.3s;background:var(--bg-primary)}
+.progress-dot.active .progress-dot-circle{border-color:var(--accent-cyan);color:var(--accent-cyan);box-shadow:0 0 12px rgba(56,189,248,0.2)}
+.progress-dot.done .progress-dot-circle{border-color:var(--accent-green);background:var(--accent-green);color:#fff}
+.progress-dot-label{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;white-space:nowrap}
+.progress-dot.active .progress-dot-label{color:var(--accent-cyan)}
+.progress-dot.done .progress-dot-label{color:var(--accent-green)}
+
+/* FORM AREA */
+.onboard-body{flex:1;display:flex;justify-content:center;padding:0 32px 48px}
+.onboard-card{width:100%;max-width:900px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:36px 40px;backdrop-filter:blur(12px);position:relative;overflow:hidden}
+.onboard-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent-cyan),var(--accent-purple),transparent)}
+.step-title{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.step-subtitle{font-size:13px;color:var(--text-muted);margin-bottom:24px}
+.section-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--accent-cyan);font-weight:700;margin-bottom:14px;margin-top:20px;display:flex;align-items:center;gap:8px}
+.section-label:first-of-type{margin-top:0}
+
+/* FORM FIELDS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid.single{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:600}
+.form-label .req{color:var(--accent-red)}
+.form-input,.form-select,.form-textarea{background:rgba(15,23,42,0.6);border:1px solid var(--border-color);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:all 0.3s;width:100%}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(56,189,248,0.08)}
+.form-input.error{border-color:var(--accent-red);box-shadow:0 0 0 3px rgba(244,63,94,0.1)}
+.form-input::placeholder{color:#334155}
+.form-select{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%2394a3b8' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.form-select option{background:#0f172a;color:var(--text-primary)}
+.form-textarea{min-height:70px;resize:vertical;font-size:12px;line-height:1.6}
+.form-hint{font-size:10px;color:var(--text-muted);margin-top:2px}
+.form-row-inline{display:flex;gap:10px;align-items:flex-end}
+.form-row-inline .form-input{flex:1}
+
+/* PASSWORD TOGGLE */
+.pw-wrapper{position:relative}
+.pw-wrapper .form-input{padding-right:44px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;transition:color 0.3s;padding:4px}
+.pw-toggle:hover{color:var(--accent-cyan)}
+
+/* FILE UPLOAD */
+.file-upload{display:flex;align-items:center;gap:12px}
+.file-upload-btn{padding:10px 18px;border-radius:10px;border:1px dashed rgba(56,189,248,0.3);background:rgba(56,189,248,0.05);color:var(--accent-cyan);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;gap:6px}
+.file-upload-btn:hover{background:rgba(56,189,248,0.1);border-color:var(--accent-cyan)}
+.file-upload input[type="file"]{display:none}
+.file-name{font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.file-name.attached{color:var(--accent-green)}
+
+/* RADIO & CHECKBOX */
+.radio-group,.checkbox-group{display:flex;flex-wrap:wrap;gap:10px}
+.radio-option,.checkbox-option{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--border-color);cursor:pointer;transition:all 0.3s;font-size:13px;color:var(--text-secondary)}
+.radio-option:hover,.checkbox-option:hover{border-color:var(--border-glow);background:rgba(56,189,248,0.03)}
+.radio-option.selected{border-color:var(--accent-cyan);background:rgba(56,189,248,0.08);color:var(--accent-cyan)}
+.checkbox-option.selected{border-color:var(--accent-green);background:rgba(52,211,153,0.08);color:var(--accent-green)}
+.radio-option input,.checkbox-option input{accent-color:var(--accent-cyan);width:14px;height:14px}
+
+/* SLIDER */
+.slider-group{display:flex;flex-direction:column;gap:6px}
+.slider-header{display:flex;justify-content:space-between;align-items:center}
+.slider-value{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--accent-cyan)}
+input[type="range"]{width:100%;height:6px;-webkit-appearance:none;appearance:none;background:rgba(255,255,255,0.05);border-radius:3px;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent-cyan);cursor:pointer;box-shadow:0 0 10px rgba(56,189,248,0.3)}
+
+/* CONSENT BOX */
+.consent-box{border:1px solid rgba(244,63,94,0.2);border-radius:12px;padding:20px;background:rgba(244,63,94,0.03);display:flex;flex-direction:column;gap:12px}
+.consent-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text-secondary);line-height:1.5}
+.consent-item input{margin-top:3px;accent-color:var(--accent-cyan);width:16px;height:16px;flex-shrink:0}
+
+/* SIGNATURE */
+.signature-pad{width:100%;height:100px;border:1px dashed var(--border-color);border-radius:12px;background:rgba(15,23,42,0.4);position:relative;cursor:crosshair;overflow:hidden}
+.signature-pad canvas{width:100%;height:100%;display:block}
+.signature-clear{position:absolute;top:8px;right:8px;background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.2);color:var(--accent-red);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600}
+.signature-type{margin-top:8px}
+
+/* REVIEW SUMMARY */
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.review-card{padding:16px;border-radius:12px;background:rgba(15,23,42,0.5);border:1px solid var(--border-color)}
+.review-card-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--accent-cyan);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.review-item{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+.review-item:last-child{border:none}
+.review-item-label{color:var(--text-muted)}
+.review-item-value{color:var(--text-primary);font-family:'JetBrains Mono',monospace;font-weight:600}
+
+/* TRUST BADGES */
+.trust-badges{display:flex;gap:16px;margin-top:16px;justify-content:center}
+.trust-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-muted);padding:6px 12px;border-radius:8px;background:rgba(52,211,153,0.05);border:1px solid rgba(52,211,153,0.1)}
+.trust-badge-icon{color:var(--accent-green);font-size:14px}
+
+/* TOOLTIP */
+.tooltip-trigger{position:relative;cursor:help;color:var(--text-muted);font-size:14px}
+.tooltip-trigger:hover .tooltip-text{opacity:1;transform:translateY(0)}
+.tooltip-text{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);background:#1e293b;color:var(--text-secondary);font-size:11px;padding:6px 12px;border-radius:6px;white-space:nowrap;opacity:0;transition:all 0.2s;pointer-events:none;z-index:10;border:1px solid var(--border-color)}
+
+/* BUTTONS */
+.btn-row{display:flex;justify-content:space-between;margin-top:28px;gap:12px}
+.btn{padding:14px 28px;border-radius:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;border:none;display:flex;align-items:center;gap:8px}
+.btn-next{background:linear-gradient(135deg,#38bdf8,#6366f1);color:#fff;margin-left:auto}
+.btn-next:hover{box-shadow:0 0 25px rgba(56,189,248,0.3);transform:translateY(-1px)}
+.btn-next:disabled{opacity:0.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-back{background:transparent;border:1px solid var(--border-color);color:var(--text-secondary)}
+.btn-back:hover{border-color:var(--border-glow);color:var(--text-primary)}
+.btn-submit{background:linear-gradient(135deg,var(--accent-green),#059669);color:#fff;margin-left:auto;font-size:16px;padding:16px 36px}
+.btn-submit:hover{box-shadow:0 0 30px rgba(52,211,153,0.3)}
+
+/* AI SUGGESTION */
+.ai-suggestion{display:flex;gap:10px;padding:12px 16px;border-radius:10px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);margin-top:12px;font-size:12px;color:var(--text-secondary);line-height:1.5;align-items:flex-start}
+.ai-suggestion-icon{font-size:18px;flex-shrink:0}
+
+/* STEP VISIBILITY */
+.step{display:none}
+.step.active{display:block;animation:stepIn 0.4s ease}
+@keyframes stepIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* SUCCESS SCREEN */
+.success-screen{display:none;text-align:center;padding:40px 20px}
+.success-screen.active{display:block}
+.success-icon{font-size:64px;margin-bottom:16px;animation:successPop 0.5s ease}
+@keyframes successPop{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.success-title{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:700;color:var(--accent-green);margin-bottom:8px}
+.success-text{font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.6}
+.success-btn{display:inline-flex;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#6366f1);color:#fff;text-decoration:none;font-weight:700;font-size:15px;transition:all 0.3s}
+.success-btn:hover{box-shadow:0 0 25px rgba(56,189,248,0.3)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .onboard-header{padding:12px 16px}
+  .onboard-logo{font-size:13px;gap:8px}
+  .onboard-logo-icon{width:28px;height:28px;font-size:14px}
+  .onboard-back{font-size:12px}
+  .progress-header{padding:16px 16px 0}
+  .onboard-body{padding:0 16px 32px}
+  .onboard-card{padding:24px 20px;border-radius:16px}
+  .step-title{font-size:16px}
+  .step-subtitle{font-size:12px;margin-bottom:18px}
+  .section-label{font-size:10px;margin-bottom:12px;margin-top:16px}
+  .form-grid{grid-template-columns:1fr}
+  .form-input,.form-select,.form-textarea{padding:10px 12px;font-size:12px;border-radius:8px}
+  .form-label{font-size:9px;letter-spacing:1.5px}
+  .review-grid{grid-template-columns:1fr}
+  .review-card{padding:14px}
+  .review-item{font-size:11px}
+  .progress-dots{overflow-x:auto;gap:8px}
+  .progress-dot-label{display:none}
+  .progress-dot-circle{width:24px;height:24px;font-size:10px}
+  .btn-row{flex-wrap:wrap}
+  .btn{padding:12px 22px;font-size:13px;border-radius:10px}
+  .btn-submit{padding:14px 28px;font-size:14px}
+  .trust-badges{flex-wrap:wrap;gap:10px}
+  .trust-badge{font-size:9px;padding:5px 10px}
+  .radio-group,.checkbox-group{gap:8px}
+  .radio-option,.checkbox-option{padding:8px 12px;font-size:12px;border-radius:8px}
+  .consent-box{padding:16px}
+  .consent-item{font-size:12px;gap:8px}
+  .signature-pad{height:80px}
+  .success-icon{font-size:48px}
+  .success-title{font-size:20px}
+  .success-text{font-size:13px}
+  .success-btn{padding:12px 24px;font-size:14px}
+  .ai-suggestion{font-size:11px;padding:10px 14px}
+  .file-upload-btn{padding:8px 14px;font-size:11px}
+  .form-row-inline{flex-direction:column;gap:8px}
+  .form-row-inline .form-input{width:100%}
+}
+@media(max-width:480px){
+  .onboard-header{padding:10px 12px}
+  .onboard-logo{font-size:11px;letter-spacing:1px}
+  .onboard-logo-icon{width:24px;height:24px;font-size:12px}
+  .onboard-body{padding:0 10px 24px}
+  .onboard-card{padding:18px 14px;border-radius:12px}
+  .step-title{font-size:15px}
+  .progress-header{padding:12px 12px 0}
+  .btn{padding:10px 18px;font-size:12px;flex:1}
+  .btn-row{gap:8px}
+  .trust-badges{justify-content:center}
+  .consent-box{padding:12px}
+  .consent-item{font-size:11px}
+  .review-card-title{font-size:10px}
+}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+<div class="scanlines"></div>
+
+<div class="onboard-wrapper">
+  <!-- HEADER -->
+  <div class="onboard-header">
+    <a href="/login" class="onboard-logo"><div class="onboard-logo-icon">&#x1F916;</div> TRADINGSMART.AI</a>
+    <a href="/login" class="onboard-back">&#x2190; Back to Login</a>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-header">
+    <div class="progress-info">
+      <span class="progress-step-text" id="stepText">Step 1 of 7</span>
+      <span class="progress-pct" id="stepPct">14%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:14%"></div></div>
+    <div class="progress-dots" id="progressDots"></div>
+  </div>
+
+  <!-- FORM BODY -->
+  <div class="onboard-body">
+    <div class="onboard-card">
+
+      <!-- ═══ STEP 1: PERSONAL INFO ═══ -->
+      <div class="step active" id="step1">
+        <div class="step-title">Personal Information</div>
+        <div class="step-subtitle">Let's start with your basic details</div>
+        <div class="section-label">&#x1F464; Basic Details</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Full Name <span class="req">*</span></label><input class="form-input" id="ob_name" placeholder="John Doe" required></div>
+          <div class="form-group"><label class="form-label">Email <span class="req">*</span></label><div class="form-row-inline"><input class="form-input" type="email" id="ob_email" placeholder="trader@example.com"><button class="file-upload-btn" onclick="mockOTP('email')" style="white-space:nowrap">Verify OTP</button></div></div>
+          <div class="form-group"><label class="form-label">Phone Number <span class="req">*</span></label><div class="form-row-inline"><input class="form-input" type="tel" id="ob_phone" placeholder="+91 9876543210"><button class="file-upload-btn" onclick="mockOTP('phone')" style="white-space:nowrap">Verify OTP</button></div></div>
+          <div class="form-group"><label class="form-label">Country</label><select class="form-select" id="ob_country"><option value="">Select Country</option><option>India</option><option>United States</option><option>United Kingdom</option><option>Singapore</option><option>UAE</option><option>Australia</option><option>Canada</option><option>Germany</option><option>Japan</option><option>Other</option></select></div>
+          <div class="form-group"><label class="form-label">City</label><input class="form-input" id="ob_city" placeholder="Mumbai"></div>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2: KYC ═══ -->
+      <div class="step" id="step2">
+        <div class="step-title">KYC & Verification</div>
+        <div class="step-subtitle">Identity and address verification</div>
+        <div class="section-label">&#x1F4CB; Identity</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">ID Type <span class="req">*</span></label><select class="form-select" id="ob_idtype"><option value="">Select ID Type</option><option>Passport</option><option>National ID / Aadhaar</option><option>PAN Card</option><option>Driver's License</option></select></div>
+          <div class="form-group"><label class="form-label">ID Number <span class="req">*</span></label><input class="form-input" id="ob_idnum" placeholder="ABCDE1234F"></div>
+          <div class="form-group full"><label class="form-label">Upload ID Proof</label><div class="file-upload"><label class="file-upload-btn">&#x1F4CE; Choose File<input type="file" accept="image/*,.pdf" onchange="showFile(this,'idFile')"></label><span class="file-name" id="idFile">No file selected</span></div></div>
+        </div>
+        <div class="section-label">&#x1F3E0; Address</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Address Line 1</label><input class="form-input" id="ob_addr1" placeholder="Street address"></div>
+          <div class="form-group"><label class="form-label">Address Line 2</label><input class="form-input" id="ob_addr2" placeholder="Apt, suite, etc."></div>
+          <div class="form-group full"><label class="form-label">Upload Address Proof</label><div class="file-upload"><label class="file-upload-btn">&#x1F4CE; Choose File<input type="file" accept="image/*,.pdf" onchange="showFile(this,'addrFile')"></label><span class="file-name" id="addrFile">No file selected</span></div></div>
+        </div>
+        <div style="margin-top:16px"><label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" id="ob_docconfirm"> I confirm all uploaded documents are valid and authentic</label></div>
+      </div>
+
+      <!-- ═══ STEP 3: TRADING PROFILE ═══ -->
+      <div class="step" id="step3">
+        <div class="step-title">Trading Profile</div>
+        <div class="step-subtitle">Tell us about your trading goals</div>
+        <div class="section-label">&#x1F4B0; Capital & Risk</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Capital Amount <span class="req">*</span></label><input class="form-input" type="number" id="ob_capital" placeholder="100000"></div>
+          <div class="form-group"><label class="form-label">Currency</label><select class="form-select" id="ob_currency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>AED</option><option>SGD</option></select></div>
+        </div>
+        <div class="form-group" style="margin-top:14px"><label class="form-label">Risk Appetite <span class="req">*</span></label>
+          <div class="radio-group" id="riskRadio">
+            <label class="radio-option" onclick="selectRadio(this,'riskRadio')"><input type="radio" name="risk" value="Low"> &#x1F7E2; Low</label>
+            <label class="radio-option" onclick="selectRadio(this,'riskRadio')"><input type="radio" name="risk" value="Medium"> &#x1F7E1; Medium</label>
+            <label class="radio-option" onclick="selectRadio(this,'riskRadio')"><input type="radio" name="risk" value="High"> &#x1F534; High</label>
+          </div>
+        </div>
+        <div class="section-label">&#x1F4CA; Experience</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Trading Experience</label><select class="form-select" id="ob_experience"><option value="">Select Level</option><option>Beginner (0-1 years)</option><option>Intermediate (1-3 years)</option><option>Advanced (3+ years)</option></select></div>
+        </div>
+        <div class="form-group" style="margin-top:14px"><label class="form-label">Preferred Markets</label>
+          <div class="checkbox-group" id="marketChecks">
+            <label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" value="Equity"> Equity</label>
+            <label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" value="Options"> Options</label>
+            <label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" value="Futures"> Futures</label>
+            <label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" value="Crypto"> Crypto</label>
+          </div>
+        </div>
+        <div class="ai-suggestion" id="aiSuggestion" style="display:none"><span class="ai-suggestion-icon">&#x1F9E0;</span><div id="aiSuggestionText"></div></div>
+      </div>
+
+      <!-- ═══ STEP 4: BROKER & API ═══ -->
+      <div class="step" id="step4">
+        <div class="step-title">Broker & API Setup</div>
+        <div class="step-subtitle">Connect your trading account</div>
+        <div class="section-label">&#x1F3E6; Broker</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Broker Name <span class="req">*</span></label><select class="form-select" id="ob_broker"><option value="">Select Broker</option><option>Zerodha</option><option>Upstox</option><option>Angel One</option><option>ICICI Direct</option><option>HDFC Securities</option><option>Interactive Brokers</option><option>Binance</option><option>Other</option></select></div>
+          <div class="form-group"><label class="form-label">Client ID</label><input class="form-input" id="ob_clientid" placeholder="AB1234"></div>
+        </div>
+        <div class="section-label">&#x1F510; API Credentials</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">API Key <span class="req">*</span> <span class="tooltip-trigger">&#x1F512;<span class="tooltip-text">Encrypted & securely stored</span></span></label><div class="pw-wrapper"><input class="form-input" type="password" id="ob_apikey" placeholder="Enter API Key"><button class="pw-toggle" onclick="togglePW(this)">&#x1F441;</button></div></div>
+          <div class="form-group"><label class="form-label">API Secret <span class="req">*</span> <span class="tooltip-trigger">&#x1F512;<span class="tooltip-text">Encrypted & securely stored</span></span></label><div class="pw-wrapper"><input class="form-input" type="password" id="ob_apisecret" placeholder="Enter API Secret"><button class="pw-toggle" onclick="togglePW(this)">&#x1F441;</button></div></div>
+        </div>
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px">
+          <label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" id="ob_apienabled"> I have enabled API access from my broker panel</label>
+          <label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" id="ob_orderauth"> I authorize automated order execution via API</label>
+        </div>
+        <div class="trust-badges"><div class="trust-badge"><span class="trust-badge-icon">&#x1F6E1;</span> 256-bit Encryption</div><div class="trust-badge"><span class="trust-badge-icon">&#x2705;</span> Secure API Handling</div><div class="trust-badge"><span class="trust-badge-icon">&#x1F512;</span> SOC2 Compliant</div></div>
+      </div>
+
+      <!-- ═══ STEP 5: STRATEGY CONFIG ═══ -->
+      <div class="step" id="step5">
+        <div class="step-title">Strategy Configuration</div>
+        <div class="step-subtitle">Set up your trading strategy</div>
+        <div class="section-label">&#x1F3AF; Strategy Selection</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Strategy Type <span class="req">*</span></label><select class="form-select" id="ob_strategy"><option value="">Select Strategy</option><option>Scalping</option><option>Trend Following</option><option>Options Selling</option><option>Mean Reversion</option><option>Momentum</option><option>Grid Trading</option></select></div>
+        </div>
+        <div class="section-label">&#x26A0; Risk Controls</div>
+        <div class="form-grid">
+          <div class="form-group"><div class="slider-group"><div class="slider-header"><label class="form-label">Risk per Trade (%)</label><span class="slider-value" id="riskTradeVal">2%</span></div><input type="range" min="1" max="5" step="0.5" value="2" id="ob_riskpertrade" oninput="document.getElementById('riskTradeVal').textContent=this.value+'%'"></div></div>
+          <div class="form-group"><div class="slider-group"><div class="slider-header"><label class="form-label">Max Daily Loss (%)</label><span class="slider-value" id="maxLossVal">5%</span></div><input type="range" min="2" max="10" step="0.5" value="5" id="ob_maxloss" oninput="document.getElementById('maxLossVal').textContent=this.value+'%'"></div></div>
+        </div>
+        <div class="section-label">&#x2699; Automation Mode</div>
+        <div class="radio-group" id="modeRadio">
+          <label class="radio-option" onclick="selectRadio(this,'modeRadio')"><input type="radio" name="mode" value="Fully Automated"> &#x1F916; Fully Automated</label>
+          <label class="radio-option" onclick="selectRadio(this,'modeRadio')"><input type="radio" name="mode" value="Semi-Automated"> &#x1F91D; Semi-Automated</label>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 6: RISK & CONSENT ═══ -->
+      <div class="step" id="step6">
+        <div class="step-title">Risk Disclosure & Legal Consent</div>
+        <div class="step-subtitle">Please read and acknowledge the following</div>
+        <div class="consent-box">
+          <div class="consent-item"><input type="checkbox" id="c1"> <span>I understand that algorithmic trading involves substantial financial risk and past performance is not indicative of future results.</span></div>
+          <div class="consent-item"><input type="checkbox" id="c2"> <span>I accept full responsibility for any losses incurred through automated trading on my account.</span></div>
+          <div class="consent-item"><input type="checkbox" id="c3"> <span>I acknowledge that no guaranteed returns are promised by TradingSmart.AI or its algorithms.</span></div>
+          <div class="consent-item"><input type="checkbox" id="c4"> <span>I authorize TradingSmart.AI to execute automated buy/sell orders on my connected broker account.</span></div>
+        </div>
+        <div class="section-label" style="margin-top:24px">&#x270D; Digital Signature</div>
+        <div class="signature-pad" id="sigPad"><canvas id="sigCanvas"></canvas><button class="signature-clear" onclick="clearSignature()">Clear</button></div>
+        <div class="form-hint">Draw your signature above, or type below</div>
+        <div class="signature-type"><input class="form-input" id="ob_sigtype" placeholder="Type your full name as signature" style="font-style:italic"></div>
+      </div>
+
+      <!-- ═══ STEP 7: REVIEW & SUBMIT ═══ -->
+      <div class="step" id="step7">
+        <div class="step-title">Review & Submit</div>
+        <div class="step-subtitle">Please verify all your details before submitting</div>
+        <div class="review-grid" id="reviewGrid"></div>
+        <div style="margin-top:20px"><label class="checkbox-option" onclick="this.classList.toggle('selected')"><input type="checkbox" id="ob_finalconfirm"> I confirm all the details provided are correct and complete</label></div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div class="success-screen" id="successScreen">
+        <div class="success-icon">&#x1F680;</div>
+        <div class="success-title">APPLICATION SUBMITTED</div>
+        <div class="success-text">Your onboarding application has been received. Our team will verify your documents and activate your trading account within 24-48 hours. You'll receive a confirmation email shortly.</div>
+        <a href="/login" class="success-btn">&#x2190; Back to Login</a>
+      </div>
+
+      <!-- NAVIGATION BUTTONS -->
+      <div class="btn-row" id="btnRow">
+        <button class="btn btn-back" id="btnBack" onclick="prevStep()" style="display:none">&#x2190; Back</button>
+        <button class="btn btn-next" id="btnNext" onclick="nextStep()">Next &#x2192;</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ WIZARD STATE ═══
+let currentStep=1;
+const totalSteps=7;
+const stepNames=['Personal Info','KYC','Trading Profile','Broker & API','Strategy Setup','Risk & Consent','Review & Submit'];
+
+function renderProgress(){
+  const dotsEl=document.getElementById('progressDots');
+  dotsEl.innerHTML='';
+  stepNames.forEach((name,i)=>{
+    const s=i+1;
+    const cls=s<currentStep?'done':s===currentStep?'active':'';
+    dotsEl.innerHTML+=`<div class="progress-dot ${cls}"><div class="progress-dot-circle">${s<currentStep?'&#x2713;':s}</div><div class="progress-dot-label">${name}</div></div>`;
+  });
+  document.getElementById('stepText').textContent=`Step ${currentStep} of ${totalSteps}`;
+  const pct=Math.round((currentStep/totalSteps)*100);
+  document.getElementById('stepPct').textContent=pct+'%';
+  document.getElementById('progressFill').style.width=pct+'%';
+}
+
+function showStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  const step=document.getElementById('step'+n);
+  if(step)step.classList.add('active');
+  document.getElementById('btnBack').style.display=n>1?'flex':'none';
+  const btnNext=document.getElementById('btnNext');
+  if(n===totalSteps){
+    btnNext.className='btn btn-submit';
+    btnNext.innerHTML='&#x1F680; Submit Application';
+  }else{
+    btnNext.className='btn btn-next';
+    btnNext.innerHTML='Next &#x2192;';
+  }
+  renderProgress();
+  if(n===3)showAISuggestion();
+  if(n===7)buildReview();
+}
+
+function nextStep(){
+  if(currentStep===totalSteps){submitForm();return}
+  if(currentStep<totalSteps){currentStep++;showStep(currentStep)}
+}
+function prevStep(){
+  if(currentStep>1){currentStep--;showStep(currentStep)}
+}
+
+// ═══ HELPERS ═══
+function selectRadio(el,groupId){
+  document.querySelectorAll('#'+groupId+' .radio-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked=true;
+}
+function togglePW(btn){
+  const inp=btn.previousElementSibling;
+  if(inp.type==='password'){inp.type='text';btn.textContent='\u{1F648}'}
+  else{inp.type='password';btn.textContent='\u{1F441}'}
+}
+function showFile(input,spanId){
+  const f=input.files?.[0];
+  const span=document.getElementById(spanId);
+  if(f){span.textContent=f.name;span.classList.add('attached')}
+  else{span.textContent='No file selected';span.classList.remove('attached')}
+}
+function mockOTP(type){
+  alert('OTP sent to your '+type+'! (Demo: auto-verified)');
+}
+
+// ═══ AI SUGGESTIONS ═══
+function showAISuggestion(){
+  const cap=parseFloat(document.getElementById('ob_capital').value)||0;
+  const exp=document.getElementById('ob_experience').value;
+  const el=document.getElementById('aiSuggestion');
+  const txt=document.getElementById('aiSuggestionText');
+  let msg='';
+  if(cap>0&&cap<50000)msg='Based on your capital, we recommend a <strong>Low Risk</strong> strategy with conservative position sizing to protect your investment.';
+  else if(exp&&exp.includes('Beginner'))msg='As a beginner trader, we suggest starting with <strong>Semi-Automated</strong> mode and a <strong>Low Risk</strong> appetite to learn the system safely.';
+  else if(cap>=500000)msg='With your capital level, you can explore <strong>Multi-Strategy</strong> approaches. Consider diversifying across Equity and Options for optimal returns.';
+  if(msg){el.style.display='flex';txt.innerHTML='<strong>AI Recommendation:</strong> '+msg}
+  else{el.style.display='none'}
+}
+
+// ═══ SIGNATURE PAD ═══
+let sigDrawing=false;
+const sigCanvas=document.getElementById('sigCanvas');
+const sigCtx=sigCanvas?.getContext('2d');
+function initSignature(){
+  if(!sigCanvas)return;
+  const rect=sigCanvas.parentElement.getBoundingClientRect();
+  sigCanvas.width=rect.width*2;sigCanvas.height=rect.height*2;
+  sigCanvas.style.width=rect.width+'px';sigCanvas.style.height=rect.height+'px';
+  sigCtx.scale(2,2);sigCtx.strokeStyle='#38bdf8';sigCtx.lineWidth=2;sigCtx.lineCap='round';
+  sigCanvas.addEventListener('mousedown',e=>{sigDrawing=true;sigCtx.beginPath();sigCtx.moveTo(e.offsetX,e.offsetY)});
+  sigCanvas.addEventListener('mousemove',e=>{if(!sigDrawing)return;sigCtx.lineTo(e.offsetX,e.offsetY);sigCtx.stroke()});
+  sigCanvas.addEventListener('mouseup',()=>sigDrawing=false);
+  sigCanvas.addEventListener('mouseleave',()=>sigDrawing=false);
+  // Touch
+  sigCanvas.addEventListener('touchstart',e=>{e.preventDefault();sigDrawing=true;const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();sigCtx.beginPath();sigCtx.moveTo(t.clientX-r.left,t.clientY-r.top)});
+  sigCanvas.addEventListener('touchmove',e=>{e.preventDefault();if(!sigDrawing)return;const t=e.touches[0];const r=sigCanvas.getBoundingClientRect();sigCtx.lineTo(t.clientX-r.left,t.clientY-r.top);sigCtx.stroke()});
+  sigCanvas.addEventListener('touchend',()=>sigDrawing=false);
+}
+function clearSignature(){
+  if(!sigCtx)return;
+  sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height);
+}
+setTimeout(initSignature,100);
+
+// ═══ REVIEW ═══
+function buildReview(){
+  const g=document.getElementById('reviewGrid');
+  const v=id=>document.getElementById(id)?.value||'--';
+  const checked=id=>document.getElementById(id)?.checked?'Yes':'No';
+  const radio=name=>{const r=document.querySelector('input[name="'+name+'"]:checked');return r?r.value:'--'};
+  g.innerHTML=`
+    <div class="review-card"><div class="review-card-title">&#x1F464; Personal Info</div>
+      <div class="review-item"><span class="review-item-label">Name</span><span class="review-item-value">${v('ob_name')}</span></div>
+      <div class="review-item"><span class="review-item-label">Email</span><span class="review-item-value">${v('ob_email')}</span></div>
+      <div class="review-item"><span class="review-item-label">Phone</span><span class="review-item-value">${v('ob_phone')}</span></div>
+      <div class="review-item"><span class="review-item-label">Country</span><span class="review-item-value">${v('ob_country')}</span></div>
+    </div>
+    <div class="review-card"><div class="review-card-title">&#x1F4B0; Trading Profile</div>
+      <div class="review-item"><span class="review-item-label">Capital</span><span class="review-item-value">${v('ob_currency')} ${Number(v('ob_capital')).toLocaleString()}</span></div>
+      <div class="review-item"><span class="review-item-label">Risk</span><span class="review-item-value">${radio('risk')}</span></div>
+      <div class="review-item"><span class="review-item-label">Experience</span><span class="review-item-value">${v('ob_experience')}</span></div>
+    </div>
+    <div class="review-card"><div class="review-card-title">&#x1F3E6; Broker & API</div>
+      <div class="review-item"><span class="review-item-label">Broker</span><span class="review-item-value">${v('ob_broker')}</span></div>
+      <div class="review-item"><span class="review-item-label">Client ID</span><span class="review-item-value">${v('ob_clientid')}</span></div>
+      <div class="review-item"><span class="review-item-label">API Key</span><span class="review-item-value">${v('ob_apikey')?'****'+v('ob_apikey').slice(-4):'--'}</span></div>
+    </div>
+    <div class="review-card"><div class="review-card-title">&#x1F3AF; Strategy</div>
+      <div class="review-item"><span class="review-item-label">Strategy</span><span class="review-item-value">${v('ob_strategy')}</span></div>
+      <div class="review-item"><span class="review-item-label">Risk/Trade</span><span class="review-item-value">${v('ob_riskpertrade')}%</span></div>
+      <div class="review-item"><span class="review-item-label">Max Loss</span><span class="review-item-value">${v('ob_maxloss')}%</span></div>
+      <div class="review-item"><span class="review-item-label">Mode</span><span class="review-item-value">${radio('mode')}</span></div>
+    </div>`;
+}
+
+// ═══ SUBMIT ═══
+function submitForm(){
+  const btn=document.getElementById('btnNext');
+  btn.textContent='Submitting...';btn.disabled=true;
+  setTimeout(()=>{
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+    document.getElementById('btnRow').style.display='none';
+    document.getElementById('successScreen').classList.add('active');
+  },2000);
+}
+
+// INIT
+renderProgress();
+</script>
+</body>
+</html>
