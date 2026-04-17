@@ -48,7 +48,7 @@ import {
   lifecycleBadgeClass,
   lifecycleLabel,
   normalizeLifecycleState,
-} from "@/lib/lifecycle";
+} from "../lib/lifecycle";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";

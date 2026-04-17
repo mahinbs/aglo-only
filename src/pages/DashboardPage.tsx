@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import TradingSmartDashboard from "../components/TradingSmartDashboard.jsx";
 import { useAuth } from "@/hooks/useAuth";
 import { bffConfigured, bffFetch } from "@/lib/api";
-import { isMarketClosedReason, normalizeLifecycleState } from "@/lib/lifecycle";
+import { isMarketClosedReason, normalizeLifecycleState } from "../lib/lifecycle";
 import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";

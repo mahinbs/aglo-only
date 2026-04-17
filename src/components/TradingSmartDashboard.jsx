@@ -5,7 +5,7 @@ import { ModalShell } from "./ModalShell.jsx";
 import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
-import { lifecycleLabel, normalizeLifecycleState } from "@/lib/lifecycle";
+import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
 const DEFAULT_USD_PER_INR = 1 / 83;
