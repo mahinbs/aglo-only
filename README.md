@@ -5,7 +5,7 @@ Single-page **TradingSmart.AI** command center on its own subdomain, using the *
 ## TradingSmartAlgo frontend bundle
 
 The repo [`tradingsmartalgo`](../tradingsmartalgo) is copied into **`public/tradingsmartalgo/`** (served as static files, same visual assets):
-
+n
 | Path | Source |
 |------|--------|
 | `/tradingsmartalgo/platform.html` | `tradingsmartalgo/index.html` (standalone login + dashboard; demo `VALID_ACCOUNTS` only) |
