@@ -217,6 +217,26 @@ function toISTDateKey(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
 }
 
+function isIstMarketOpenNow(d: Date = new Date()): boolean {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    weekday: "short",
+  }).formatToParts(d);
+  const hh = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const mm = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  const wd = (parts.find((p) => p.type === "weekday")?.value ?? "").toLowerCase();
+  if (wd.startsWith("sat") || wd.startsWith("sun")) return false;
+  const minutes = hh * 60 + mm;
+  return minutes >= (9 * 60 + 15) && minutes <= (15 * 60 + 30);
+}
+
+function marketClosedMessage(): string {
+  return "Market is closed now. Options data refresh is available during market hours (09:15-15:30 IST).";
+}
+
 function formatDisplay(d: Date): string {
   return d.toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -370,24 +390,31 @@ export async function fetchOptionChain(params: {
   const expiryBroker = brokerExpiryParam(params.expiry_date);
 
   if (API_BASE) {
-    const raw = await apiFetch<Record<string, unknown>>("/api/options/chain", {
-      method: "POST",
-      body: JSON.stringify({
-        underlying: sym,
-        exchange: ex,
-        expiry_date: expiryBroker,
-        strike_count: params.strike_count,
-      }),
-    });
-    // OpenAlgo may return {status:"error", message:"..."} with HTTP 200
-    if (raw?.status === "error" || raw?.status === "failed") {
-      const hint = toErrString(
-        raw.message ?? raw.error_msg ?? raw.error,
-        "OpenAlgo option chain error — check your broker session"
-      );
-      throw new Error(friendlyBrokerMarketDataError(hint));
+    try {
+      const raw = await apiFetch<Record<string, unknown>>("/api/options/chain", {
+        method: "POST",
+        body: JSON.stringify({
+          underlying: sym,
+          exchange: ex,
+          expiry_date: expiryBroker,
+          strike_count: params.strike_count,
+        }),
+      });
+      // OpenAlgo may return {status:"error", message:"..."} with HTTP 200
+      if (raw?.status === "error" || raw?.status === "failed") {
+        const hint = toErrString(
+          raw.message ?? raw.error_msg ?? raw.error,
+          "OpenAlgo option chain error — check your broker session"
+        );
+        throw new Error(friendlyBrokerMarketDataError(hint));
+      }
+      return normalizeOptionChainPayload(raw, sym, ex, params.expiry_date);
+    } catch (e) {
+      if (!isIstMarketOpenNow()) {
+        throw new Error(marketClosedMessage());
+      }
+      throw e;
     }
-    return normalizeOptionChainPayload(raw, sym, ex, params.expiry_date);
   }
 
   const { data, error } = await supabase.functions.invoke<Record<string, unknown>>("fetch-option-chain", {
@@ -459,6 +486,9 @@ export async function fetchExpiryDates(params: {
         });
         return result;
       } catch {
+        if (!isIstMarketOpenNow()) {
+          throw new Error(marketClosedMessage());
+        }
         // FastAPI path failed or timed out — fall back to Supabase Edge route.
       }
     }
@@ -466,8 +496,16 @@ export async function fetchExpiryDates(params: {
     const { data, error } = await supabase.functions.invoke<Record<string, unknown>>("fetch-expiry-dates", {
       body: { symbol: sym, exchange: ex, instrumenttype: instrument },
     });
-    if (error) throw new Error(friendlyBrokerMarketDataError(error.message ?? "fetch-expiry-dates failed"));
+    if (error) {
+      if (!isIstMarketOpenNow()) {
+        throw new Error(marketClosedMessage());
+      }
+      throw new Error(friendlyBrokerMarketDataError(error.message ?? "fetch-expiry-dates failed"));
+    }
     if (data && typeof data === "object" && "error" in data && data.error) {
+      if (!isIstMarketOpenNow()) {
+        throw new Error(marketClosedMessage());
+      }
       throw new Error(friendlyBrokerMarketDataError(String((data as { error: unknown }).error)));
     }
     const normalized = data && Array.isArray((data as { expiries?: unknown }).expiries)
@@ -477,6 +515,9 @@ export async function fetchExpiryDates(params: {
           expiries: (data as { expiries: NormalizedExpiryItem[] }).expiries,
         }
       : normalizeExpiryPayload(data ?? {}, sym, ex);
+    if (!normalized.expiries.length && !isIstMarketOpenNow()) {
+      throw new Error(marketClosedMessage());
+    }
     expiryCache.set(cacheKey, {
       expiresAt: Date.now() + EXPIRY_CACHE_TTL_MS,
       data: normalized,
