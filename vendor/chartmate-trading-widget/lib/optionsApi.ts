@@ -10,7 +10,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyBrokerMarketDataError } from "@/lib/brokerMarketDataErrors";
 
-const API_BASE = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+// In algo-only, prefer direct options API if configured, else use BFF proxy.
+const DIRECT_OPTIONS_API_BASE = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const BFF_OPTIONS_PROXY_BASE = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const API_BASE = DIRECT_OPTIONS_API_BASE || BFF_OPTIONS_PROXY_BASE;
 const EXPIRY_CACHE_TTL_MS = 90_000;
 
 type ExpiryResponse = {

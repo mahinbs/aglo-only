@@ -693,6 +693,23 @@ export default function TradingSmartDashboard(props = {}) {
     riskScore == null ? "n/a" : riskScore < 30 ? "Low" : riskScore < 60 ? "Medium" : "High";
 
   const sessLive = Boolean(summary?.broker_session_live ?? summary?.broker_connected);
+  const brokerSnap = summary?.broker_snapshot && typeof summary.broker_snapshot === "object" ? summary.broker_snapshot : {};
+  const brokerPositionsCount = Number(brokerSnap?.positions_count);
+  const brokerTradesCount = Number(brokerSnap?.tradebook_count);
+  const brokerOpenOrdersCount = Number(brokerSnap?.open_orders_count);
+  const brokerCashAvailable = Number(brokerSnap?.cash_available);
+  const liveOpenPositionsCount =
+    sessLive && Number.isFinite(brokerPositionsCount)
+      ? brokerPositionsCount
+      : (summary?.open_positions_count ?? 0);
+  const liveTradesCount =
+    sessLive && Number.isFinite(brokerTradesCount)
+      ? brokerTradesCount
+      : (summary?.recent_orders_count ?? 0);
+  const liveOpenOrdersCount =
+    sessLive && Number.isFinite(brokerOpenOrdersCount) ? brokerOpenOrdersCount : null;
+  const liveCashAvailable =
+    sessLive && Number.isFinite(brokerCashAvailable) ? brokerCashAvailable : null;
   // Only show real numbers when broker session is live — avoid showing paper/stale data as real values.
   const displayPortfolio = sessLive && typeof summary?.portfolio_value === "number" ? summary.portfolio_value : 0;
   const displayCumulative = sessLive && typeof summary?.cumulative_pnl === "number" ? summary.cumulative_pnl : 0;
@@ -761,10 +778,8 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="status-item"><div className={`status-dot ${useChartmate ? "live" : "live"}`} /> {useChartmate ? "ChartMate data" : "WebSocket Active"}</div>
             <div className="status-item">
-              <div className={`status-dot ${(summary?.recent_orders_count ?? orders.length) > 0 ? "live" : "warn"}`} />
-              {useChartmate
-                ? `Trades ${summary?.recent_orders_count ?? 0} · Open ${summary?.open_positions_count ?? 0}`
-                : "Live feed"}
+              <div className={`status-dot ${(liveTradesCount ?? orders.length) > 0 ? "live" : "warn"}`} />
+              {useChartmate ? `Trades ${liveTradesCount ?? 0} · Open ${liveOpenPositionsCount ?? 0}` : "Live feed"}
             </div>
             {useChartmate && chartmateActions?.onConnectBroker && (
               <button
@@ -856,7 +871,7 @@ export default function TradingSmartDashboard(props = {}) {
                 {formatSignedDisplay(displayToday, currencyMode)}
               </div>
               <div className="hero-change up">
-                {sessLive ? (summary?.recent_orders_count ?? 0) : "—"} total trades
+                {sessLive ? (liveTradesCount ?? 0) : "—"} total trades
                 {sessLive && summary?.win_rate_pct != null ? ` | ${summary.win_rate_pct.toFixed(1)}% win (closed)` : " | Win rate n/a"}
               </div>
               <Sparkline data={sparkData.s3} color="#34d399" />
@@ -887,7 +902,7 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Active Positions</div>
-              <div className="stat-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? String(summary?.open_positions_count ?? 0) : "—"}</div>
+              <div className="stat-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? String(liveOpenPositionsCount ?? 0) : "—"}</div>
               <div className="progress-container">
                 <div className="progress-label">
                   <span>Exposure</span>
@@ -951,8 +966,10 @@ export default function TradingSmartDashboard(props = {}) {
                 </div>
                 <div className="robot-metrics">
                   <>
-                    <div className="metric-row"><span className="metric-label">Open positions</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? (summary?.open_positions_count ?? 0) : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Total trades (DB)</span><span className="metric-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? (summary?.recent_orders_count ?? 0) : "—"}</span></div>
+                    <div className="metric-row"><span className="metric-label">Open positions (broker)</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? (liveOpenPositionsCount ?? 0) : "—"}</span></div>
+                    <div className="metric-row"><span className="metric-label">Order history (tradebook)</span><span className="metric-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? (liveTradesCount ?? 0) : "—"}</span></div>
+                    <div className="metric-row"><span className="metric-label">Open broker orders</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? (liveOpenOrdersCount ?? "—") : "—"}</span></div>
+                    <div className="metric-row"><span className="metric-label">Available cash</span><span className="metric-value" style={{ color: "var(--accent-green)" }}>{sessLive && liveCashAvailable != null ? formatUnsignedDisplay(liveCashAvailable, currencyMode) : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Feed preview rows</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? orders.length : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Strategies deployed</span><span className="metric-value" style={{ color: "var(--accent-yellow)" }}>{sessLive ? (summary?.active_strategies_deployed ?? 0) : "—"}</span></div>
                     <div className="metric-row"><span className="metric-label">Broker session</span><span className="metric-value" style={{ color: sessLive ? "var(--accent-green)" : "var(--accent-orange)" }}>{sessLive ? "Live" : "Reconnect (IST day token)"}</span></div>
