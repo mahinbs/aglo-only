@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback, useMemo, useId } from "react"
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { ModalShell } from "./ModalShell.jsx";
-import AlgoStrategyBuilder from "../../../chartmate-trading-widget/src/components/trading/AlgoStrategyBuilder";
-import { OptionsStrategyBuilderDialog } from "../../../chartmate-trading-widget/src/components/options/OptionsStrategyBuilderDialog";
+import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
+import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
