@@ -424,6 +424,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                               strategyName={s.name}
                               brokerLive={brokerConnected}
                               streamStale={positionsStreamStale}
+                              lifecycleState={lcState}
                             />
                           </div>
                         </div>

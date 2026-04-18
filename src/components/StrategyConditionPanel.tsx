@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useConditionEvents, type ConditionRow } from "../hooks/useConditionEvents";
+import type { LifecycleState } from "../lib/lifecycle";
 
 function formatVal(v: number | string | null | undefined): string {
   if (v === null || v === undefined) return "—";
@@ -32,8 +33,18 @@ export function StrategyConditionPanel(props: {
   strategyName: string;
   brokerLive: boolean;
   streamStale?: boolean;
+  lifecycleState?: LifecycleState;
 }) {
-  const { strategyId, strategyName, brokerLive, streamStale } = props;
+  const { strategyId, strategyName, brokerLive, streamStale, lifecycleState } = props;
+  const isLiveLifecycle =
+    lifecycleState === undefined ||
+    lifecycleState === "ACTIVE" ||
+    lifecycleState === "WAITING_MARKET_OPEN" ||
+    lifecycleState === "TRIGGERED";
+  const isTerminal =
+    lifecycleState === "COMPLETED" ||
+    lifecycleState === "FAILED" ||
+    lifecycleState === "CANCELLED";
   const { event, stale } = useConditionEvents(strategyId);
 
   const { ready, total } = useMemo(
@@ -77,7 +88,17 @@ export function StrategyConditionPanel(props: {
         </div>
       </div>
 
-      {!brokerLive ? (
+      {isTerminal ? (
+        <span className="text-slate-500">
+          {lifecycleState === "COMPLETED"
+            ? "Completed — no further evaluation"
+            : lifecycleState === "CANCELLED"
+              ? "Cancelled — activate to resume"
+              : "Stopped — activate to resume"}
+        </span>
+      ) : !isLiveLifecycle ? (
+        <span className="text-slate-500">Paused — activate to see live conditions</span>
+      ) : !brokerLive ? (
         <span className="text-slate-500">Connect broker for live condition ticks</span>
       ) : stale ? (
         <span className="text-amber-400">Stale — waiting for tick (no event in 10s)</span>

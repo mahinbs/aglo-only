@@ -154,7 +154,32 @@ function buildStrategyTableRows(
     bySid.set(sid, arr);
   }
   /* Only attribute trades with user_strategies.id — loose matching inflated P&L across rows. */
-  const slice = (strats ?? []).slice(0, 8);
+  // Hide crashed/stopped/terminal strategies so they never show in the table.
+  const visible = (strats ?? []).filter((s) => {
+    const st = normalizeLifecycleState(
+      (s as { lifecycle_state?: string | null }).lifecycle_state,
+      Boolean((s as { is_active?: unknown }).is_active),
+    );
+    return st !== "FAILED" && st !== "CANCELLED" && st !== "COMPLETED";
+  });
+  // Expand: one row per (strategy, instrument). Same strategy across multiple
+  // instruments must render as separate rows.
+  const expanded: Array<{ strat: Record<string, unknown>; symbol: string | null }> = [];
+  for (const s of visible) {
+    const rawPairs = String((s as { pairs?: unknown }).pairs ?? "").trim();
+    const syms = rawPairs
+      ? rawPairs
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean)
+      : [];
+    if (syms.length <= 1) {
+      expanded.push({ strat: s, symbol: syms[0] ?? null });
+    } else {
+      for (const sym of syms) expanded.push({ strat: s, symbol: sym });
+    }
+  }
+  const slice = expanded.slice(0, 8);
   if (!slice.length) {
     return [
       {
@@ -168,9 +193,14 @@ function buildStrategyTableRows(
       },
     ];
   }
-  return slice.map((s) => {
+  return slice.map(({ strat: s, symbol: instrumentSymbol }) => {
     const sid = String(s.id ?? "");
-    const matched = bySid.get(sid) ?? [];
+    const allMatched = bySid.get(sid) ?? [];
+    const matched = instrumentSymbol
+      ? allMatched.filter(
+          (t) => String(t.symbol ?? "").toUpperCase() === instrumentSymbol.toUpperCase(),
+        )
+      : allMatched;
     const tc = matched.length;
     const pnlSum = matched.reduce((a, t) => a + Number(t.current_pnl || 0), 0);
     const closedM = matched.filter((t) => closed.has(String(t.status ?? "").toLowerCase()));
@@ -178,8 +208,9 @@ function buildStrategyTableRows(
     const wr = closedM.length >= 1 ? Math.round((100 * wins) / closedM.length) : null;
     const pnlStr = formatLiveMoney(pnlSum, cur);
     const winStr = wr != null ? `${wr}%` : "—";
+    const displayName = instrumentSymbol ? `${String(s.name)} · ${instrumentSymbol}` : String(s.name);
     return {
-      name: String(s.name),
+      name: displayName,
       status: normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active)).toLowerCase(),
       trades: tc,
       pnl: pnlStr,
