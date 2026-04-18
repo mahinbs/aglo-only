@@ -665,6 +665,7 @@ export default function DashboardPage() {
         useChartmate={useChartmate}
         brokerConnected={summary?.broker_connected ?? null}
         positionsStreamStale={Boolean(positionsWsFrame?.stale)}
+        optionsPositionsFrame={positionsWsFrame}
         summary={summary}
         orderFeed={summary?.orders ?? null}
         strategyCards={summary?.user_strategies ?? null}

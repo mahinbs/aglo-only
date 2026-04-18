@@ -5,6 +5,7 @@ import { ModalShell } from "./ModalShell.jsx";
 import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
+import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
@@ -467,6 +468,7 @@ export default function TradingSmartDashboard(props = {}) {
     useChartmate = true,
     brokerConnected = null,
     positionsStreamStale = false,
+    optionsPositionsFrame = null,
     summary = null,
     orderFeed = null,
     strategyCards = null,
@@ -1138,6 +1140,14 @@ export default function TradingSmartDashboard(props = {}) {
                         <div className="my-strat-param"><span className="my-strat-param-label">Take Profit</span><span className="my-strat-param-value">{s.takeProfit}</span></div>
                         <div className="my-strat-param"><span className="my-strat-param-label">Max Pos</span><span className="my-strat-param-value">{s.maxPositions}</span></div>
                       </div>
+                      <div style={{ marginTop: 10 }}>
+                        <StrategyConditionPanel
+                          strategyId={s.id}
+                          strategyName={s.name}
+                          brokerLive={sessLive}
+                          streamStale={positionsStreamStale}
+                        />
+                      </div>
                       <div className="my-strat-actions">
                         {pendingDelete?.id === s.id ? (
                           <>
@@ -1278,6 +1288,7 @@ export default function TradingSmartDashboard(props = {}) {
                   cash: brokerSnap?.cash_available,
                 }}
                 positionsStreamStale={positionsStreamStale}
+                optionsPositionsFrame={optionsPositionsFrame}
               />
             </div>
 

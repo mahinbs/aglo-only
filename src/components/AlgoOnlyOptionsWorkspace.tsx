@@ -43,6 +43,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { bffConfigured, bffFetch } from "@/lib/api";
+import type { OptionsPositionsFrame } from "@/hooks/useRealtimeStrategy";
+import { StrategyLiveChart } from "./StrategyLiveChart";
+import { OptionsLegsTable } from "./OptionsLegsTable";
 import {
   isMarketClosedReason,
   lifecycleBadgeClass,
@@ -120,6 +123,15 @@ function directionIcon(dir: string) {
   return <BarChart2 className="h-4 w-4 text-yellow-400" />;
 }
 
+/** OpenAlgo history for spot/indices uses cash exchange; quotes often use *_INDEX. */
+function chartExchangesForStrategy(s: OptionsStrategy): { history: string; quote: string } {
+  const ex = String(s.exchange || "NSE_INDEX").toUpperCase();
+  if (ex === "NSE_INDEX") return { history: "NSE", quote: "NSE_INDEX" };
+  if (ex === "BSE_INDEX") return { history: "BSE", quote: "BSE_INDEX" };
+  if (ex === "NFO" || ex === "BFO") return { history: "NSE", quote: "NSE_INDEX" };
+  return { history: ex || "NSE", quote: ex || "NSE_INDEX" };
+}
+
 export type AccountCaps = {
   activeOrders?: number;
   activeStrategies?: number;
@@ -132,8 +144,9 @@ export type AccountCaps = {
 export function AlgoOnlyOptionsWorkspace(props?: {
   accountCaps?: AccountCaps;
   positionsStreamStale?: boolean;
+  optionsPositionsFrame?: OptionsPositionsFrame | null;
 }) {
-  const { accountCaps, positionsStreamStale = false } = props ?? {};
+  const { accountCaps, positionsStreamStale = false, optionsPositionsFrame = null } = props ?? {};
   const { user, session } = useAuth();
 
   const [strategies, setStrategies] = useState<Array<OptionsStrategy & {
@@ -385,6 +398,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
           ) : (
             <div className="space-y-3">
               {strategies.map((s) => {
+                const chartEx = chartExchangesForStrategy(s);
                 const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
                 const lcReason = String(s.lifecycle_reason ?? "").trim();
                 const lcUpdated = String(s.lifecycle_updated_at ?? "").trim();
@@ -406,6 +420,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                           </CardDescription>
                           <div className="mt-2">
                             <StrategyConditionPanel
+                              strategyId={s.id}
                               strategyName={s.name}
                               brokerLive={brokerConnected}
                               streamStale={positionsStreamStale}
@@ -449,6 +464,22 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                     {/* Expandable details */}
                     {expandedId === s.id && (
                       <div className="space-y-2 mt-2 text-xs border-t border-border/50 pt-3">
+                        {session?.access_token && bffConfigured() ? (
+                          <div className="space-y-2">
+                            <StrategyLiveChart
+                              accessToken={session.access_token}
+                              symbol={String(s.underlying || "").trim() || "NIFTY"}
+                              historyExchange={chartEx.history}
+                              quoteExchange={chartEx.quote}
+                            />
+                            <OptionsLegsTable
+                              strategyId={s.id}
+                              accessToken={session.access_token}
+                              positionsFrame={optionsPositionsFrame}
+                              streamStale={positionsStreamStale}
+                            />
+                          </div>
+                        ) : null}
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                           <div className="flex justify-between"><span className="text-muted-foreground">ORB Duration</span><span>{(s.orb_config as any)?.orb_duration_mins ?? 15} min</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground">Momentum Bars</span><span>{(s.orb_config as any)?.momentum_bars ?? 3}</span></div>
