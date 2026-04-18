@@ -524,26 +524,37 @@ export default function DashboardPage() {
         exchange: ex,
         orderProduct: product,
       };
-      const up = await supabase.functions.invoke("manage-strategy", {
-        body: {
-          action: "update",
-          strategy_id: strategyId,
-          symbols: symbolsPayload,
-          position_config,
-        },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const upErr = (up.data as { error?: string } | null)?.error;
-      if (up.error) return up.error.message;
-      if (upErr) return upErr;
-      const tog = await supabase.functions.invoke("manage-strategy", {
-        body: { action: "toggle", strategy_id: strategyId },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const togErr = (tog.data as { error?: string } | null)?.error;
-      if (tog.error) return tog.error.message;
-      if (togErr) return togErr;
-      return null;
+      const fnBodyError = (data: unknown): string | null => {
+        if (!data || typeof data !== "object") return null;
+        const row = data as { error?: unknown; message?: unknown };
+        if (typeof row.error === "string" && row.error.trim()) return row.error.trim();
+        if (typeof row.message === "string" && row.message.trim()) return row.message.trim();
+        return null;
+      };
+      try {
+        const up = await supabase.functions.invoke("manage-strategy", {
+          body: {
+            action: "update",
+            strategy_id: strategyId,
+            symbols: symbolsPayload,
+            position_config,
+          },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const upMsg = fnBodyError(up.data);
+        if (up.error) return upMsg ?? up.error.message ?? "manage-strategy update failed.";
+        if (upMsg) return upMsg;
+        const tog = await supabase.functions.invoke("manage-strategy", {
+          body: { action: "toggle", strategy_id: strategyId },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const togMsg = fnBodyError(tog.data);
+        if (tog.error) return togMsg ?? tog.error.message ?? "manage-strategy toggle failed.";
+        if (togMsg) return togMsg;
+        return null;
+      } catch (e: unknown) {
+        return e instanceof Error ? e.message : "Network or server error while activating.";
+      }
     },
     [session?.access_token, summary?.broker_session_live],
   );

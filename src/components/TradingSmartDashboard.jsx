@@ -1204,7 +1204,9 @@ export default function TradingSmartDashboard(props = {}) {
                                   if (useChartmate && chartmateActions?.onToggleDeploy) {
                                     const err = await chartmateActions.onToggleDeploy(s.id, false);
                                     if (err) {
-                                      addLog("error", err);
+                                      const msg = typeof err === "string" ? err : String(err);
+                                      toast.error("Could not stop strategy", { description: msg, duration: 10_000 });
+                                      addLog("error", msg);
                                       return;
                                     }
                                     addLog("warn", `Strategy "${s.name}" stopped`);
@@ -1694,22 +1696,38 @@ export default function TradingSmartDashboard(props = {}) {
               onClick={() => {
                 void (async () => {
                   if (!goLiveTarget || !chartmateActions?.onConfirmGoLive) return;
-                  setGoLiveBusy(true);
-                  const qty = parseInt(goLiveForm.quantity, 10);
-                  const err = await chartmateActions.onConfirmGoLive(goLiveTarget.id, goLiveTarget.position_config, {
-                    symbol: goLiveForm.symbol,
-                    exchange: goLiveForm.exchange,
-                    quantity: qty,
-                    product: goLiveForm.product,
-                  });
-                  if (err) {
-                    addLog("error", err);
-                  } else {
-                    addLog("exec", `Strategy "${goLiveTarget.name}" activated (${goLiveForm.symbol} × ${qty})`);
-                    chartmateActions.onRefresh?.();
-                    setGoLiveTarget(null);
+                  const qty = Math.floor(Number(goLiveForm.quantity));
+                  if (!Number.isFinite(qty) || qty < 1) {
+                    toast.error("Invalid quantity", { description: "Enter a whole number ≥ 1." });
+                    return;
                   }
-                  setGoLiveBusy(false);
+                  setGoLiveBusy(true);
+                  try {
+                    const err = await chartmateActions.onConfirmGoLive(goLiveTarget.id, goLiveTarget.position_config, {
+                      symbol: goLiveForm.symbol,
+                      exchange: goLiveForm.exchange,
+                      quantity: qty,
+                      product: goLiveForm.product,
+                    });
+                    if (err) {
+                      const msg = typeof err === "string" ? err : String(err);
+                      toast.error("Strategy was not activated", { description: msg, duration: 12_000 });
+                      addLog("error", msg);
+                    } else {
+                      toast.success("Strategy activated", {
+                        description: `${goLiveTarget.name} · ${String(goLiveForm.symbol || "").toUpperCase()} × ${qty}`,
+                      });
+                      addLog("exec", `Strategy "${goLiveTarget.name}" activated (${goLiveForm.symbol} × ${qty})`);
+                      chartmateActions.onRefresh?.();
+                      setGoLiveTarget(null);
+                    }
+                  } catch (e) {
+                    const msg = e instanceof Error ? e.message : "Unexpected error during activation.";
+                    toast.error("Activation failed", { description: msg, duration: 12_000 });
+                    addLog("error", msg);
+                  } finally {
+                    setGoLiveBusy(false);
+                  }
                 })();
               }}
             >
