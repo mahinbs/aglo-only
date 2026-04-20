@@ -6,6 +6,7 @@ import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
+import { StrategyLiveChart } from "./StrategyLiveChart";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
@@ -69,6 +70,18 @@ function defaultsGoLiveFromCard(s) {
     if (op) product = op.toUpperCase();
   }
   return { symbol, exchange, quantity, product: product || "MIS" };
+}
+
+/** Symbol + exchange for BFF chart quote/history (same defaults as go-live). */
+function chartRoutingFromStrategyCard(s) {
+  const d = defaultsGoLiveFromCard(s);
+  const symbol = String(d.symbol || firstSymbolFromPairs(s.pairs) || "RELIANCE")
+    .trim()
+    .toUpperCase();
+  const exchange = String(d.exchange || "NSE")
+    .trim()
+    .toUpperCase();
+  return { symbol, exchange };
 }
 
 // ─── SVG Logo Component (matches your TradingSmart.ai brain+chart logo) ───
@@ -478,6 +491,8 @@ export default function TradingSmartDashboard(props = {}) {
     onSignOut = null,
     currencyMode = "INR",
     setCurrencyMode = null,
+    sessionAccessToken = null,
+    onCancelPendingForStrategy = null,
   } = props;
 
   const [time, setTime] = useState("");
@@ -526,6 +541,8 @@ export default function TradingSmartDashboard(props = {}) {
   const [goLiveTarget, setGoLiveTarget] = useState(null);
   const [goLiveForm, setGoLiveForm] = useState({ symbol: "", exchange: "NSE", quantity: "1", product: "MIS" });
   const [goLiveBusy, setGoLiveBusy] = useState(false);
+  const [liveViewTarget, setLiveViewTarget] = useState(null);
+  const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [stratStep, setStratStep] = useState(0);
   const [optionsStep, setOptionsStep] = useState(0);
@@ -1158,15 +1175,11 @@ export default function TradingSmartDashboard(props = {}) {
                         <div className="my-strat-param"><span className="my-strat-param-label">Take Profit</span><span className="my-strat-param-value">{s.takeProfit}</span></div>
                         <div className="my-strat-param"><span className="my-strat-param-label">Max Pos</span><span className="my-strat-param-value">{s.maxPositions}</span></div>
                       </div>
-                      <div style={{ marginTop: 10 }}>
-                        <StrategyConditionPanel
-                          strategyId={s.id}
-                          strategyName={s.name}
-                          brokerLive={sessLive}
-                          streamStale={positionsStreamStale}
-                          lifecycleState={lcState}
-                        />
-                      </div>
+                      {s.deployed ? (
+                        <p style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45 }}>
+                          Live chart and condition matrix open in <strong style={{ color: "var(--accent-cyan)" }}>Live view</strong> (engine updates are batched; not every second is a new snapshot).
+                        </p>
+                      ) : null}
                       <div className="my-strat-actions">
                         {pendingDelete?.id === s.id ? (
                           <>
@@ -1219,19 +1232,21 @@ export default function TradingSmartDashboard(props = {}) {
                             ) : (
                               <>
                                 <button
+                                  type="button"
                                   className="strat-action-btn strat-btn-deploy"
-                                  title="Add another symbol/instrument for this strategy"
+                                  title="Candles, LTP refresh, and full condition table"
                                   onClick={() => {
                                     if (!sessLive) {
-                                      toast.error("Broker not connected — connect your broker (live session) before adding an instrument.", { description: "Click 'Connect broker' in the top navigation bar." });
-                                      addLog("warn", "Connect broker (live session) before adding a strategy instrument.");
+                                      toast.error("Connect broker (live session) to load the chart and live quotes.", {
+                                        description: "Use Connect broker in the top bar, then open Live view again.",
+                                      });
+                                      addLog("warn", "Live view needs a live broker session for chart quotes.");
                                       return;
                                     }
-                                    setGoLiveTarget(s);
-                                    setGoLiveForm(defaultsGoLiveFromCard(s));
+                                    setLiveViewTarget(s);
                                   }}
                                 >
-                                  &#x2795; Add Instrument…
+                                  &#x1F4CA; Live view
                                 </button>
                                 <button
                                   className="strat-action-btn strat-btn-edit"
@@ -1254,6 +1269,42 @@ export default function TradingSmartDashboard(props = {}) {
                                 >
                                   &#x23F9; Stop
                                 </button>
+                                {useChartmate && typeof onCancelPendingForStrategy === "function" ? (
+                                  <button
+                                    type="button"
+                                    className="strat-action-btn strat-btn-edit"
+                                    style={{ borderColor: "rgba(251,146,60,0.45)", color: "var(--accent-orange)" }}
+                                    title="Cancel queued conditional entry rows for this strategy only (does not flatten open positions)"
+                                    disabled={cancelPendingBusyId === s.id}
+                                    onClick={() => {
+                                      void (async () => {
+                                        setCancelPendingBusyId(s.id);
+                                        try {
+                                          const err = await onCancelPendingForStrategy(s.id);
+                                          if (err) {
+                                            const msg = typeof err === "string" ? err : String(err);
+                                            toast.error("Could not cancel pending orders", { description: msg, duration: 10_000 });
+                                            addLog("error", msg);
+                                            return;
+                                          }
+                                          toast.success("Pending orders cancelled", {
+                                            description: `Cleared queued rows for “${s.name}”.`,
+                                          });
+                                          addLog("exec", `Cancelled pending conditional orders for "${s.name}"`);
+                                          chartmateActions?.onRefresh?.();
+                                        } catch (e) {
+                                          const msg = e instanceof Error ? e.message : "Unexpected error.";
+                                          toast.error("Cancel pending failed", { description: msg });
+                                          addLog("error", msg);
+                                        } finally {
+                                          setCancelPendingBusyId(null);
+                                        }
+                                      })();
+                                    }}
+                                  >
+                                    {cancelPendingBusyId === s.id ? "Cancelling…" : "⏸ Cancel pending"}
+                                  </button>
+                                ) : null}
                               </>
                             )}
                             <button
@@ -1300,8 +1351,28 @@ export default function TradingSmartDashboard(props = {}) {
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>Your strategy portfolio at a glance. Use <strong>+ Create New Strategy</strong> for a popup form (ChartMate <code style={{ fontSize: 10 }}>manage-strategy</code>).</div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                         <div className="my-strat-param"><span className="my-strat-param-label">Total</span><span className="my-strat-param-value">{myStrategies.length}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Live</span><span className="my-strat-param-value" style={{ color: "var(--accent-green)" }}>{myStrategies.filter((s) => s.deployed).length}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Stopped</span><span className="my-strat-param-value" style={{ color: "var(--accent-yellow)" }}>{myStrategies.filter((s) => !s.deployed).length}</span></div>
+                        <div className="my-strat-param">
+                          <span className="my-strat-param-label">Scanning</span>
+                          <span className="my-strat-param-value" style={{ color: "var(--accent-green)" }}>
+                            {
+                              myStrategies.filter((s) => {
+                                const st = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                                return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+                              }).length
+                            }
+                          </span>
+                        </div>
+                        <div className="my-strat-param">
+                          <span className="my-strat-param-label">Off</span>
+                          <span className="my-strat-param-value" style={{ color: "var(--accent-yellow)" }}>
+                            {
+                              myStrategies.filter((s) => {
+                                const st = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                                return !(st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED");
+                              }).length
+                            }
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1380,32 +1451,59 @@ export default function TradingSmartDashboard(props = {}) {
                 </div>
                 <span className="card-badge badge-green">{liveMonitorStrategies.length} running</span>
               </div>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                Summary of strategies that are scanning or waiting on the engine. Open <strong style={{ color: "var(--accent-cyan)" }}>Live view</strong> on a card (or below) for candles, LTP, and the full condition matrix.
+              </p>
               {liveMonitorStrategies.length === 0 ? (
                 <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
-                  No active strategy monitors yet. Activate a strategy to see live condition progress here.
+                  No active strategy monitors yet. Activate a strategy to list it here, then use Live view for charts and conditions.
                 </div>
               ) : (
-                <div style={{ display: "grid", gap: 12 }}>
+                <div style={{ display: "grid", gap: 10 }}>
                   {liveMonitorStrategies.map((s) => {
                     const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                    const { symbol: symHint } = chartRoutingFromStrategyCard(s);
                     return (
-                      <div key={`live-${s.id}`} style={{ border: "1px solid var(--border-color)", borderRadius: 10, padding: 10, background: "rgba(10,14,23,0.45)" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div
+                        key={`live-${s.id}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          flexWrap: "wrap",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: 10,
+                          padding: "10px 12px",
+                          background: "rgba(10,14,23,0.45)",
+                        }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                             <span style={{ fontSize: 12, fontWeight: 700 }}>{s.name}</span>
                             <span className="my-strat-card-type type-momentum">{s.type}</span>
+                            <span className={`strategy-tag ${strategyTagClass(lcState)}`}>{lifecycleLabel(lcState)}</span>
                           </div>
-                          <span className={`strategy-tag ${strategyTagClass(lcState)}`}>
-                            {lifecycleLabel(lcState)}
+                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                            Chart symbol: <span style={{ color: "var(--text-secondary)" }}>{symHint || "—"}</span>
                           </span>
                         </div>
-                        <StrategyConditionPanel
-                          strategyId={s.id}
-                          strategyName={s.name}
-                          brokerLive={sessLive}
-                          streamStale={positionsStreamStale}
-                          lifecycleState={lcState}
-                        />
+                        <button
+                          type="button"
+                          className="action-btn btn-primary"
+                          style={{ padding: "6px 12px", fontSize: 11, borderRadius: 8, whiteSpace: "nowrap" }}
+                          disabled={!sessLive}
+                          title={!sessLive ? "Connect broker for live chart quotes" : "Open chart + conditions"}
+                          onClick={() => {
+                            if (!sessLive) {
+                              toast.error("Connect broker (live session) to open Live view.");
+                              return;
+                            }
+                            setLiveViewTarget(s);
+                          }}
+                        >
+                          Live view
+                        </button>
                       </div>
                     );
                   })}
@@ -1817,6 +1915,119 @@ export default function TradingSmartDashboard(props = {}) {
             </button>
           </div>
         </div>
+      </ModalShell>
+
+      <ModalShell
+        open={Boolean(liveViewTarget)}
+        title={liveViewTarget ? `Live view — ${liveViewTarget.name}` : "Live view"}
+        onClose={() => setLiveViewTarget(null)}
+      >
+        {liveViewTarget ? (
+          <div className="strategy-form" style={{ maxWidth: 760 }}>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.55 }}>
+              Intraday candles refresh from the BFF; condition rows mirror the strategy engine snapshots (updates can be spaced out — that is normal during scanning).
+            </p>
+            {(() => {
+              const ch = chartRoutingFromStrategyCard(liveViewTarget);
+              const lvLc = normalizeLifecycleState(liveViewTarget.lifecycle_state, Boolean(liveViewTarget.deployed));
+              return (
+                <>
+                  {sessionAccessToken ? (
+                    <div style={{ marginBottom: 12 }}>
+                      <StrategyLiveChart
+                        accessToken={sessionAccessToken}
+                        symbol={ch.symbol}
+                        historyExchange={ch.exchange}
+                        quoteExchange={ch.exchange}
+                        height={260}
+                        interval="5m"
+                      />
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 12, color: "var(--accent-orange)", marginBottom: 12 }}>
+                      Chart needs a signed-in session. Refresh the page or reconnect broker, then open Live view again.
+                    </p>
+                  )}
+                  <StrategyConditionPanel
+                    strategyId={liveViewTarget.id}
+                    strategyName={liveViewTarget.name}
+                    brokerLive={sessLive}
+                    streamStale={positionsStreamStale}
+                    lifecycleState={lvLc}
+                    showStrategyTitle={false}
+                  />
+                </>
+              );
+            })()}
+            <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+              {useChartmate && sessLive ? (
+                <button
+                  type="button"
+                  className="action-btn btn-primary"
+                  style={{ flex: 1, minWidth: 140 }}
+                  disabled={goLiveBusy}
+                  title="Merge another symbol into this strategy (same manage-strategy flow as portfolio)"
+                  onClick={() => {
+                    const t = liveViewTarget;
+                    setLiveViewTarget(null);
+                    setGoLiveTarget(t);
+                    setGoLiveForm(defaultsGoLiveFromCard(t));
+                  }}
+                >
+                  + Add instrument…
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="action-btn btn-warning"
+                style={{ minWidth: 120 }}
+                onClick={() => {
+                  setEditAlgoTarget(liveViewTarget._raw ?? liveViewTarget);
+                  setShowExactAlgoBuilder(true);
+                  setLiveViewTarget(null);
+                }}
+              >
+                Edit strategy
+              </button>
+              {useChartmate && typeof onCancelPendingForStrategy === "function" ? (
+                <button
+                  type="button"
+                  className="action-btn btn-warning"
+                  style={{ borderColor: "rgba(251,146,60,0.45)", color: "var(--accent-orange)", minWidth: 140 }}
+                  disabled={cancelPendingBusyId === liveViewTarget.id}
+                  onClick={() => {
+                    const id = liveViewTarget.id;
+                    void (async () => {
+                      setCancelPendingBusyId(id);
+                      try {
+                        const err = await onCancelPendingForStrategy(id);
+                        if (err) {
+                          const msg = typeof err === "string" ? err : String(err);
+                          toast.error("Could not cancel pending orders", { description: msg, duration: 10_000 });
+                          addLog("error", msg);
+                          return;
+                        }
+                        toast.success("Pending orders cancelled");
+                        chartmateActions?.onRefresh?.();
+                      } catch (e) {
+                        const msg = e instanceof Error ? e.message : "Unexpected error.";
+                        toast.error("Cancel pending failed", { description: msg });
+                        addLog("error", msg);
+                      } finally {
+                        setCancelPendingBusyId(null);
+                      }
+                    })();
+                  }}
+                >
+                  {cancelPendingBusyId === liveViewTarget.id ? "Cancelling…" : "Cancel pending"}
+                </button>
+              ) : null}
+              <button type="button" className="action-btn btn-primary" style={{ minWidth: 90 }} onClick={() => setLiveViewTarget(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        ) : null}
       </ModalShell>
 
       {false && <ModalShell open={showStratForm} title="Create strategy (ChartMate)" onClose={() => { setShowStratForm(false); setStratStep(0); }}>

@@ -23,10 +23,17 @@ export type StrategyConditionEventRow = {
   created_at?: string | null;
 };
 
-const STALE_MS = 10_000;
+const DEFAULT_STALE_MS = 30_000;
 let _condEventsChannelSeq = 0;
 
-export function useConditionEvents(strategyId: string | null | undefined) {
+export function useConditionEvents(
+  strategyId: string | null | undefined,
+  opts?: { staleAfterMs?: number },
+) {
+  const staleAfterMs =
+    typeof opts?.staleAfterMs === "number" && Number.isFinite(opts.staleAfterMs) && opts.staleAfterMs >= 3000
+      ? opts.staleAfterMs
+      : DEFAULT_STALE_MS;
   const [event, setEvent] = useState<StrategyConditionEventRow | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
 
@@ -96,8 +103,8 @@ export function useConditionEvents(strategyId: string | null | undefined) {
     if (!atRaw) return true;
     const t = Date.parse(atRaw);
     if (Number.isNaN(t)) return true;
-    return nowTick - t > STALE_MS;
-  }, [event, nowTick, sid]);
+    return nowTick - t > staleAfterMs;
+  }, [event, nowTick, sid, staleAfterMs]);
 
-  return { event, stale };
+  return { event, stale, staleAfterMs };
 }

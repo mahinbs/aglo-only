@@ -629,6 +629,26 @@ export default function DashboardPage() {
     [session?.access_token],
   );
 
+  const onCancelPendingForStrategy = useCallback(
+    async (strategyId: string): Promise<string | null> => {
+      const uid = session?.user?.id;
+      if (!uid) return "Not signed in";
+      const { error } = await supabase
+        .from("pending_conditional_orders")
+        .update({
+          status: "cancelled",
+          error_message: "Cancelled from algo dashboard",
+        })
+        .eq("strategy_id", strategyId)
+        .eq("user_id", uid)
+        .in("status", ["pending", "scheduled"]);
+      if (error) return error.message;
+      void refresh();
+      return null;
+    },
+    [session?.user?.id, refresh],
+  );
+
   const onOptionsExecuteBody = useCallback(
     async (body: { strategy_type: string; params: Record<string, unknown> }) => {
       if (!session?.access_token) return;
@@ -754,6 +774,8 @@ export default function DashboardPage() {
         setCurrencyMode={null}
         optionsPanel={import.meta.env.VITE_OPTIONS_API_URL || bffConfigured() ? optionsPanel : null}
         onSignOut={() => void signOut()}
+        sessionAccessToken={session.access_token ?? null}
+        onCancelPendingForStrategy={onCancelPendingForStrategy}
       />
     </div>
   );

@@ -34,8 +34,19 @@ export function StrategyConditionPanel(props: {
   brokerLive: boolean;
   streamStale?: boolean;
   lifecycleState?: LifecycleState;
+  /** When false, hides the title row (e.g. live modal already shows strategy name). */
+  showStrategyTitle?: boolean;
+  staleAfterMs?: number;
 }) {
-  const { strategyId, strategyName, brokerLive, streamStale, lifecycleState } = props;
+  const {
+    strategyId,
+    strategyName,
+    brokerLive,
+    streamStale,
+    lifecycleState,
+    showStrategyTitle = true,
+    staleAfterMs,
+  } = props;
   const isLiveLifecycle =
     lifecycleState === undefined ||
     lifecycleState === "ACTIVE" ||
@@ -45,7 +56,10 @@ export function StrategyConditionPanel(props: {
     lifecycleState === "COMPLETED" ||
     lifecycleState === "FAILED" ||
     lifecycleState === "CANCELLED";
-  const { event, stale } = useConditionEvents(strategyId);
+  const { event, stale, staleAfterMs: effectiveStaleMs } = useConditionEvents(strategyId, {
+    staleAfterMs,
+  });
+  const staleLabelSec = Math.max(3, Math.round(effectiveStaleMs / 1000));
 
   const { ready, total } = useMemo(
     () => (event ? readinessFromEvent(event) : { ready: 0, total: 0 }),
@@ -66,9 +80,30 @@ export function StrategyConditionPanel(props: {
 
   return (
     <div className="rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[11px] text-muted-foreground space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-foreground/90 truncate">{strategyName}</span>
-        <div className={`flex items-center gap-1 shrink-0 ${ringColor}`} title={`${ready} / ${total} conditions`}>
+      {showStrategyTitle ? (
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-medium text-foreground/90 truncate">{strategyName}</span>
+          <div className={`flex items-center gap-1 shrink-0 ${ringColor}`} title={`${ready} / ${total} conditions`}>
+            <svg viewBox="0 0 36 36" className="h-7 w-7 -rotate-90">
+              <circle cx="18" cy="18" r="15" fill="none" className="stroke-white/10" strokeWidth="4" />
+              <circle
+                cx="18"
+                cy="18"
+                r="15"
+                fill="none"
+                className={pct >= 100 ? "stroke-emerald-400" : "stroke-amber-400"}
+                strokeWidth="4"
+                strokeDasharray={`${(pct / 100) * 94.2} 94.2`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="tabular-nums text-[10px]">
+              {total > 0 ? `${ready}/${total}` : "—"}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className={`flex items-center justify-end gap-1 ${ringColor}`} title={`${ready} / ${total} conditions`}>
           <svg viewBox="0 0 36 36" className="h-7 w-7 -rotate-90">
             <circle cx="18" cy="18" r="15" fill="none" className="stroke-white/10" strokeWidth="4" />
             <circle
@@ -86,7 +121,7 @@ export function StrategyConditionPanel(props: {
             {total > 0 ? `${ready}/${total}` : "—"}
           </span>
         </div>
-      </div>
+      )}
 
       {isTerminal ? (
         <span className="text-slate-500">
@@ -103,7 +138,9 @@ export function StrategyConditionPanel(props: {
       ) : !brokerLive ? (
         <span className="text-slate-500">Connect broker for live condition ticks</span>
       ) : stale ? (
-        <span className="text-amber-400">Waiting for fresh tick (no condition refresh in 10s)</span>
+        <span className="text-amber-400">
+          Waiting for engine update (no new condition snapshot in {staleLabelSec}s)
+        </span>
       ) : (
         <span className={streamStale ? "text-amber-400" : "text-emerald-400"}>
           {streamStale ? "Live data stale — reconnecting…" : `Last evaluated ${lastEval}`}
