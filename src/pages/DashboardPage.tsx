@@ -242,6 +242,23 @@ function symbolsFromPairs(pairs: string) {
     });
 }
 
+function normalizeSymbolRow(row: unknown): { symbol: string; exchange: string; quantity: number; product_type: string } | null {
+  if (!row) return null;
+  if (typeof row === "string") {
+    const sym = row.trim().toUpperCase();
+    if (!sym) return null;
+    return { symbol: sym, exchange: "NSE", quantity: 1, product_type: "MIS" };
+  }
+  if (typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+  const symbol = String(r.symbol ?? "").trim().toUpperCase();
+  if (!symbol) return null;
+  const exchange = String(r.exchange ?? "NSE").trim().toUpperCase() || "NSE";
+  const q = Math.max(1, Math.floor(Number(r.quantity ?? 1) || 1));
+  const product = String(r.product_type ?? "MIS").trim().toUpperCase() || "MIS";
+  return { symbol, exchange, quantity: q, product_type: product };
+}
+
 export default function DashboardPage() {
   const { user, session, loading, signOut } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -516,7 +533,27 @@ export default function DashboardPage() {
       const product = payload.product.trim().toUpperCase() || "MIS";
       if (!sym) return "Enter a trading symbol";
       if (!Number.isFinite(qty) || qty < 1) return "Quantity must be at least 1";
-      const symbolsPayload = [{ symbol: sym, exchange: ex, quantity: qty, product_type: product }];
+      let symbolsPayload = [{ symbol: sym, exchange: ex, quantity: qty, product_type: product }];
+      try {
+        const { data: existing } = await supabase
+          .from("user_strategies")
+          .select("symbols")
+          .eq("id", strategyId)
+          .maybeSingle();
+        const existingRows = Array.isArray((existing as { symbols?: unknown[] } | null)?.symbols)
+          ? ((existing as { symbols?: unknown[] }).symbols ?? [])
+              .map((x) => normalizeSymbolRow(x))
+              .filter((x): x is { symbol: string; exchange: string; quantity: number; product_type: string } => Boolean(x))
+          : [];
+        const merged = new Map<string, { symbol: string; exchange: string; quantity: number; product_type: string }>();
+        for (const r of existingRows) {
+          merged.set(`${r.symbol}:${r.exchange}`, r);
+        }
+        merged.set(`${sym}:${ex}`, { symbol: sym, exchange: ex, quantity: qty, product_type: product });
+        symbolsPayload = Array.from(merged.values());
+      } catch {
+        // Keep single-row payload fallback if read fails.
+      }
       const prevPc = positionConfigBase && typeof positionConfigBase === "object" ? positionConfigBase : {};
       const position_config = {
         ...prevPc,

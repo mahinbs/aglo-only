@@ -98,10 +98,12 @@ export function StrategyConditionPanel(props: {
         </span>
       ) : !isLiveLifecycle ? (
         <span className="text-slate-500">Paused — activate to see live conditions</span>
+      ) : lifecycleState === "WAITING_MARKET_OPEN" ? (
+        <span className="text-amber-400">Waiting for strategy trading window (market/session timing)</span>
       ) : !brokerLive ? (
         <span className="text-slate-500">Connect broker for live condition ticks</span>
       ) : stale ? (
-        <span className="text-amber-400">Stale — waiting for tick (no event in 10s)</span>
+        <span className="text-amber-400">Waiting for fresh tick (no condition refresh in 10s)</span>
       ) : (
         <span className={streamStale ? "text-amber-400" : "text-emerald-400"}>
           {streamStale ? "Live data stale — reconnecting…" : `Last evaluated ${lastEval}`}

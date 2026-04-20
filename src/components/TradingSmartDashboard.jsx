@@ -771,6 +771,10 @@ export default function TradingSmartDashboard(props = {}) {
     if (st === "CANCELLED") return "tag-cancelled";
     return "tag-paused";
   };
+  const liveMonitorStrategies = myStrategies.filter((s) => {
+    const st = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+    return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+  });
 
   return (
     <>
@@ -1122,14 +1126,28 @@ export default function TradingSmartDashboard(props = {}) {
               <div className="strategy-builder">
                 {/* Left: Strategy Cards */}
                 <div className="strategy-cards">
-                  {myStrategies.map((s) => (
+                  {myStrategies.map((s) => {
+                    const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                    const badgeTitle =
+                      s.lifecycle_reason || s.lifecycle_updated_at
+                        ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
+                        : undefined;
+                    return (
                     <div className="my-strat-card" key={s.id}>
                       <div className="my-strat-card-header">
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span className="my-strat-card-name">{s.name}</span>
                           <span className="my-strat-card-type type-momentum">{s.type}</span>
                         </div>
-                        {s.deployed && <span className="strat-deployed-badge"><span className="status-dot live" style={{ width: 6, height: 6 }} /> LIVE</span>}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span
+                            className={`strategy-tag ${strategyTagClass(lcState)}`}
+                            title={badgeTitle}
+                          >
+                            {lifecycleLabel(lcState)}
+                          </span>
+                          {s.deployed && <span className="strat-deployed-badge"><span className="status-dot live" style={{ width: 6, height: 6 }} /> LIVE</span>}
+                        </div>
                       </div>
                       <div className="my-strat-params">
                         <div className="my-strat-param"><span className="my-strat-param-label">Mode</span><span className="my-strat-param-value">{s.type} · {s.is_intraday !== false ? "Intraday" : "Positional"}</span></div>
@@ -1146,6 +1164,7 @@ export default function TradingSmartDashboard(props = {}) {
                           strategyName={s.name}
                           brokerLive={sessLive}
                           streamStale={positionsStreamStale}
+                          lifecycleState={lcState}
                         />
                       </div>
                       <div className="my-strat-actions">
@@ -1198,27 +1217,44 @@ export default function TradingSmartDashboard(props = {}) {
                                 &#x25B6; Activate…
                               </button>
                             ) : (
-                              <button
-                                className="strat-action-btn strat-btn-edit"
-                                onClick={async () => {
-                                  if (useChartmate && chartmateActions?.onToggleDeploy) {
-                                    const err = await chartmateActions.onToggleDeploy(s.id, false);
-                                    if (err) {
-                                      const msg = typeof err === "string" ? err : String(err);
-                                      toast.error("Could not stop strategy", { description: msg, duration: 10_000 });
-                                      addLog("error", msg);
+                              <>
+                                <button
+                                  className="strat-action-btn strat-btn-deploy"
+                                  title="Add another symbol/instrument for this strategy"
+                                  onClick={() => {
+                                    if (!sessLive) {
+                                      toast.error("Broker not connected — connect your broker (live session) before adding an instrument.", { description: "Click 'Connect broker' in the top navigation bar." });
+                                      addLog("warn", "Connect broker (live session) before adding a strategy instrument.");
                                       return;
                                     }
-                                    addLog("warn", `Strategy "${s.name}" stopped`);
-                                    chartmateActions.onRefresh?.();
-                                    return;
-                                  }
-                                  setMyStrategies((prev) => prev.map((x) => (x.id === s.id ? { ...x, deployed: false } : x)));
-                                  addLog("warn", `Strategy "${s.name}" stopped (local preview)`);
-                                }}
-                              >
-                                &#x23F9; Stop
-                              </button>
+                                    setGoLiveTarget(s);
+                                    setGoLiveForm(defaultsGoLiveFromCard(s));
+                                  }}
+                                >
+                                  &#x2795; Add Instrument…
+                                </button>
+                                <button
+                                  className="strat-action-btn strat-btn-edit"
+                                  onClick={async () => {
+                                    if (useChartmate && chartmateActions?.onToggleDeploy) {
+                                      const err = await chartmateActions.onToggleDeploy(s.id, false);
+                                      if (err) {
+                                        const msg = typeof err === "string" ? err : String(err);
+                                        toast.error("Could not stop strategy", { description: msg, duration: 10_000 });
+                                        addLog("error", msg);
+                                        return;
+                                      }
+                                      addLog("warn", `Strategy "${s.name}" stopped`);
+                                      chartmateActions.onRefresh?.();
+                                      return;
+                                    }
+                                    setMyStrategies((prev) => prev.map((x) => (x.id === s.id ? { ...x, deployed: false } : x)));
+                                    addLog("warn", `Strategy "${s.name}" stopped (local preview)`);
+                                  }}
+                                >
+                                  &#x23F9; Stop
+                                </button>
+                              </>
                             )}
                             <button
                               type="button"
@@ -1243,7 +1279,8 @@ export default function TradingSmartDashboard(props = {}) {
                         )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   <button
                     type="button"
                     className="btn-add-strategy"
@@ -1330,6 +1367,48 @@ export default function TradingSmartDashboard(props = {}) {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* LIVE MONITORING */}
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">
+                  <span className="card-title-icon" style={{ background: "rgba(52,211,153,0.1)", color: "var(--accent-green)" }}>&#x1F4F6;</span>
+                  Live Monitoring
+                </div>
+                <span className="card-badge badge-green">{liveMonitorStrategies.length} running</span>
+              </div>
+              {liveMonitorStrategies.length === 0 ? (
+                <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
+                  No active strategy monitors yet. Activate a strategy to see live condition progress here.
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {liveMonitorStrategies.map((s) => {
+                    const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                    return (
+                      <div key={`live-${s.id}`} style={{ border: "1px solid var(--border-color)", borderRadius: 10, padding: 10, background: "rgba(10,14,23,0.45)" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700 }}>{s.name}</span>
+                            <span className="my-strat-card-type type-momentum">{s.type}</span>
+                          </div>
+                          <span className={`strategy-tag ${strategyTagClass(lcState)}`}>
+                            {lifecycleLabel(lcState)}
+                          </span>
+                        </div>
+                        <StrategyConditionPanel
+                          strategyId={s.id}
+                          strategyName={s.name}
+                          brokerLive={sessLive}
+                          streamStale={positionsStreamStale}
+                          lifecycleState={lcState}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
