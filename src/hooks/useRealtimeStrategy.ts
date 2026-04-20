@@ -7,6 +7,18 @@ function httpBaseToWs(base: string): string {
   return b;
 }
 
+function normalizeBaseOrigin(raw: string): string {
+  const v = String(raw || "").trim().replace(/\/$/, "");
+  if (!v) return "";
+  try {
+    const url = new URL(v);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    // Fallback for plain host values.
+    return v.replace(/\/api\/?.*$/i, "").replace(/\/$/, "");
+  }
+}
+
 function deriveOptionsWsFromBff(): string {
   const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
   if (!bff) return "";
@@ -24,13 +36,12 @@ function deriveOptionsWsFromBff(): string {
 }
 
 function optionsWsBase(): string {
-  const explicit = (import.meta.env.VITE_OPTIONS_WS_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+  const explicit = (import.meta.env.VITE_OPTIONS_WS_URL as string | undefined)?.trim() ?? "";
   if (explicit) {
-    if (explicit.startsWith("ws://") || explicit.startsWith("wss://")) return explicit;
-    return httpBaseToWs(explicit);
+    return normalizeBaseOrigin(explicit);
   }
-  const direct = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-  if (direct) return direct;
+  const direct = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.trim() ?? "";
+  if (direct) return normalizeBaseOrigin(direct);
   return deriveOptionsWsFromBff();
 }
 
@@ -56,6 +67,7 @@ export function useOptionsPositionsStream(opts: {
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<number | null>(null);
   const attemptRef = useRef(0);
+  const stopUntilRef = useRef<number>(0);
 
   const clearTimer = () => {
     if (timerRef.current != null) {
@@ -71,6 +83,15 @@ export function useOptionsPositionsStream(opts: {
       setConnected(false);
       return;
     }
+    if (Date.now() < stopUntilRef.current) {
+      return;
+    }
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
     const wsUrl = `${httpBaseToWs(base)}/ws/options/positions/${opts.userId}?token=${encodeURIComponent(opts.token)}`;
     try {
       const ws = new WebSocket(wsUrl);
@@ -79,6 +100,7 @@ export function useOptionsPositionsStream(opts: {
         setConnected(true);
         attemptRef.current = 0;
         setReconnectAttempt(0);
+        stopUntilRef.current = 0;
       };
       ws.onmessage = (ev) => {
         try {
@@ -87,12 +109,18 @@ export function useOptionsPositionsStream(opts: {
           /* ignore */
         }
       };
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         setConnected(false);
         wsRef.current = null;
         attemptRef.current += 1;
         setReconnectAttempt(attemptRef.current);
-        if (!opts.enabled || attemptRef.current > 80) return;
+        if (!opts.enabled) return;
+        // Auth / policy / malformed URL style closes should pause reconnect
+        // until auth state changes instead of spamming connect errors.
+        if (ev.code === 1008 || ev.code === 4001 || ev.code === 4003 || attemptRef.current > 16) {
+          stopUntilRef.current = Date.now() + 60_000;
+          return;
+        }
         const exp = Math.min(30_000, 1000 * 2 ** Math.min(attemptRef.current - 1, 5));
         const jitter = Math.floor(Math.random() * 400);
         timerRef.current = window.setTimeout(() => connect(), exp + jitter);
@@ -112,6 +140,8 @@ export function useOptionsPositionsStream(opts: {
   }, [opts.enabled, opts.userId, opts.token]);
 
   useEffect(() => {
+    stopUntilRef.current = 0;
+    attemptRef.current = 0;
     connect();
     return () => {
       clearTimer();

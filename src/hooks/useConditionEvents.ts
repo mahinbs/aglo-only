@@ -24,6 +24,7 @@ export type StrategyConditionEventRow = {
 };
 
 const STALE_MS = 10_000;
+let _condEventsChannelSeq = 0;
 
 export function useConditionEvents(strategyId: string | null | undefined) {
   const [event, setEvent] = useState<StrategyConditionEventRow | null>(null);
@@ -60,8 +61,14 @@ export function useConditionEvents(strategyId: string | null | undefined) {
       }
     })();
 
+    // Important: channel topics must be unique per hook instance.
+    // The dashboard can render multiple panels for the same strategy id
+    // (e.g. card + live-monitoring section). Reusing the exact same channel
+    // topic causes Supabase to reject adding callbacks after the first subscribe.
+    _condEventsChannelSeq += 1;
+    const channelTopic = `strategy_condition_events:${sid}:${_condEventsChannelSeq}`;
     const channel = supabase
-      .channel(`strategy_condition_events:${sid}`)
+      .channel(channelTopic)
       .on(
         "postgres_changes",
         {
