@@ -759,15 +759,35 @@ export default function TradingSmartDashboard(props = {}) {
   const [killActive, setKillActive] = useState(false);
   const [showDevRequest, setShowDevRequest] = useState(false);
 
-  const [devForm, setDevForm] = useState({ strategyName: "", description: "", market: "crypto", urgency: "normal", email: "", pdfName: "" });
+  const [devForm, setDevForm] = useState({
+    strategyName: "",
+    description: "",
+    market: "crypto",
+    urgency: "normal",
+    email: "",
+    pdfName: "",
+  });
   const [devRequests, setDevRequests] = useState([
-    { id: "dr1", name: "Ichimoku Cloud Breakout", status: "in_progress", submitted: "2026-04-10", eta: "2026-04-18" },
-    { id: "dr2", name: "Volume Profile Reversal", status: "completed", submitted: "2026-03-28", eta: "2026-04-05" },
+    {
+      id: "dr1",
+      name: "Ichimoku Cloud Breakout",
+      status: "in_progress",
+      submitted: "2026-04-10",
+      eta: "2026-04-18",
+    },
+    {
+      id: "dr2",
+      name: "Volume Profile Reversal",
+      status: "completed",
+      submitted: "2026-03-28",
+      eta: "2026-04-05",
+    },
   ]);
   const fileInputRef = useRef(null);
   const [chartData, setChartData] = useState(() => {
     const d = [2400000];
-    for (let i = 1; i < 90; i++) d.push(d[i - 1] + (Math.random() - 0.42) * 8000);
+    for (let i = 1; i < 90; i++)
+      d.push(d[i - 1] + (Math.random() - 0.42) * 8000);
     return d;
   });
 
@@ -820,7 +840,6 @@ export default function TradingSmartDashboard(props = {}) {
     if (!useChartmate || !orderFeed) return;
     setOrders(orderFeed.length ? orderFeed : []);
   }, [useChartmate, orderFeed]);
-
 
   // Clock
   useEffect(() => {
@@ -1973,7 +1992,7 @@ export default function TradingSmartDashboard(props = {}) {
               <div className="strategy-builder">
                 {/* Left: Strategy Cards */}
                 <div className="strategy-cards">
-                <button
+                  <button
                     type="button"
                     className="btn-add-strategy"
                     onClick={() => {
@@ -2738,362 +2757,6 @@ export default function TradingSmartDashboard(props = {}) {
                   + New Request
                 </button>
               </div>
-
-              {showDevRequest && (
-                <div
-                  className="devreq-modal-overlay"
-                  style={{
-                    marginBottom: 24,
-                  }}
-                  onClick={() => setShowDevRequest(false)}
-                >
-                  <div
-                    className="devreq-modal"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Strategy development request form"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="devreq-modal-head">
-                      <div className="devreq-modal-title">
-                        Submit Strategy Development Request
-                      </div>
-                      <button
-                        type="button"
-                        className="devreq-modal-close"
-                        aria-label="Close strategy development request form"
-                        onClick={() => setShowDevRequest(false)}
-                      >
-                        &#x2715;
-                      </button>
-                    </div>
-                    <div className="devreq-modal-grid">
-                  <div className="strategy-form">
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "var(--text-secondary)",
-                        lineHeight: 1.6,
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        background: "rgba(167,139,250,0.05)",
-                        border: "1px solid rgba(167,139,250,0.1)",
-                        marginBottom: 4,
-                      }}
-                    >
-                      Submit your trading strategy idea to our development team.
-                      Upload a PDF document with your strategy rules, entry/exit
-                      conditions, indicators used, and risk parameters. Our
-                      developers will code it into a production-ready algorithm.
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Strategy Name</label>
-                      <input
-                        className="form-input"
-                        placeholder="e.g. Fibonacci Retracement Scalper"
-                        value={devForm.strategyName}
-                        onChange={(e) =>
-                          setDevForm({
-                            ...devForm,
-                            strategyName: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Strategy Description</label>
-                      <textarea
-                        className="form-input form-textarea"
-                        placeholder="Describe your strategy logic, entry/exit rules, indicators, timeframes, and any special conditions..."
-                        value={devForm.description}
-                        onChange={(e) =>
-                          setDevForm({
-                            ...devForm,
-                            description: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label className="form-label">Market</label>
-                        <select
-                          className="form-select"
-                          value={devForm.market}
-                          onChange={(e) =>
-                            setDevForm({ ...devForm, market: e.target.value })
-                          }
-                        >
-                          <option value="crypto">Crypto</option>
-                          <option value="forex">Forex</option>
-                          <option value="stocks">Stocks</option>
-                          <option value="options">Options</option>
-                          <option value="futures">Futures</option>
-                          <option value="commodities">Commodities</option>
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Priority</label>
-                        <select
-                          className="form-select"
-                          value={devForm.urgency}
-                          onChange={(e) =>
-                            setDevForm({ ...devForm, urgency: e.target.value })
-                          }
-                        >
-                          <option value="normal">Normal (7-10 days)</option>
-                          <option value="priority">Priority (3-5 days)</option>
-                          <option value="rush">Rush (1-2 days)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Contact Email</label>
-                      <input
-                        className="form-input"
-                        type="email"
-                        placeholder="you@example.com"
-                        value={devForm.email}
-                        onChange={(e) =>
-                          setDevForm({ ...devForm, email: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">
-                        Upload Strategy Document (PDF)
-                      </label>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 10,
-                          alignItems: "center",
-                        }}
-                      >
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".pdf"
-                          style={{ display: "none" }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file)
-                              setDevForm({ ...devForm, pdfName: file.name });
-                          }}
-                        />
-                        <button
-                          className="action-btn btn-primary"
-                          style={{ padding: "10px 20px", fontSize: 12 }}
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          &#x1F4CE; Choose PDF File
-                        </button>
-                        {devForm.pdfName ? (
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: "var(--accent-green)",
-                              fontFamily: "'JetBrains Mono',monospace",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 6,
-                            }}
-                          >
-                            &#x2714; {devForm.pdfName}
-                          </span>
-                        ) : (
-                          <span
-                            style={{ fontSize: 11, color: "var(--text-muted)" }}
-                          >
-                            No file selected
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      className="action-btn btn-primary"
-                      style={{
-                        padding: 14,
-                        fontSize: 14,
-                        marginTop: 4,
-                        background:
-                          "linear-gradient(135deg,rgba(167,139,250,0.2),rgba(99,102,241,0.2))",
-                        borderColor: "rgba(167,139,250,0.4)",
-                        color: "var(--accent-purple)",
-                      }}
-                      onClick={() => {
-                        if (!devForm.strategyName) return;
-                        setDevRequests((prev) => [
-                          ...prev,
-                          {
-                            id: "dr" + Date.now(),
-                            name: devForm.strategyName,
-                            status: "submitted",
-                            submitted: new Date().toISOString().slice(0, 10),
-                            eta: new Date(
-                              Date.now() +
-                                (devForm.urgency === "rush"
-                                  ? 2
-                                  : devForm.urgency === "priority"
-                                    ? 5
-                                    : 10) *
-                                  86400000,
-                            )
-                              .toISOString()
-                              .slice(0, 10),
-                          },
-                        ]);
-                        addLog(
-                          "info",
-                          `Strategy development request submitted: "${devForm.strategyName}"`,
-                        );
-                        setDevForm({
-                          strategyName: "",
-                          description: "",
-                          market: "crypto",
-                          urgency: "normal",
-                          email: "",
-                          pdfName: "",
-                        });
-                        setShowDevRequest(false);
-                      }}
-                    >
-                      &#x1F680; Submit Development Request
-                    </button>
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 16,
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: 16,
-                        borderRadius: 12,
-                        background: "rgba(15,23,42,0.5)",
-                        border: "1px solid var(--border-color)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: "var(--text-primary)",
-                          marginBottom: 12,
-                        }}
-                      >
-                        What to Include in Your PDF
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 8,
-                          fontSize: 12,
-                          color: "var(--text-secondary)",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {[
-                          "Entry & exit conditions with specific indicators",
-                          "Timeframe and trading pairs/assets",
-                          "Position sizing and risk management rules",
-                          "Stop loss & take profit logic",
-                          "Any special conditions or filters",
-                          "Backtesting results (if available)",
-                        ].map((item, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              alignItems: "flex-start",
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: "var(--accent-cyan)",
-                                fontWeight: 700,
-                                fontSize: 14,
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              &#x2022;
-                            </span>
-                            <span>{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        padding: 16,
-                        borderRadius: 12,
-                        background: "rgba(15,23,42,0.5)",
-                        border: "1px solid var(--border-color)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: "var(--text-primary)",
-                          marginBottom: 6,
-                        }}
-                      >
-                        Pricing
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 6,
-                        }}
-                      >
-                        {[
-                          { label: "Normal", price: "$499", time: "7-10 days" },
-                          {
-                            label: "Priority",
-                            price: "$899",
-                            time: "3-5 days",
-                          },
-                          { label: "Rush", price: "$1,499", time: "1-2 days" },
-                        ].map((p) => (
-                          <div
-                            key={p.label}
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              fontSize: 12,
-                              padding: "6px 8px",
-                              borderRadius: 6,
-                              background: "rgba(0,0,0,0.2)",
-                            }}
-                          >
-                            <span style={{ color: "var(--text-muted)" }}>
-                              {p.label} ({p.time})
-                            </span>
-                            <span
-                              style={{
-                                color: "var(--accent-cyan)",
-                                fontFamily: "'JetBrains Mono',monospace",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {p.price}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Previous Requests */}
               <div>
@@ -4423,6 +4086,362 @@ export default function TradingSmartDashboard(props = {}) {
       />
       {/* Toaster for broker-gate notifications and strategy feedback */}
       <Toaster richColors position="top-right" />
+
+      {showDevRequest && (
+        <div
+          className="devreq-modal-overlay"
+          style={{
+            marginBottom: 24,
+          }}
+          onClick={() => setShowDevRequest(false)}
+        >
+          <div
+            className="devreq-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Strategy development request form"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="devreq-modal-head">
+              <div className="devreq-modal-title">
+                Submit Strategy Development Request
+              </div>
+              <button
+                type="button"
+                className="devreq-modal-close"
+                aria-label="Close strategy development request form"
+                onClick={() => setShowDevRequest(false)}
+              >
+                &#x2715;
+              </button>
+            </div>
+            <div className="devreq-modal-grid">
+              <div className="strategy-form">
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-secondary)",
+                    lineHeight: 1.6,
+                    padding: "10px 14px",
+                    borderRadius: 10,
+                    background: "rgba(167,139,250,0.05)",
+                    border: "1px solid rgba(167,139,250,0.1)",
+                    marginBottom: 4,
+                  }}
+                >
+                  Submit your trading strategy idea to our development team.
+                  Upload a PDF document with your strategy rules, entry/exit
+                  conditions, indicators used, and risk parameters. Our
+                  developers will code it into a production-ready algorithm.
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Strategy Name</label>
+                  <input
+                    className="form-input"
+                    placeholder="e.g. Fibonacci Retracement Scalper"
+                    value={devForm.strategyName}
+                    onChange={(e) =>
+                      setDevForm({
+                        ...devForm,
+                        strategyName: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Strategy Description</label>
+                  <textarea
+                    className="form-input form-textarea"
+                    placeholder="Describe your strategy logic, entry/exit rules, indicators, timeframes, and any special conditions..."
+                    value={devForm.description}
+                    onChange={(e) =>
+                      setDevForm({
+                        ...devForm,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Market</label>
+                    <select
+                      className="form-select"
+                      value={devForm.market}
+                      onChange={(e) =>
+                        setDevForm({ ...devForm, market: e.target.value })
+                      }
+                    >
+                      <option value="crypto">Crypto</option>
+                      <option value="forex">Forex</option>
+                      <option value="stocks">Stocks</option>
+                      <option value="options">Options</option>
+                      <option value="futures">Futures</option>
+                      <option value="commodities">Commodities</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Priority</label>
+                    <select
+                      className="form-select"
+                      value={devForm.urgency}
+                      onChange={(e) =>
+                        setDevForm({ ...devForm, urgency: e.target.value })
+                      }
+                    >
+                      <option value="normal">Normal (7-10 days)</option>
+                      <option value="priority">Priority (3-5 days)</option>
+                      <option value="rush">Rush (1-2 days)</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Contact Email</label>
+                  <input
+                    className="form-input"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={devForm.email}
+                    onChange={(e) =>
+                      setDevForm({ ...devForm, email: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    Upload Strategy Document (PDF)
+                  </label>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file)
+                          setDevForm({ ...devForm, pdfName: file.name });
+                      }}
+                    />
+                    <button
+                      className="action-btn btn-primary"
+                      style={{ padding: "10px 20px", fontSize: 12 }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      &#x1F4CE; Choose PDF File
+                    </button>
+                    {devForm.pdfName ? (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "var(--accent-green)",
+                          fontFamily: "'JetBrains Mono',monospace",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        &#x2714; {devForm.pdfName}
+                      </span>
+                    ) : (
+                      <span
+                        style={{ fontSize: 11, color: "var(--text-muted)" }}
+                      >
+                        No file selected
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  className="action-btn btn-primary"
+                  style={{
+                    padding: 14,
+                    fontSize: 14,
+                    marginTop: 4,
+                    background:
+                      "linear-gradient(135deg,rgba(167,139,250,0.2),rgba(99,102,241,0.2))",
+                    borderColor: "rgba(167,139,250,0.4)",
+                    color: "var(--accent-purple)",
+                  }}
+                  onClick={() => {
+                    if (!devForm.strategyName) return;
+                    setDevRequests((prev) => [
+                      ...prev,
+                      {
+                        id: "dr" + Date.now(),
+                        name: devForm.strategyName,
+                        status: "submitted",
+                        submitted: new Date().toISOString().slice(0, 10),
+                        eta: new Date(
+                          Date.now() +
+                            (devForm.urgency === "rush"
+                              ? 2
+                              : devForm.urgency === "priority"
+                                ? 5
+                                : 10) *
+                              86400000,
+                        )
+                          .toISOString()
+                          .slice(0, 10),
+                      },
+                    ]);
+                    addLog(
+                      "info",
+                      `Strategy development request submitted: "${devForm.strategyName}"`,
+                    );
+                    setDevForm({
+                      strategyName: "",
+                      description: "",
+                      market: "crypto",
+                      urgency: "normal",
+                      email: "",
+                      pdfName: "",
+                    });
+                    setShowDevRequest(false);
+                  }}
+                >
+                  &#x1F680; Submit Development Request
+                </button>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                }}
+              >
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 12,
+                    background: "rgba(15,23,42,0.5)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      marginBottom: 12,
+                    }}
+                  >
+                    What to Include in Your PDF
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      fontSize: 12,
+                      color: "var(--text-secondary)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {[
+                      "Entry & exit conditions with specific indicators",
+                      "Timeframe and trading pairs/assets",
+                      "Position sizing and risk management rules",
+                      "Stop loss & take profit logic",
+                      "Any special conditions or filters",
+                      "Backtesting results (if available)",
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "var(--accent-cyan)",
+                            fontWeight: 700,
+                            fontSize: 14,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          &#x2022;
+                        </span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: 16,
+                    borderRadius: 12,
+                    background: "rgba(15,23,42,0.5)",
+                    border: "1px solid var(--border-color)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--text-primary)",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Pricing
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                    }}
+                  >
+                    {[
+                      { label: "Normal", price: "$499", time: "7-10 days" },
+                      {
+                        label: "Priority",
+                        price: "$899",
+                        time: "3-5 days",
+                      },
+                      { label: "Rush", price: "$1,499", time: "1-2 days" },
+                    ].map((p) => (
+                      <div
+                        key={p.label}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: 12,
+                          padding: "6px 8px",
+                          borderRadius: 6,
+                          background: "rgba(0,0,0,0.2)",
+                        }}
+                      >
+                        <span style={{ color: "var(--text-muted)" }}>
+                          {p.label} ({p.time})
+                        </span>
+                        <span
+                          style={{
+                            color: "var(--accent-cyan)",
+                            fontFamily: "'JetBrains Mono',monospace",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {p.price}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
