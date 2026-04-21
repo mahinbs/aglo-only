@@ -800,8 +800,8 @@ export default function TradingSmartDashboard(props = {}) {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
-  // Draw chart on canvas
-  useEffect(() => {
+   // Draw chart on canvas
+   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -811,21 +811,12 @@ export default function TradingSmartDashboard(props = {}) {
     canvas.style.width = rect.width + "px";
     canvas.style.height = rect.height + "px";
     ctx.setTransform(2, 0, 0, 2, 0, 0);
-    const w = rect.width,
-      h = rect.height;
+    const w = rect.width, h = rect.height;
     ctx.clearRect(0, 0, w, h);
     if (chartData.length < 2) return;
-    const rawMin = Math.min(...chartData);
-    const rawMax = Math.max(...chartData);
-    const min =
-      rawMin === rawMax
-        ? rawMin - Math.max(1, Math.abs(rawMin) * 0.0005)
-        : rawMin * 0.998;
-    const max =
-      rawMin === rawMax
-        ? rawMax + Math.max(1, Math.abs(rawMax) * 0.0005)
-        : rawMax * 1.002;
-    const range = max - min || 1;
+    const min = Math.min(...chartData) * 0.998;
+    const max = Math.max(...chartData) * 1.002;
+    const range = max - min;
     const pad = { top: 20, bottom: 30, left: 0, right: 0 };
     const cw = w - pad.left - pad.right;
     const ch = h - pad.top - pad.bottom;
@@ -834,10 +825,7 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.lineWidth = 1;
     for (let i = 0; i <= 5; i++) {
       const y = pad.top + (ch / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(pad.left, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w, y); ctx.stroke();
     }
 
     const gradient = ctx.createLinearGradient(0, pad.top, 0, h);
@@ -856,34 +844,21 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.fill();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => {
-      if (i === 0) ctx.moveTo(toX(i), toY(v));
-      else ctx.lineTo(toX(i), toY(v));
-    });
+    chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(toX(i), toY(v)); else ctx.lineTo(toX(i), toY(v)); });
     ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = 2.5;
     ctx.lineJoin = "round";
     ctx.stroke();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => {
-      if (i === 0) ctx.moveTo(toX(i), toY(v));
-      else ctx.lineTo(toX(i), toY(v));
-    });
+    chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(toX(i), toY(v)); else ctx.lineTo(toX(i), toY(v)); });
     ctx.strokeStyle = "rgba(56,189,248,0.3)";
     ctx.lineWidth = 6;
     ctx.stroke();
 
-    const lx = toX(chartData.length - 1),
-      ly = toY(chartData[chartData.length - 1]);
-    ctx.beginPath();
-    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "#38bdf8";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(lx, ly, 10, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(56,189,248,0.2)";
-    ctx.fill();
+    const lx = toX(chartData.length - 1), ly = toY(chartData[chartData.length - 1]);
+    ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fillStyle = "#38bdf8"; ctx.fill();
+    ctx.beginPath(); ctx.arc(lx, ly, 10, 0, Math.PI * 2); ctx.fillStyle = "rgba(56,189,248,0.2)"; ctx.fill();
 
     ctx.fillStyle = "rgba(148,163,184,0.5)";
     ctx.font = "11px JetBrains Mono";
@@ -891,8 +866,7 @@ export default function TradingSmartDashboard(props = {}) {
     for (let i = 0; i <= 5; i++) {
       const val = min + (range / 5) * (5 - i);
       const y = pad.top + (ch / 5) * i;
-      const lab = "₹" + (val / 1000).toFixed(0) + "k";
-      ctx.fillText(lab, w - 4, y + 4);
+      ctx.fillText("$" + (val / 1000).toFixed(0) + "k", w - 4, y + 4);
     }
   }, [chartData]);
 
