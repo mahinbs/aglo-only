@@ -1,4 +1,11 @@
-import { useState, useEffect, useRef, useCallback, useMemo, useId } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useId,
+} from "react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { ModalShell } from "./ModalShell.jsx";
@@ -8,6 +15,7 @@ import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { StrategyLiveChart } from "./StrategyLiveChart";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
+import '../styles/'
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
 const DEFAULT_USD_PER_INR = 1 / 83;
@@ -39,19 +47,44 @@ function formatUnsignedDisplay(amount, displayCurrency) {
 
 const GO_LIVE_EXCHANGES = ["NSE", "BSE", "NFO", "BFO", "CDS", "MCX", "NCDEX"];
 const GO_LIVE_PRODUCTS = ["CNC", "MIS", "NRML", "CO", "BO"];
-const STRATEGY_WIZARD_STEPS = ["Foundation", "Timing", "Entry", "Exit", "Position", "Risk Rules"];
-const OPTIONS_WIZARD_STEPS = ["Instrument Setup", "Entry Conditions", "Exit & Risk"];
+const STRATEGY_WIZARD_STEPS = [
+  "Foundation",
+  "Timing",
+  "Entry",
+  "Exit",
+  "Position",
+  "Risk Rules",
+];
+const OPTIONS_WIZARD_STEPS = [
+  "Instrument Setup",
+  "Entry Conditions",
+  "Exit & Risk",
+];
 
-const OPTIONS_LOT_UNITS = { NIFTY: 75, BANKNIFTY: 30, FINNIFTY: 65, MIDCPNIFTY: 120, SENSEX: 20 };
+const OPTIONS_LOT_UNITS = {
+  NIFTY: 75,
+  BANKNIFTY: 30,
+  FINNIFTY: 65,
+  MIDCPNIFTY: 120,
+  SENSEX: 20,
+};
 function lotUnitsForUnderlying(u) {
-  return OPTIONS_LOT_UNITS[String(u || "").trim().toUpperCase()] ?? 75;
+  return (
+    OPTIONS_LOT_UNITS[
+      String(u || "")
+        .trim()
+        .toUpperCase()
+    ] ?? 75
+  );
 }
 
 function firstSymbolFromPairs(pairs) {
-  return String(pairs || "")
-    .split(",")[0]
-    ?.trim()
-    .toUpperCase() || "";
+  return (
+    String(pairs || "")
+      .split(",")[0]
+      ?.trim()
+      .toUpperCase() || ""
+  );
 }
 
 function defaultsGoLiveFromCard(s) {
@@ -86,7 +119,13 @@ function chartRoutingFromStrategyCard(s) {
 
 // ─── SVG Logo Component (matches your TradingSmart.ai brain+chart logo) ───
 const TradingSmartLogo = ({ size = 36 }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
     <defs>
       <linearGradient id="logoGrad" x1="0" y1="0" x2="100" y2="100">
         <stop offset="0%" stopColor="#38bdf8" />
@@ -94,13 +133,20 @@ const TradingSmartLogo = ({ size = 36 }) => (
       </linearGradient>
       <filter id="logoGlow">
         <feGaussianBlur stdDeviation="2" result="blur" />
-        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
       </filter>
     </defs>
     <g filter="url(#logoGlow)">
       {/* Brain outline */}
-      <path d="M20 55 C20 30, 35 15, 50 15 C55 15, 58 18, 55 25 C52 32, 48 30, 45 35 C42 40, 46 45, 50 45 C54 45, 52 40, 55 38 C58 36, 62 38, 60 42 C58 46, 54 48, 52 52 C50 56, 48 60, 45 62 C42 64, 38 62, 35 58 C32 54, 28 56, 25 58 C22 60, 20 58, 20 55Z"
-        stroke="url(#logoGrad)" strokeWidth="2" fill="none" />
+      <path
+        d="M20 55 C20 30, 35 15, 50 15 C55 15, 58 18, 55 25 C52 32, 48 30, 45 35 C42 40, 46 45, 50 45 C54 45, 52 40, 55 38 C58 36, 62 38, 60 42 C58 46, 54 48, 52 52 C50 56, 48 60, 45 62 C42 64, 38 62, 35 58 C32 54, 28 56, 25 58 C22 60, 20 58, 20 55Z"
+        stroke="url(#logoGrad)"
+        strokeWidth="2"
+        fill="none"
+      />
       {/* Circuit lines */}
       <circle cx="30" cy="35" r="2" fill="#38bdf8" />
       <circle cx="40" cy="28" r="2" fill="#38bdf8" />
@@ -110,16 +156,78 @@ const TradingSmartLogo = ({ size = 36 }) => (
       <line x1="40" y1="28" x2="45" y2="38" stroke="#38bdf8" strokeWidth="1" />
       <line x1="35" y1="45" x2="30" y2="35" stroke="#06b6d4" strokeWidth="1" />
       {/* Candlesticks */}
-      <rect x="55" y="50" width="4" height="20" rx="1" fill="#38bdf8" opacity="0.7" />
-      <rect x="62" y="42" width="4" height="25" rx="1" fill="#38bdf8" opacity="0.8" />
-      <rect x="69" y="35" width="4" height="30" rx="1" fill="#06b6d4" opacity="0.9" />
+      <rect
+        x="55"
+        y="50"
+        width="4"
+        height="20"
+        rx="1"
+        fill="#38bdf8"
+        opacity="0.7"
+      />
+      <rect
+        x="62"
+        y="42"
+        width="4"
+        height="25"
+        rx="1"
+        fill="#38bdf8"
+        opacity="0.8"
+      />
+      <rect
+        x="69"
+        y="35"
+        width="4"
+        height="30"
+        rx="1"
+        fill="#06b6d4"
+        opacity="0.9"
+      />
       <rect x="76" y="28" width="4" height="35" rx="1" fill="#06b6d4" />
-      <line x1="57" y1="48" x2="57" y2="72" stroke="#38bdf8" strokeWidth="1" opacity="0.5" />
-      <line x1="64" y1="40" x2="64" y2="69" stroke="#38bdf8" strokeWidth="1" opacity="0.5" />
-      <line x1="71" y1="33" x2="71" y2="67" stroke="#06b6d4" strokeWidth="1" opacity="0.5" />
-      <line x1="78" y1="25" x2="78" y2="65" stroke="#06b6d4" strokeWidth="1" opacity="0.5" />
+      <line
+        x1="57"
+        y1="48"
+        x2="57"
+        y2="72"
+        stroke="#38bdf8"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <line
+        x1="64"
+        y1="40"
+        x2="64"
+        y2="69"
+        stroke="#38bdf8"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <line
+        x1="71"
+        y1="33"
+        x2="71"
+        y2="67"
+        stroke="#06b6d4"
+        strokeWidth="1"
+        opacity="0.5"
+      />
+      <line
+        x1="78"
+        y1="25"
+        x2="78"
+        y2="65"
+        stroke="#06b6d4"
+        strokeWidth="1"
+        opacity="0.5"
+      />
       {/* Trend arrow */}
-      <path d="M52 68 Q65 40, 82 22" stroke="url(#logoGrad)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path
+        d="M52 68 Q65 40, 82 22"
+        stroke="url(#logoGrad)"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
       <polygon points="82,22 85,28 78,26" fill="#38bdf8" />
     </g>
   </svg>
@@ -448,20 +556,33 @@ function sparkSeriesFromValue(v) {
   const n = 40;
   const b = Number(v);
   if (!Number.isFinite(b) || b === 0) return [0, 0];
-  return Array.from({ length: n }, (_, i) => b * (1 + (i / (n - 1) - 0.5) * 0.015));
+  return Array.from(
+    { length: n },
+    (_, i) => b * (1 + (i / (n - 1) - 0.5) * 0.015),
+  );
 }
 
 // ─── Sparkline SVG Component ───
 const Sparkline = ({ data, color = "#38bdf8" }) => {
   const gradId = useId().replace(/:/g, "");
   if (!data || data.length < 2) return null;
-  const w = 300, h = 40;
-  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
-  const pts = data.map((v, i) =>
-    `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h * 0.9 - h * 0.05}`
-  ).join(" ");
+  const w = 300,
+    h = 40;
+  const min = Math.min(...data),
+    max = Math.max(...data),
+    range = max - min || 1;
+  const pts = data
+    .map(
+      (v, i) =>
+        `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h * 0.9 - h * 0.05}`,
+    )
+    .join(" ");
   return (
-    <svg className="sparkline-svg" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+    <svg
+      className="sparkline-svg"
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+    >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity="0.3" />
@@ -469,7 +590,14 @@ const Sparkline = ({ data, color = "#38bdf8" }) => {
         </linearGradient>
       </defs>
       <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#${gradId})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline
+        points={pts}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 };
@@ -539,7 +667,12 @@ export default function TradingSmartDashboard(props = {}) {
     max_adjustments: "2",
   });
   const [goLiveTarget, setGoLiveTarget] = useState(null);
-  const [goLiveForm, setGoLiveForm] = useState({ symbol: "", exchange: "NSE", quantity: "1", product: "MIS" });
+  const [goLiveForm, setGoLiveForm] = useState({
+    symbol: "",
+    exchange: "NSE",
+    quantity: "1",
+    product: "MIS",
+  });
   const [goLiveBusy, setGoLiveBusy] = useState(false);
   const [liveViewTarget, setLiveViewTarget] = useState(null);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
@@ -562,13 +695,19 @@ export default function TradingSmartDashboard(props = {}) {
   const riskScore = useMemo(() => {
     // Risk score is only meaningful when broker session is live (real closed trades feed in).
     // Without a live session all trade data is stale / zero — show null (—) not a fake number.
-    const isLive = Boolean(summary?.broker_session_live ?? summary?.broker_connected);
+    const isLive = Boolean(
+      summary?.broker_session_live ?? summary?.broker_connected,
+    );
     if (!isLive) return null;
     if (summary?.win_rate_pct == null) return null;
     const w = Number(summary.win_rate_pct);
     if (!Number.isFinite(w)) return null;
     return Math.max(0, Math.min(100, Math.round(100 - w)));
-  }, [summary?.win_rate_pct, summary?.broker_session_live, summary?.broker_connected]);
+  }, [
+    summary?.win_rate_pct,
+    summary?.broker_session_live,
+    summary?.broker_connected,
+  ]);
 
   const canvasRef = useRef(null);
   const logRef = useRef(null);
@@ -576,7 +715,10 @@ export default function TradingSmartDashboard(props = {}) {
   const addLog = useCallback((type, msg) => {
     const now = new Date();
     setLogs((prev) => {
-      const next = [...prev, { type, msg, time: now.toLocaleTimeString("en-US", { hour12: false }) }];
+      const next = [
+        ...prev,
+        { type, msg, time: now.toLocaleTimeString("en-US", { hour12: false }) },
+      ];
       return next.slice(-50);
     });
   }, []);
@@ -608,7 +750,11 @@ export default function TradingSmartDashboard(props = {}) {
   useEffect(() => {
     const id = setInterval(() => {
       const n = new Date();
-      setTime(n.toLocaleTimeString("en-US", { hour12: false }) + "." + String(n.getMilliseconds()).padStart(3, "0"));
+      setTime(
+        n.toLocaleTimeString("en-US", { hour12: false }) +
+          "." +
+          String(n.getMilliseconds()).padStart(3, "0"),
+      );
     }, 50);
     return () => clearInterval(id);
   }, []);
@@ -635,13 +781,20 @@ export default function TradingSmartDashboard(props = {}) {
     canvas.style.width = rect.width + "px";
     canvas.style.height = rect.height + "px";
     ctx.setTransform(2, 0, 0, 2, 0, 0);
-    const w = rect.width, h = rect.height;
+    const w = rect.width,
+      h = rect.height;
     ctx.clearRect(0, 0, w, h);
     if (chartData.length < 2) return;
     const rawMin = Math.min(...chartData);
     const rawMax = Math.max(...chartData);
-    const min = rawMin === rawMax ? rawMin - Math.max(1, Math.abs(rawMin) * 0.0005) : rawMin * 0.998;
-    const max = rawMin === rawMax ? rawMax + Math.max(1, Math.abs(rawMax) * 0.0005) : rawMax * 1.002;
+    const min =
+      rawMin === rawMax
+        ? rawMin - Math.max(1, Math.abs(rawMin) * 0.0005)
+        : rawMin * 0.998;
+    const max =
+      rawMin === rawMax
+        ? rawMax + Math.max(1, Math.abs(rawMax) * 0.0005)
+        : rawMax * 1.002;
     const range = max - min || 1;
     const pad = { top: 20, bottom: 30, left: 0, right: 0 };
     const cw = w - pad.left - pad.right;
@@ -651,7 +804,10 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.lineWidth = 1;
     for (let i = 0; i <= 5; i++) {
       const y = pad.top + (ch / 5) * i;
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
 
     const gradient = ctx.createLinearGradient(0, pad.top, 0, h);
@@ -670,21 +826,34 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.fill();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(toX(i), toY(v)); else ctx.lineTo(toX(i), toY(v)); });
+    chartData.forEach((v, i) => {
+      if (i === 0) ctx.moveTo(toX(i), toY(v));
+      else ctx.lineTo(toX(i), toY(v));
+    });
     ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = 2.5;
     ctx.lineJoin = "round";
     ctx.stroke();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(toX(i), toY(v)); else ctx.lineTo(toX(i), toY(v)); });
+    chartData.forEach((v, i) => {
+      if (i === 0) ctx.moveTo(toX(i), toY(v));
+      else ctx.lineTo(toX(i), toY(v));
+    });
     ctx.strokeStyle = "rgba(56,189,248,0.3)";
     ctx.lineWidth = 6;
     ctx.stroke();
 
-    const lx = toX(chartData.length - 1), ly = toY(chartData[chartData.length - 1]);
-    ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fillStyle = "#38bdf8"; ctx.fill();
-    ctx.beginPath(); ctx.arc(lx, ly, 10, 0, Math.PI * 2); ctx.fillStyle = "rgba(56,189,248,0.2)"; ctx.fill();
+    const lx = toX(chartData.length - 1),
+      ly = toY(chartData[chartData.length - 1]);
+    ctx.beginPath();
+    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+    ctx.fillStyle = "#38bdf8";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(lx, ly, 10, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(56,189,248,0.2)";
+    ctx.fill();
 
     ctx.fillStyle = "rgba(148,163,184,0.5)";
     ctx.font = "11px JetBrains Mono";
@@ -716,10 +885,21 @@ export default function TradingSmartDashboard(props = {}) {
           ? "var(--accent-yellow)"
           : "var(--accent-red)";
   const riskLabel =
-    riskScore == null ? "n/a" : riskScore < 30 ? "Low" : riskScore < 60 ? "Medium" : "High";
+    riskScore == null
+      ? "n/a"
+      : riskScore < 30
+        ? "Low"
+        : riskScore < 60
+          ? "Medium"
+          : "High";
 
-  const sessLive = Boolean(summary?.broker_session_live ?? summary?.broker_connected);
-  const brokerSnap = summary?.broker_snapshot && typeof summary.broker_snapshot === "object" ? summary.broker_snapshot : {};
+  const sessLive = Boolean(
+    summary?.broker_session_live ?? summary?.broker_connected,
+  );
+  const brokerSnap =
+    summary?.broker_snapshot && typeof summary.broker_snapshot === "object"
+      ? summary.broker_snapshot
+      : {};
   const brokerPositionsCount = Number(brokerSnap?.positions_count);
   const brokerTradesCount = Number(brokerSnap?.tradebook_count);
   const brokerOpenOrdersCount = Number(brokerSnap?.open_orders_count);
@@ -733,9 +913,13 @@ export default function TradingSmartDashboard(props = {}) {
       ? brokerTradesCount
       : (summary?.recent_orders_count ?? 0);
   const liveOpenOrdersCount =
-    sessLive && Number.isFinite(brokerOpenOrdersCount) ? brokerOpenOrdersCount : null;
+    sessLive && Number.isFinite(brokerOpenOrdersCount)
+      ? brokerOpenOrdersCount
+      : null;
   const liveCashAvailable =
-    sessLive && Number.isFinite(brokerCashAvailable) ? brokerCashAvailable : null;
+    sessLive && Number.isFinite(brokerCashAvailable)
+      ? brokerCashAvailable
+      : null;
   const capOrdersLimit = summary?.limits?.orders ?? 10;
   const capStrategiesLimit = summary?.limits?.strategies ?? 10;
   const activeOrdersCap = summary?.active_live_orders_for_cap;
@@ -743,22 +927,32 @@ export default function TradingSmartDashboard(props = {}) {
   const atOrderCap =
     typeof activeOrdersCap === "number" && activeOrdersCap >= capOrdersLimit;
   const atStrategyCap =
-    typeof activeStrategiesCap === "number" && activeStrategiesCap >= capStrategiesLimit;
+    typeof activeStrategiesCap === "number" &&
+    activeStrategiesCap >= capStrategiesLimit;
   // Only show real numbers when broker session is live — avoid showing paper/stale data as real values.
-  const displayPortfolio = sessLive && typeof summary?.portfolio_value === "number" ? summary.portfolio_value : 0;
-  const displayCumulative = sessLive && typeof summary?.cumulative_pnl === "number" ? summary.cumulative_pnl : 0;
-  const displayToday = sessLive && typeof summary?.today_pnl === "number" ? summary.today_pnl : 0;
-  const pctMtm = sessLive && typeof summary?.open_positions_pct_mtm === "number" ? summary.open_positions_pct_mtm : null;
-  const fmtExpiry =
-    summary?.token_expires_at
-      ? new Date(summary.token_expires_at).toLocaleString(undefined, {
-          timeZone: "Asia/Kolkata",
-          hour: "2-digit",
-          minute: "2-digit",
-          day: "numeric",
-          month: "short",
-        })
+  const displayPortfolio =
+    sessLive && typeof summary?.portfolio_value === "number"
+      ? summary.portfolio_value
+      : 0;
+  const displayCumulative =
+    sessLive && typeof summary?.cumulative_pnl === "number"
+      ? summary.cumulative_pnl
+      : 0;
+  const displayToday =
+    sessLive && typeof summary?.today_pnl === "number" ? summary.today_pnl : 0;
+  const pctMtm =
+    sessLive && typeof summary?.open_positions_pct_mtm === "number"
+      ? summary.open_positions_pct_mtm
       : null;
+  const fmtExpiry = summary?.token_expires_at
+    ? new Date(summary.token_expires_at).toLocaleString(undefined, {
+        timeZone: "Asia/Kolkata",
+        hour: "2-digit",
+        minute: "2-digit",
+        day: "numeric",
+        month: "short",
+      })
+    : null;
   const sharpeRatio = (() => {
     const candidates = [
       summary?.sharpe_ratio,
@@ -833,13 +1027,23 @@ export default function TradingSmartDashboard(props = {}) {
     [currencyMode],
   );
   const strategiesData =
-    strategiesTable && strategiesTable.length ? strategiesTable : [emptyStrategyRow];
+    strategiesTable && strategiesTable.length
+      ? strategiesTable
+      : [emptyStrategyRow];
   const activeStrategiesCount = strategiesData.filter((s) => {
-    const st = normalizeLifecycleState(s.status, String(s.status).toLowerCase() === "active");
-    return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+    const st = normalizeLifecycleState(
+      s.status,
+      String(s.status).toLowerCase() === "active",
+    );
+    return (
+      st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
+    );
   }).length;
   const strategyTagClass = (status) => {
-    const st = normalizeLifecycleState(status, String(status).toLowerCase() === "active");
+    const st = normalizeLifecycleState(
+      status,
+      String(status).toLowerCase() === "active",
+    );
     if (st === "ACTIVE") return "tag-active";
     if (st === "WAITING_MARKET_OPEN") return "tag-waiting";
     if (st === "TRIGGERED") return "tag-triggered";
@@ -850,7 +1054,9 @@ export default function TradingSmartDashboard(props = {}) {
   };
   const liveMonitorStrategies = myStrategies.filter((s) => {
     const st = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
-    return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+    return (
+      st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
+    );
   });
 
   return (
@@ -858,7 +1064,9 @@ export default function TradingSmartDashboard(props = {}) {
       <style>{styles}</style>
       <div className="bg-grid" />
       <div className="bg-orbs">
-        <div className="orb orb-1" /><div className="orb orb-2" /><div className="orb orb-3" />
+        <div className="orb orb-1" />
+        <div className="orb orb-2" />
+        <div className="orb orb-3" />
       </div>
       <div className="scanlines" />
 
@@ -866,7 +1074,9 @@ export default function TradingSmartDashboard(props = {}) {
         {/* NAV */}
         <nav className="topnav">
           <div className="logo">
-            <div className="logo-icon"><TradingSmartLogo size={32} /></div>
+            <div className="logo-icon">
+              <TradingSmartLogo size={32} />
+            </div>
             <div className="logo-text">
               <span className="logo-text-main">TRADINGSMART.AI</span>
               <span className="logo-text-sub">ALGO TRADING ENGINE</span>
@@ -874,7 +1084,9 @@ export default function TradingSmartDashboard(props = {}) {
           </div>
           <div className="nav-status">
             <div className="status-item">
-              <div className={`status-dot ${sessLive ? "live" : useChartmate ? "warn" : brokerConnected === true ? "live" : brokerConnected === false ? "warn" : "live"}`} />
+              <div
+                className={`status-dot ${sessLive ? "live" : useChartmate ? "warn" : brokerConnected === true ? "live" : brokerConnected === false ? "warn" : "live"}`}
+              />
               {useChartmate
                 ? sessLive
                   ? "Broker session live"
@@ -887,21 +1099,36 @@ export default function TradingSmartDashboard(props = {}) {
                     ? "Broker offline"
                     : "Exchange connected"}
             </div>
-            <div className="status-item"><div className={`status-dot ${useChartmate ? "live" : "live"}`} /> {useChartmate ? "ChartMate data" : "WebSocket Active"}</div>
+            <div className="status-item">
+              <div className={`status-dot ${useChartmate ? "live" : "live"}`} />{" "}
+              {useChartmate ? "ChartMate data" : "WebSocket Active"}
+            </div>
             {positionsStreamStale && (
-              <div className="status-item" style={{ color: "var(--accent-orange)", fontSize: 11 }}>
+              <div
+                className="status-item"
+                style={{ color: "var(--accent-orange)", fontSize: 11 }}
+              >
                 Options stream: stale
               </div>
             )}
             <div className="status-item">
-              <div className={`status-dot ${(liveTradesCount ?? orders.length) > 0 ? "live" : "warn"}`} />
-              {useChartmate ? `Trades ${liveTradesCount ?? 0} · Open ${liveOpenPositionsCount ?? 0}` : "Live feed"}
+              <div
+                className={`status-dot ${(liveTradesCount ?? orders.length) > 0 ? "live" : "warn"}`}
+              />
+              {useChartmate
+                ? `Trades ${liveTradesCount ?? 0} · Open ${liveOpenPositionsCount ?? 0}`
+                : "Live feed"}
             </div>
             {useChartmate && chartmateActions?.onConnectBroker && (
               <button
                 type="button"
                 className="action-btn btn-primary"
-                style={{ padding: "8px 14px", fontSize: "11px", borderRadius: "10px", whiteSpace: "nowrap" }}
+                style={{
+                  padding: "8px 14px",
+                  fontSize: "11px",
+                  borderRadius: "10px",
+                  whiteSpace: "nowrap",
+                }}
                 disabled={chartmateActions.connectBusy}
                 onClick={() => void chartmateActions.onConnectBroker()}
               >
@@ -910,7 +1137,9 @@ export default function TradingSmartDashboard(props = {}) {
             )}
             {setCurrencyMode ? (
               <div className="status-item" style={{ gap: 6 }}>
-                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>Show</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                  Show
+                </span>
                 <button
                   type="button"
                   className="action-btn btn-primary"
@@ -944,7 +1173,12 @@ export default function TradingSmartDashboard(props = {}) {
               <button
                 type="button"
                 className="action-btn btn-primary"
-                style={{ padding: "6px 12px", fontSize: "10px", borderRadius: "8px", opacity: 0.85 }}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: "10px",
+                  borderRadius: "8px",
+                  opacity: 0.85,
+                }}
                 onClick={() => onSignOut()}
               >
                 Sign out
@@ -961,7 +1195,9 @@ export default function TradingSmartDashboard(props = {}) {
               <div className="hero-value neutral">
                 {formatUnsignedDisplay(displayPortfolio, currencyMode)}
               </div>
-              <div className={`hero-change ${pctMtm != null && pctMtm < 0 ? "" : "up"}`}>
+              <div
+                className={`hero-change ${pctMtm != null && pctMtm < 0 ? "" : "up"}`}
+              >
                 {pctMtm != null ? (
                   <>
                     Today's Algo P&L {pctMtm >= 0 ? "+" : ""}
@@ -975,42 +1211,71 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="hero-card">
               <div className="hero-label">Algo Cumulative P&L</div>
-              <div className={`hero-value ${displayCumulative >= 0 ? "positive" : "neutral"}`}>
+              <div
+                className={`hero-value ${displayCumulative >= 0 ? "positive" : "neutral"}`}
+              >
                 {formatSignedDisplay(displayCumulative, currencyMode)}
               </div>
-              <div className="hero-change up">Sum of P&L on live trades (ChartMate)</div>
+              <div className="hero-change up">
+                Sum of P&L on live trades (ChartMate)
+              </div>
               <Sparkline data={sparkData.s2} color="#34d399" />
             </div>
             <div className="hero-card">
               <div className="hero-label">Today's Algo P&L</div>
-              <div className={`hero-value ${displayToday >= 0 ? "positive" : "neutral"}`}>
+              <div
+                className={`hero-value ${displayToday >= 0 ? "positive" : "neutral"}`}
+              >
                 {formatSignedDisplay(displayToday, currencyMode)}
               </div>
               <div className="hero-change up">
                 {sessLive ? (liveTradesCount ?? 0) : "—"} total trades
-                {sessLive && summary?.win_rate_pct != null ? ` | ${summary.win_rate_pct.toFixed(1)}% win (closed)` : " | Win rate n/a"}
+                {sessLive && summary?.win_rate_pct != null
+                  ? ` | ${summary.win_rate_pct.toFixed(1)}% win (closed)`
+                  : " | Win rate n/a"}
               </div>
               <Sparkline data={sparkData.s3} color="#34d399" />
             </div>
           </div>
-          <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 18, padding: "0 8px", lineHeight: 1.5 }}>
-            <strong>INR-only live mode</strong>. Broker metrics/order feed use live broker snapshot data. Strategy table remains strategy metadata and does not attribute broker tradebook rows back to strategy IDs.
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--text-muted)",
+              marginBottom: 18,
+              padding: "0 8px",
+              lineHeight: 1.5,
+            }}
+          >
+            <strong>INR-only live mode</strong>. Broker metrics/order feed use
+            live broker snapshot data. Strategy table remains strategy metadata
+            and does not attribute broker tradebook rows back to strategy IDs.
           </div>
 
           {/* STATS — only show real numbers when broker session is live */}
           <div className="stats-row">
             <div className="stat-card">
               <div className="stat-label">Win Rate</div>
-              <div className="stat-value" style={{ color: sessLive ? "var(--accent-green)" : "var(--text-muted)" }}>
-                {sessLive && summary?.win_rate_pct != null ? `${summary.win_rate_pct.toFixed(1)}%` : "—"}
+              <div
+                className="stat-value"
+                style={{
+                  color: sessLive ? "var(--accent-green)" : "var(--text-muted)",
+                }}
+              >
+                {sessLive && summary?.win_rate_pct != null
+                  ? `${summary.win_rate_pct.toFixed(1)}%`
+                  : "—"}
               </div>
               <div className="progress-container">
                 <div className="progress-bar-bg">
                   <div
                     className="progress-bar-fill"
                     style={{
-                      width: sessLive && summary?.win_rate_pct != null ? `${Math.min(100, Number(summary.win_rate_pct))}%` : "0%",
-                      background: "linear-gradient(90deg,var(--accent-green),var(--accent-cyan))",
+                      width:
+                        sessLive && summary?.win_rate_pct != null
+                          ? `${Math.min(100, Number(summary.win_rate_pct))}%`
+                          : "0%",
+                      background:
+                        "linear-gradient(90deg,var(--accent-green),var(--accent-cyan))",
                     }}
                   />
                 </div>
@@ -1018,18 +1283,29 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Active Positions</div>
-              <div className="stat-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? String(liveOpenPositionsCount ?? 0) : "—"}</div>
+              <div
+                className="stat-value"
+                style={{ color: "var(--accent-purple)" }}
+              >
+                {sessLive ? String(liveOpenPositionsCount ?? 0) : "—"}
+              </div>
               <div className="progress-container">
                 <div className="progress-label">
                   <span>Exposure</span>
-                  <span>{pctMtm != null ? `${pctMtm.toFixed(1)}% MTM` : "—"}</span>
+                  <span>
+                    {pctMtm != null ? `${pctMtm.toFixed(1)}% MTM` : "—"}
+                  </span>
                 </div>
                 <div className="progress-bar-bg">
                   <div
                     className="progress-bar-fill"
                     style={{
-                      width: pctMtm != null ? `${Math.min(100, Math.abs(pctMtm))}%` : "0%",
-                      background: "linear-gradient(90deg,var(--accent-purple),var(--accent-blue))",
+                      width:
+                        pctMtm != null
+                          ? `${Math.min(100, Math.abs(pctMtm))}%`
+                          : "0%",
+                      background:
+                        "linear-gradient(90deg,var(--accent-purple),var(--accent-blue))",
                     }}
                   />
                 </div>
@@ -1037,7 +1313,10 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Strategies</div>
-              <div className="stat-value" style={{ color: "var(--text-primary)" }}>
+              <div
+                className="stat-value"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {String(summary?.active_strategies_deployed ?? 0)}
               </div>
               <div className="progress-container">
@@ -1050,7 +1329,8 @@ export default function TradingSmartDashboard(props = {}) {
                     className="progress-bar-fill"
                     style={{
                       width: `${Math.min(100, (Number(summary?.active_strategies_deployed) || 0) * 15)}%`,
-                      background: "linear-gradient(90deg,var(--accent-green),var(--accent-cyan))",
+                      background:
+                        "linear-gradient(90deg,var(--accent-green),var(--accent-cyan))",
                     }}
                   />
                 </div>
@@ -1058,7 +1338,15 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Sharpe Ratio</div>
-              <div className="stat-value" style={{ color: sharpeRatio != null ? "var(--accent-cyan)" : "var(--text-muted)" }}>
+              <div
+                className="stat-value"
+                style={{
+                  color:
+                    sharpeRatio != null
+                      ? "var(--accent-cyan)"
+                      : "var(--text-muted)",
+                }}
+              >
                 {sharpeRatio != null ? sharpeRatio.toFixed(2) : "—"}
               </div>
               <div className="progress-container">
@@ -1066,8 +1354,12 @@ export default function TradingSmartDashboard(props = {}) {
                   <div
                     className="progress-bar-fill"
                     style={{
-                      width: sharpeRatio != null ? `${Math.min(100, Math.max(0, (sharpeRatio / 3) * 100))}%` : "0%",
-                      background: "linear-gradient(90deg,var(--accent-cyan),var(--accent-blue))",
+                      width:
+                        sharpeRatio != null
+                          ? `${Math.min(100, Math.max(0, (sharpeRatio / 3) * 100))}%`
+                          : "0%",
+                      background:
+                        "linear-gradient(90deg,var(--accent-cyan),var(--accent-blue))",
                     }}
                   />
                 </div>
@@ -1075,16 +1367,30 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Max Drawdown</div>
-              <div className="stat-value" style={{ color: maxDrawdownPct != null ? "var(--accent-orange)" : "var(--text-muted)" }}>
-                {maxDrawdownPct != null ? `${maxDrawdownPct > 0 ? "-" : ""}${Math.abs(maxDrawdownPct).toFixed(1)}%` : "—"}
+              <div
+                className="stat-value"
+                style={{
+                  color:
+                    maxDrawdownPct != null
+                      ? "var(--accent-orange)"
+                      : "var(--text-muted)",
+                }}
+              >
+                {maxDrawdownPct != null
+                  ? `${maxDrawdownPct > 0 ? "-" : ""}${Math.abs(maxDrawdownPct).toFixed(1)}%`
+                  : "—"}
               </div>
               <div className="progress-container">
                 <div className="progress-bar-bg">
                   <div
                     className="progress-bar-fill"
                     style={{
-                      width: maxDrawdownPct != null ? `${Math.min(100, Math.abs(maxDrawdownPct) * 2)}%` : "0%",
-                      background: "linear-gradient(90deg,var(--accent-yellow),var(--accent-orange))",
+                      width:
+                        maxDrawdownPct != null
+                          ? `${Math.min(100, Math.abs(maxDrawdownPct) * 2)}%`
+                          : "0%",
+                      background:
+                        "linear-gradient(90deg,var(--accent-yellow),var(--accent-orange))",
                     }}
                   />
                 </div>
@@ -1092,20 +1398,36 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="stat-card">
               <div className="stat-label">Avg Trade Duration</div>
-              <div className="stat-value" style={{ color: avgTradeDurationSec != null ? "var(--text-primary)" : "var(--text-muted)" }}>
+              <div
+                className="stat-value"
+                style={{
+                  color:
+                    avgTradeDurationSec != null
+                      ? "var(--text-primary)"
+                      : "var(--text-muted)",
+                }}
+              >
                 {formatDuration(avgTradeDurationSec)}
               </div>
               <div className="progress-container">
                 <div className="progress-label">
                   <span>Latency</span>
-                  <span>{avgLatencyMs != null ? `${Math.round(avgLatencyMs)}ms` : "—"}</span>
+                  <span>
+                    {avgLatencyMs != null
+                      ? `${Math.round(avgLatencyMs)}ms`
+                      : "—"}
+                  </span>
                 </div>
                 <div className="progress-bar-bg">
                   <div
                     className="progress-bar-fill"
                     style={{
-                      width: avgLatencyMs != null ? `${Math.min(100, Math.max(0, (avgLatencyMs / 80) * 100))}%` : "0%",
-                      background: "linear-gradient(90deg,#2dd4bf,var(--accent-cyan))",
+                      width:
+                        avgLatencyMs != null
+                          ? `${Math.min(100, Math.max(0, (avgLatencyMs / 80) * 100))}%`
+                          : "0%",
+                      background:
+                        "linear-gradient(90deg,#2dd4bf,var(--accent-cyan))",
                     }}
                   />
                 </div>
@@ -1119,43 +1441,225 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card robot-panel">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(56,189,248,0.1)", color: "var(--accent-cyan)" }}>&#x1F916;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(56,189,248,0.1)",
+                      color: "var(--accent-cyan)",
+                    }}
+                  >
+                    &#x1F916;
+                  </span>
                   Robot Command Center
                 </div>
-                <span className={`card-badge ${sessLive ? "badge-green" : "badge-warn"}`}>
+                <span
+                  className={`card-badge ${sessLive ? "badge-green" : "badge-warn"}`}
+                >
                   {sessLive ? "● BROKER LIVE" : "○ RECONNECT"}
                 </span>
               </div>
               <div className="robot-grid">
                 <div className="robot-avatar">
-                  <div className="robot-ring"><div className="robot-face">&#x1F916;</div></div>
+                  <div className="robot-ring">
+                    <div className="robot-face">&#x1F916;</div>
+                  </div>
                   <div className="robot-name">TSA-7</div>
                   <div className="robot-status-text">
-                    <div className={`status-dot ${sessLive ? "live" : "warn"}`} />
-                    {sessLive ? "Broker session active" : "Connect broker for live execution"}
+                    <div
+                      className={`status-dot ${sessLive ? "live" : "warn"}`}
+                    />
+                    {sessLive
+                      ? "Broker session active"
+                      : "Connect broker for live execution"}
                   </div>
                 </div>
                 <div className="robot-metrics">
                   <>
-                    <div className="metric-row"><span className="metric-label">Open positions (broker)</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? (liveOpenPositionsCount ?? 0) : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Order history (tradebook)</span><span className="metric-value" style={{ color: "var(--accent-purple)" }}>{sessLive ? (liveTradesCount ?? 0) : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Open broker orders</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? (liveOpenOrdersCount ?? "—") : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Available cash</span><span className="metric-value" style={{ color: "var(--accent-green)" }}>{sessLive && liveCashAvailable != null ? formatUnsignedDisplay(liveCashAvailable, currencyMode) : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Live orders (cap)</span><span className="metric-value" style={{ color: atOrderCap ? "var(--accent-orange)" : "var(--text-primary)" }}>{sessLive && typeof activeOrdersCap === "number" ? `${activeOrdersCap} / ${capOrdersLimit}` : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Active strategies (cap)</span><span className="metric-value" style={{ color: atStrategyCap ? "var(--accent-orange)" : "var(--text-primary)" }}>{sessLive && typeof activeStrategiesCap === "number" ? `${activeStrategiesCap} / ${capStrategiesLimit}` : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Feed preview rows</span><span className="metric-value" style={{ color: "var(--accent-cyan)" }}>{sessLive ? orders.length : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Strategies deployed</span><span className="metric-value" style={{ color: "var(--accent-yellow)" }}>{sessLive ? (summary?.active_strategies_deployed ?? 0) : "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Broker session</span><span className="metric-value" style={{ color: sessLive ? "var(--accent-green)" : "var(--accent-orange)" }}>{sessLive ? "Live" : "Reconnect (IST day token)"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Token valid until (IST)</span><span className="metric-value" style={{ color: "var(--text-primary)" }}>{fmtExpiry || "—"}</span></div>
-                    <div className="metric-row"><span className="metric-label">Uptime</span><span className="metric-value" style={{ color: "var(--text-primary)" }}>{formatUptime(uptimeSec)}</span></div>
+                    <div className="metric-row">
+                      <span className="metric-label">
+                        Open positions (broker)
+                      </span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--accent-cyan)" }}
+                      >
+                        {sessLive ? (liveOpenPositionsCount ?? 0) : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">
+                        Order history (tradebook)
+                      </span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--accent-purple)" }}
+                      >
+                        {sessLive ? (liveTradesCount ?? 0) : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Open broker orders</span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--accent-cyan)" }}
+                      >
+                        {sessLive ? (liveOpenOrdersCount ?? "—") : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Available cash</span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--accent-green)" }}
+                      >
+                        {sessLive && liveCashAvailable != null
+                          ? formatUnsignedDisplay(
+                              liveCashAvailable,
+                              currencyMode,
+                            )
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Live orders (cap)</span>
+                      <span
+                        className="metric-value"
+                        style={{
+                          color: atOrderCap
+                            ? "var(--accent-orange)"
+                            : "var(--text-primary)",
+                        }}
+                      >
+                        {sessLive && typeof activeOrdersCap === "number"
+                          ? `${activeOrdersCap} / ${capOrdersLimit}`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">
+                        Active strategies (cap)
+                      </span>
+                      <span
+                        className="metric-value"
+                        style={{
+                          color: atStrategyCap
+                            ? "var(--accent-orange)"
+                            : "var(--text-primary)",
+                        }}
+                      >
+                        {sessLive && typeof activeStrategiesCap === "number"
+                          ? `${activeStrategiesCap} / ${capStrategiesLimit}`
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Feed preview rows</span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--accent-cyan)" }}
+                      >
+                        {sessLive ? orders.length : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Strategies deployed</span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--accent-yellow)" }}
+                      >
+                        {sessLive
+                          ? (summary?.active_strategies_deployed ?? 0)
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Broker session</span>
+                      <span
+                        className="metric-value"
+                        style={{
+                          color: sessLive
+                            ? "var(--accent-green)"
+                            : "var(--accent-orange)",
+                        }}
+                      >
+                        {sessLive ? "Live" : "Reconnect (IST day token)"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">
+                        Token valid until (IST)
+                      </span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {fmtExpiry || "—"}
+                      </span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="metric-label">Uptime</span>
+                      <span
+                        className="metric-value"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {formatUptime(uptimeSec)}
+                      </span>
+                    </div>
                   </>
                 </div>
                 <div className="robot-actions">
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, textAlign: "left" }}>
-                    Use <strong>Connect broker</strong> for Zerodha (same flow as ChartMate). Options and strategy deploy run only with a live broker session.
+                  <div className="kill-switch-container">
+                    <button
+                      className={`kill-switch ${killActive ? "active" : ""}`}
+                      onClick={handleKillSwitch}
+                    >
+                      <span className="kill-icon">
+                        {killActive ? "\u26D4" : "\u26A0"}
+                      </span>
+                      <span className="kill-text">
+                        {killActive ? "ACTIVATED" : "KILL SWITCH"}
+                      </span>
+                    </button>
+                    <div className="kill-label">
+                      <span>Emergency Stop</span>
+                      <br />
+                      Halts all strategies & cancels orders
+                    </div>
+                  </div>
+                  <button
+                    className="action-btn btn-warning"
+                    onClick={() =>
+                      addLog(
+                        "warn",
+                        "Pause command issued — Pausing all strategies...",
+                      )
+                    }
+                  >
+                    &#x23F8; Pause All Strategies
+                  </button>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                      marginBottom: 6,
+                      textAlign: "left",
+                    }}
+                  >
+                    Use <strong>Connect broker</strong> for Zerodha (same flow
+                    as ChartMate). Options and strategy deploy run only with a
+                    live broker session.
                   </div>
                   {chartmateActions?.onRefresh && (
-                    <button type="button" className="action-btn btn-primary" onClick={() => { chartmateActions.onRefresh(); addLog("info", "Dashboard refreshed from ChartMate"); }}>&#x21BB; Refresh data</button>
+                    <button
+                      type="button"
+                      className="action-btn btn-primary"
+                      onClick={() => {
+                        chartmateActions.onRefresh();
+                        addLog("info", "Dashboard refreshed from ChartMate");
+                      }}
+                    >
+                      &#x21BB; Refresh data
+                    </button>
                   )}
                 </div>
               </div>
@@ -1165,17 +1669,37 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(167,139,250,0.1)", color: "var(--accent-purple)" }}>&#x1F9E0;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(167,139,250,0.1)",
+                      color: "var(--accent-purple)",
+                    }}
+                  >
+                    &#x1F9E0;
+                  </span>
                   Active Strategies
                 </div>
-                <span className="card-badge badge-blue">{activeStrategiesCount} active</span>
+                <span className="card-badge badge-blue">
+                  {activeStrategiesCount} active
+                </span>
               </div>
               <table className="strategy-table">
-                <thead><tr><th>Strategy</th><th>Status</th><th>Trades</th><th>P&L</th><th>Win %</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th>Strategy</th>
+                    <th>Status</th>
+                    <th>Trades</th>
+                    <th>P&L</th>
+                    <th>Win %</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {strategiesData.map((s, idx) => (
                     <tr key={`${s.name}-${idx}`}>
-                      <td><span className="strategy-name">{s.name}</span></td>
+                      <td>
+                        <span className="strategy-name">{s.name}</span>
+                      </td>
                       <td>
                         <span
                           className={`strategy-tag ${strategyTagClass(s.status)}`}
@@ -1185,23 +1709,60 @@ export default function TradingSmartDashboard(props = {}) {
                               : undefined
                           }
                         >
-                          {lifecycleLabel(normalizeLifecycleState(s.status, String(s.status).toLowerCase() === "active"))}
+                          {lifecycleLabel(
+                            normalizeLifecycleState(
+                              s.status,
+                              String(s.status).toLowerCase() === "active",
+                            ),
+                          )}
                         </span>
                       </td>
                       <td>{sessLive ? s.trades.toLocaleString() : "—"}</td>
-                      <td style={{ color: sessLive ? s.pnlColor : "var(--text-muted)" }}>{sessLive ? s.pnl : "—"}</td>
-                      <td style={{ color: sessLive ? s.winColor : "var(--text-muted)" }}>{sessLive ? s.win : "—"}</td>
+                      <td
+                        style={{
+                          color: sessLive ? s.pnlColor : "var(--text-muted)",
+                        }}
+                      >
+                        {sessLive ? s.pnl : "—"}
+                      </td>
+                      <td
+                        style={{
+                          color: sessLive ? s.winColor : "var(--text-muted)",
+                        }}
+                      >
+                        {sessLive ? s.win : "—"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 8, lineHeight: 1.4 }}>
-                P&amp;L and win % use only trades in the <strong>60-day window</strong> where <code style={{ fontSize: 10 }}>active_trades.strategy_id</code> equals this row’s strategy id. ChartMate “Algo Guide” presets often have <strong>no</strong> <code style={{ fontSize: 10 }}>strategy_id</code> on historical rows — those stay 0 here until live runs attach the id (same as attributing orders in the main app).
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "var(--text-muted)",
+                  marginTop: 8,
+                  lineHeight: 1.4,
+                }}
+              >
+                P&amp;L and win % use only trades in the{" "}
+                <strong>60-day window</strong> where{" "}
+                <code style={{ fontSize: 10 }}>active_trades.strategy_id</code>{" "}
+                equals this row’s strategy id. ChartMate “Algo Guide” presets
+                often have <strong>no</strong>{" "}
+                <code style={{ fontSize: 10 }}>strategy_id</code> on historical
+                rows — those stay 0 here until live runs attach the id (same as
+                attributing orders in the main app).
               </div>
               <div className="risk-gauge">
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div className="gauge-score" style={{ color: riskColor }}>{riskScore == null ? "—" : riskScore}</div>
-                  <div className="gauge-label-text">Risk Score — {riskLabel}</div>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                >
+                  <div className="gauge-score" style={{ color: riskColor }}>
+                    {riskScore == null ? "—" : riskScore}
+                  </div>
+                  <div className="gauge-label-text">
+                    Risk Score — {riskLabel}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1210,33 +1771,85 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(52,211,153,0.1)", color: "var(--accent-green)" }}>&#x26A1;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(52,211,153,0.1)",
+                      color: "var(--accent-green)",
+                    }}
+                  >
+                    &#x26A1;
+                  </span>
                   Live Order Feed
                 </div>
                 <span className="card-badge badge-green">Real-time</span>
               </div>
               <div className="order-feed">
                 {summary?.feed_paused ? (
-                  <div style={{ fontSize: 12, color: "var(--accent-orange)", padding: "12px 8px", lineHeight: 1.5 }}>
-                    Order feed is hidden until your <strong>broker day session is live</strong> (reconnect above). That avoids showing old database rows as if they were today’s executions. Open-position KPIs above still use your current open rows.
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--accent-orange)",
+                      padding: "12px 8px",
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    Order feed is hidden until your{" "}
+                    <strong>broker day session is live</strong> (reconnect
+                    above). That avoids showing old database rows as if they
+                    were today’s executions. Open-position KPIs above still use
+                    your current open rows.
                   </div>
                 ) : null}
                 {!summary?.feed_paused && orders.length === 0 ? (
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "12px 8px" }}>
-                    No trades in the last 60 days (live rows only). After you trade with a linked strategy, rows appear here with IST timestamps.
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "var(--text-muted)",
+                      padding: "12px 8px",
+                    }}
+                  >
+                    No trades in the last 60 days (live rows only). After you
+                    trade with a linked strategy, rows appear here with IST
+                    timestamps.
                   </div>
                 ) : null}
                 {orders.map((o) => (
                   <div className="order-item" key={o.id}>
-                    <div className={`order-icon ${o.type}`}>{o.type === "buy" ? "\u25B2" : "\u25BC"}</div>
+                    <div className={`order-icon ${o.type}`}>
+                      {o.type === "buy" ? "\u25B2" : "\u25BC"}
+                    </div>
                     <div>
-                      <div className="order-pair">{o.symbol} <span style={{ color: o.type === "buy" ? "var(--accent-green)" : "var(--accent-red)", fontSize: 11, textTransform: "uppercase" }}>{o.type}</span></div>
+                      <div className="order-pair">
+                        {o.symbol}{" "}
+                        <span
+                          style={{
+                            color:
+                              o.type === "buy"
+                                ? "var(--accent-green)"
+                                : "var(--accent-red)",
+                            fontSize: 11,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {o.type}
+                        </span>
+                      </div>
                       <div className="order-meta">
-                        {o.strategy} &bull; {o.qty} @ {formatUnsignedDisplay(Number(o.price), currencyMode)}
+                        {o.strategy} &bull; {o.qty} @{" "}
+                        {formatUnsignedDisplay(Number(o.price), currencyMode)}
                       </div>
                     </div>
                     <div>
-                      <div className="order-pnl" style={{ color: o.pnl >= 0 ? "var(--accent-green)" : "var(--accent-red)" }}>
+                      <div
+                        className="order-pnl"
+                        style={{
+                          color:
+                            o.pnl >= 0
+                              ? "var(--accent-green)"
+                              : "var(--accent-red)",
+                        }}
+                      >
                         {formatSignedDisplay(Number(o.pnl), currencyMode)}
                       </div>
                       <div className="order-time">{o.time}</div>
@@ -1250,201 +1863,397 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card my-strategy-panel">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(56,189,248,0.1)", color: "var(--accent-cyan)" }}>&#x1F3AF;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(56,189,248,0.1)",
+                      color: "var(--accent-cyan)",
+                    }}
+                  >
+                    &#x1F3AF;
+                  </span>
                   My Strategies
                 </div>
-                <span className="card-badge badge-blue">{myStrategies.length} Saved</span>
+                <span className="card-badge badge-blue">
+                  {myStrategies.length} Saved
+                </span>
               </div>
               <div className="strategy-builder">
                 {/* Left: Strategy Cards */}
                 <div className="strategy-cards">
                   {myStrategies.map((s) => {
-                    const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                    const lcState = normalizeLifecycleState(
+                      s.lifecycle_state,
+                      Boolean(s.deployed),
+                    );
                     const badgeTitle =
                       s.lifecycle_reason || s.lifecycle_updated_at
                         ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
                         : undefined;
                     return (
-                    <div className="my-strat-card" key={s.id}>
-                      <div className="my-strat-card-header">
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span className="my-strat-card-name">{s.name}</span>
-                          <span className="my-strat-card-type type-momentum">{s.type}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span
-                            className={`strategy-tag ${strategyTagClass(lcState)}`}
-                            title={badgeTitle}
+                      <div className="my-strat-card" key={s.id}>
+                        <div className="my-strat-card-header">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                            }}
                           >
-                            {lifecycleLabel(lcState)}
-                          </span>
-                          {s.deployed && <span className="strat-deployed-badge"><span className="status-dot live" style={{ width: 6, height: 6 }} /> LIVE</span>}
+                            <span className="my-strat-card-name">{s.name}</span>
+                            <span className="my-strat-card-type type-momentum">
+                              {s.type}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            <span
+                              className={`strategy-tag ${strategyTagClass(lcState)}`}
+                              title={badgeTitle}
+                            >
+                              {lifecycleLabel(lcState)}
+                            </span>
+                            {s.deployed && (
+                              <span className="strat-deployed-badge">
+                                <span
+                                  className="status-dot live"
+                                  style={{ width: 6, height: 6 }}
+                                />{" "}
+                                LIVE
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="my-strat-params">
-                        <div className="my-strat-param"><span className="my-strat-param-label">Mode</span><span className="my-strat-param-value">{s.type} · {s.is_intraday !== false ? "Intraday" : "Positional"}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Pairs</span><span className="my-strat-param-value">{s.pairs}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Timeframe</span><span className="my-strat-param-value">{s.timeframe}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Risk/Trade</span><span className="my-strat-param-value">{s.riskPerTrade}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Stop Loss</span><span className="my-strat-param-value">{s.stopLoss}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Take Profit</span><span className="my-strat-param-value">{s.takeProfit}</span></div>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Max Pos</span><span className="my-strat-param-value">{s.maxPositions}</span></div>
-                      </div>
-                      {s.deployed ? (
-                        <p style={{ marginTop: 8, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45 }}>
-                          Live chart and condition matrix open in <strong style={{ color: "var(--accent-cyan)" }}>Live view</strong> (engine updates are batched; not every second is a new snapshot).
-                        </p>
-                      ) : null}
-                      <div className="my-strat-actions">
-                        {pendingDelete?.id === s.id ? (
-                          <>
-                            <button
-                              type="button"
-                              className="strat-action-btn strat-btn-delete"
-                              onClick={async () => {
-                                if (useChartmate && chartmateActions?.onDeleteStrategy) {
-                                  const err = await chartmateActions.onDeleteStrategy(s.id, s.name);
-                                  if (err) {
-                                    addLog("error", err);
+                        <div className="my-strat-params">
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">Mode</span>
+                            <span className="my-strat-param-value">
+                              {s.type} ·{" "}
+                              {s.is_intraday !== false
+                                ? "Intraday"
+                                : "Positional"}
+                            </span>
+                          </div>
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">Pairs</span>
+                            <span className="my-strat-param-value">
+                              {s.pairs}
+                            </span>
+                          </div>
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">
+                              Timeframe
+                            </span>
+                            <span className="my-strat-param-value">
+                              {s.timeframe}
+                            </span>
+                          </div>
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">
+                              Risk/Trade
+                            </span>
+                            <span className="my-strat-param-value">
+                              {s.riskPerTrade}
+                            </span>
+                          </div>
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">
+                              Stop Loss
+                            </span>
+                            <span className="my-strat-param-value">
+                              {s.stopLoss}
+                            </span>
+                          </div>
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">
+                              Take Profit
+                            </span>
+                            <span className="my-strat-param-value">
+                              {s.takeProfit}
+                            </span>
+                          </div>
+                          <div className="my-strat-param">
+                            <span className="my-strat-param-label">
+                              Max Pos
+                            </span>
+                            <span className="my-strat-param-value">
+                              {s.maxPositions}
+                            </span>
+                          </div>
+                        </div>
+                        {s.deployed ? (
+                          <p
+                            style={{
+                              marginTop: 8,
+                              fontSize: 11,
+                              color: "var(--text-muted)",
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            Live chart and condition matrix open in{" "}
+                            <strong style={{ color: "var(--accent-cyan)" }}>
+                              Live view
+                            </strong>{" "}
+                            (engine updates are batched; not every second is a
+                            new snapshot).
+                          </p>
+                        ) : null}
+                        <div className="my-strat-actions">
+                          {pendingDelete?.id === s.id ? (
+                            <>
+                              <button
+                                type="button"
+                                className="strat-action-btn strat-btn-delete"
+                                onClick={async () => {
+                                  if (
+                                    useChartmate &&
+                                    chartmateActions?.onDeleteStrategy
+                                  ) {
+                                    const err =
+                                      await chartmateActions.onDeleteStrategy(
+                                        s.id,
+                                        s.name,
+                                      );
+                                    if (err) {
+                                      addLog("error", err);
+                                      setPendingDelete(null);
+                                      return;
+                                    }
+                                    chartmateActions.onRefresh?.();
                                     setPendingDelete(null);
                                     return;
                                   }
-                                  chartmateActions.onRefresh?.();
+                                  setMyStrategies((prev) =>
+                                    prev.filter((x) => x.id !== s.id),
+                                  );
+                                  addLog(
+                                    "warn",
+                                    `Strategy "${s.name}" deleted`,
+                                  );
                                   setPendingDelete(null);
-                                  return;
-                                }
-                                setMyStrategies((prev) => prev.filter((x) => x.id !== s.id));
-                                addLog("warn", `Strategy "${s.name}" deleted`);
-                                setPendingDelete(null);
-                              }}
-                            >
-                              Confirm delete
-                            </button>
-                            <button type="button" className="strat-action-btn strat-btn-edit" onClick={() => setPendingDelete(null)}>
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {!s.deployed ? (
-                              <button
-                                type="button"
-                                className="strat-action-btn strat-btn-deploy"
-                                style={!sessLive ? { opacity: 0.6, cursor: "pointer" } : undefined}
-                                title={!sessLive ? "Connect broker (live session) to activate" : "Activate this strategy live"}
-                                onClick={() => {
-                                  if (!sessLive) {
-                                    toast.error("Broker not connected — connect your broker (live session) before activating a strategy.", { description: "Click 'Connect broker' in the top navigation bar." });
-                                    addLog("warn", "Connect broker (live session) before activating a strategy.");
-                                    return;
-                                  }
-                                  setGoLiveTarget(s);
-                                  setGoLiveForm(defaultsGoLiveFromCard(s));
                                 }}
                               >
-                                &#x25B6; Activate…
+                                Confirm delete
                               </button>
-                            ) : (
-                              <>
+                              <button
+                                type="button"
+                                className="strat-action-btn strat-btn-edit"
+                                onClick={() => setPendingDelete(null)}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {!s.deployed ? (
                                 <button
                                   type="button"
                                   className="strat-action-btn strat-btn-deploy"
-                                  title="Candles, LTP refresh, and full condition table"
+                                  style={
+                                    !sessLive
+                                      ? { opacity: 0.6, cursor: "pointer" }
+                                      : undefined
+                                  }
+                                  title={
+                                    !sessLive
+                                      ? "Connect broker (live session) to activate"
+                                      : "Activate this strategy live"
+                                  }
                                   onClick={() => {
                                     if (!sessLive) {
-                                      toast.error("Connect broker (live session) to load the chart and live quotes.", {
-                                        description: "Use Connect broker in the top bar, then open Live view again.",
-                                      });
-                                      addLog("warn", "Live view needs a live broker session for chart quotes.");
+                                      toast.error(
+                                        "Broker not connected — connect your broker (live session) before activating a strategy.",
+                                        {
+                                          description:
+                                            "Click 'Connect broker' in the top navigation bar.",
+                                        },
+                                      );
+                                      addLog(
+                                        "warn",
+                                        "Connect broker (live session) before activating a strategy.",
+                                      );
                                       return;
                                     }
-                                    setLiveViewTarget(s);
+                                    setGoLiveTarget(s);
+                                    setGoLiveForm(defaultsGoLiveFromCard(s));
                                   }}
                                 >
-                                  &#x1F4CA; Live view
+                                  &#x25B6; Activate…
                                 </button>
-                                <button
-                                  className="strat-action-btn strat-btn-edit"
-                                  onClick={async () => {
-                                    if (useChartmate && chartmateActions?.onToggleDeploy) {
-                                      const err = await chartmateActions.onToggleDeploy(s.id, false);
-                                      if (err) {
-                                        const msg = typeof err === "string" ? err : String(err);
-                                        toast.error("Could not stop strategy", { description: msg, duration: 10_000 });
-                                        addLog("error", msg);
-                                        return;
-                                      }
-                                      addLog("warn", `Strategy "${s.name}" stopped`);
-                                      chartmateActions.onRefresh?.();
-                                      return;
-                                    }
-                                    setMyStrategies((prev) => prev.map((x) => (x.id === s.id ? { ...x, deployed: false } : x)));
-                                    addLog("warn", `Strategy "${s.name}" stopped (local preview)`);
-                                  }}
-                                >
-                                  &#x23F9; Stop
-                                </button>
-                                {useChartmate && typeof onCancelPendingForStrategy === "function" ? (
+                              ) : (
+                                <>
                                   <button
                                     type="button"
-                                    className="strat-action-btn strat-btn-edit"
-                                    style={{ borderColor: "rgba(251,146,60,0.45)", color: "var(--accent-orange)" }}
-                                    title="Cancel queued conditional entry rows for this strategy only (does not flatten open positions)"
-                                    disabled={cancelPendingBusyId === s.id}
+                                    className="strat-action-btn strat-btn-deploy"
+                                    title="Candles, LTP refresh, and full condition table"
                                     onClick={() => {
-                                      void (async () => {
-                                        setCancelPendingBusyId(s.id);
-                                        try {
-                                          const err = await onCancelPendingForStrategy(s.id);
-                                          if (err) {
-                                            const msg = typeof err === "string" ? err : String(err);
-                                            toast.error("Could not cancel pending orders", { description: msg, duration: 10_000 });
-                                            addLog("error", msg);
-                                            return;
-                                          }
-                                          toast.success("Pending orders cancelled", {
-                                            description: `Cleared queued rows for “${s.name}”.`,
-                                          });
-                                          addLog("exec", `Cancelled pending conditional orders for "${s.name}"`);
-                                          chartmateActions?.onRefresh?.();
-                                        } catch (e) {
-                                          const msg = e instanceof Error ? e.message : "Unexpected error.";
-                                          toast.error("Cancel pending failed", { description: msg });
-                                          addLog("error", msg);
-                                        } finally {
-                                          setCancelPendingBusyId(null);
-                                        }
-                                      })();
+                                      if (!sessLive) {
+                                        toast.error(
+                                          "Connect broker (live session) to load the chart and live quotes.",
+                                          {
+                                            description:
+                                              "Use Connect broker in the top bar, then open Live view again.",
+                                          },
+                                        );
+                                        addLog(
+                                          "warn",
+                                          "Live view needs a live broker session for chart quotes.",
+                                        );
+                                        return;
+                                      }
+                                      setLiveViewTarget(s);
                                     }}
                                   >
-                                    {cancelPendingBusyId === s.id ? "Cancelling…" : "⏸ Cancel pending"}
+                                    &#x1F4CA; Live view
                                   </button>
-                                ) : null}
-                              </>
-                            )}
-                            <button
-                              type="button"
-                              className="strat-action-btn strat-btn-edit"
-                              title="Edit this strategy"
-                              onClick={() => {
-                                // Pass the full raw DB row so AlgoStrategyBuilder can pre-populate all fields
-                                setEditAlgoTarget(s._raw ?? s);
-                                setShowExactAlgoBuilder(true);
-                              }}
-                            >
-                              &#x270E; Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="strat-action-btn strat-btn-delete"
-                              onClick={() => setPendingDelete({ id: s.id, name: s.name })}
-                            >
-                              &#x2715; Delete
-                            </button>
-                          </>
-                        )}
+                                  <button
+                                    className="strat-action-btn strat-btn-edit"
+                                    onClick={async () => {
+                                      if (
+                                        useChartmate &&
+                                        chartmateActions?.onToggleDeploy
+                                      ) {
+                                        const err =
+                                          await chartmateActions.onToggleDeploy(
+                                            s.id,
+                                            false,
+                                          );
+                                        if (err) {
+                                          const msg =
+                                            typeof err === "string"
+                                              ? err
+                                              : String(err);
+                                          toast.error(
+                                            "Could not stop strategy",
+                                            {
+                                              description: msg,
+                                              duration: 10_000,
+                                            },
+                                          );
+                                          addLog("error", msg);
+                                          return;
+                                        }
+                                        addLog(
+                                          "warn",
+                                          `Strategy "${s.name}" stopped`,
+                                        );
+                                        chartmateActions.onRefresh?.();
+                                        return;
+                                      }
+                                      setMyStrategies((prev) =>
+                                        prev.map((x) =>
+                                          x.id === s.id
+                                            ? { ...x, deployed: false }
+                                            : x,
+                                        ),
+                                      );
+                                      addLog(
+                                        "warn",
+                                        `Strategy "${s.name}" stopped (local preview)`,
+                                      );
+                                    }}
+                                  >
+                                    &#x23F9; Stop
+                                  </button>
+                                  {useChartmate &&
+                                  typeof onCancelPendingForStrategy ===
+                                    "function" ? (
+                                    <button
+                                      type="button"
+                                      className="strat-action-btn strat-btn-edit"
+                                      style={{
+                                        borderColor: "rgba(251,146,60,0.45)",
+                                        color: "var(--accent-orange)",
+                                      }}
+                                      title="Cancel queued conditional entry rows for this strategy only (does not flatten open positions)"
+                                      disabled={cancelPendingBusyId === s.id}
+                                      onClick={() => {
+                                        void (async () => {
+                                          setCancelPendingBusyId(s.id);
+                                          try {
+                                            const err =
+                                              await onCancelPendingForStrategy(
+                                                s.id,
+                                              );
+                                            if (err) {
+                                              const msg =
+                                                typeof err === "string"
+                                                  ? err
+                                                  : String(err);
+                                              toast.error(
+                                                "Could not cancel pending orders",
+                                                {
+                                                  description: msg,
+                                                  duration: 10_000,
+                                                },
+                                              );
+                                              addLog("error", msg);
+                                              return;
+                                            }
+                                            toast.success(
+                                              "Pending orders cancelled",
+                                              {
+                                                description: `Cleared queued rows for “${s.name}”.`,
+                                              },
+                                            );
+                                            addLog(
+                                              "exec",
+                                              `Cancelled pending conditional orders for "${s.name}"`,
+                                            );
+                                            chartmateActions?.onRefresh?.();
+                                          } catch (e) {
+                                            const msg =
+                                              e instanceof Error
+                                                ? e.message
+                                                : "Unexpected error.";
+                                            toast.error(
+                                              "Cancel pending failed",
+                                              { description: msg },
+                                            );
+                                            addLog("error", msg);
+                                          } finally {
+                                            setCancelPendingBusyId(null);
+                                          }
+                                        })();
+                                      }}
+                                    >
+                                      {cancelPendingBusyId === s.id
+                                        ? "Cancelling…"
+                                        : "⏸ Cancel pending"}
+                                    </button>
+                                  ) : null}
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                className="strat-action-btn strat-btn-edit"
+                                title="Edit this strategy"
+                                onClick={() => {
+                                  // Pass the full raw DB row so AlgoStrategyBuilder can pre-populate all fields
+                                  setEditAlgoTarget(s._raw ?? s);
+                                  setShowExactAlgoBuilder(true);
+                                }}
+                              >
+                                &#x270E; Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="strat-action-btn strat-btn-delete"
+                                onClick={() =>
+                                  setPendingDelete({ id: s.id, name: s.name })
+                                }
+                              >
+                                &#x2715; Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
                     );
                   })}
                   <button
@@ -1460,30 +2269,94 @@ export default function TradingSmartDashboard(props = {}) {
                 </div>
 
                 <div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ padding: 20, borderRadius: 12, background: "rgba(15,23,42,0.5)", border: "1px solid var(--border-color)" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>Quick Stats</div>
-                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 14 }}>Your strategy portfolio at a glance. Use <strong>+ Create New Strategy</strong> for a popup form (ChartMate <code style={{ fontSize: 10 }}>manage-strategy</code>).</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                        <div className="my-strat-param"><span className="my-strat-param-label">Total</span><span className="my-strat-param-value">{myStrategies.length}</span></div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: 20,
+                        borderRadius: 12,
+                        background: "rgba(15,23,42,0.5)",
+                        border: "1px solid var(--border-color)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          marginBottom: 4,
+                          color: "var(--text-primary)",
+                        }}
+                      >
+                        Quick Stats
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--text-muted)",
+                          marginBottom: 14,
+                        }}
+                      >
+                        Your strategy portfolio at a glance. Use{" "}
+                        <strong>+ Create New Strategy</strong> for a popup form
+                        (ChartMate{" "}
+                        <code style={{ fontSize: 10 }}>manage-strategy</code>).
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr 1fr",
+                          gap: 8,
+                        }}
+                      >
+                        <div className="my-strat-param">
+                          <span className="my-strat-param-label">Total</span>
+                          <span className="my-strat-param-value">
+                            {myStrategies.length}
+                          </span>
+                        </div>
                         <div className="my-strat-param">
                           <span className="my-strat-param-label">Scanning</span>
-                          <span className="my-strat-param-value" style={{ color: "var(--accent-green)" }}>
+                          <span
+                            className="my-strat-param-value"
+                            style={{ color: "var(--accent-green)" }}
+                          >
                             {
                               myStrategies.filter((s) => {
-                                const st = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
-                                return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+                                const st = normalizeLifecycleState(
+                                  s.lifecycle_state,
+                                  Boolean(s.deployed),
+                                );
+                                return (
+                                  st === "ACTIVE" ||
+                                  st === "WAITING_MARKET_OPEN" ||
+                                  st === "TRIGGERED"
+                                );
                               }).length
                             }
                           </span>
                         </div>
                         <div className="my-strat-param">
                           <span className="my-strat-param-label">Off</span>
-                          <span className="my-strat-param-value" style={{ color: "var(--accent-yellow)" }}>
+                          <span
+                            className="my-strat-param-value"
+                            style={{ color: "var(--accent-yellow)" }}
+                          >
                             {
                               myStrategies.filter((s) => {
-                                const st = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
-                                return !(st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED");
+                                const st = normalizeLifecycleState(
+                                  s.lifecycle_state,
+                                  Boolean(s.deployed),
+                                );
+                                return !(
+                                  st === "ACTIVE" ||
+                                  st === "WAITING_MARKET_OPEN" ||
+                                  st === "TRIGGERED"
+                                );
                               }).length
                             }
                           </span>
@@ -1499,17 +2372,30 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card" style={{ gridColumn: "1 / -1" }}>
               <div className="card-header" style={{ marginBottom: 0 }}>
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(52,211,153,0.1)", color: "var(--accent-green)" }}>&#x1F4CA;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(52,211,153,0.1)",
+                      color: "var(--accent-green)",
+                    }}
+                  >
+                    &#x1F4CA;
+                  </span>
                   Options Strategies
                 </div>
-                <span className="card-badge badge-green">Live · chartmate-options-api</span>
+                <span className="card-badge badge-green">
+                  Live · chartmate-options-api
+                </span>
               </div>
               {/* AlgoOnlyOptionsWorkspace — live-only, broker-gated, no paper/backtest buttons */}
               <AlgoOnlyOptionsWorkspace
                 accountCaps={{
                   activeOrders: activeOrdersCap,
                   activeStrategies: activeStrategiesCap,
-                  limits: { orders: capOrdersLimit, strategies: capStrategiesLimit },
+                  limits: {
+                    orders: capOrdersLimit,
+                    strategies: capStrategiesLimit,
+                  },
                   cash: brokerSnap?.cash_available,
                 }}
                 positionsStreamStale={positionsStreamStale}
@@ -1520,32 +2406,72 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card" style={{ gridColumn: "1 / -1" }}>
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(167,139,250,0.1)", color: "var(--accent-purple)" }}>&#x23F3;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(167,139,250,0.1)",
+                      color: "var(--accent-purple)",
+                    }}
+                  >
+                    &#x23F3;
+                  </span>
                   Pending Execution Queue
                 </div>
-                <span className="card-badge badge-blue">{(summary?.pending_executions ?? []).length} rows</span>
+                <span className="card-badge badge-blue">
+                  {(summary?.pending_executions ?? []).length} rows
+                </span>
               </div>
-              {!(summary?.pending_executions?.length) ? (
+              {!summary?.pending_executions?.length ? (
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  No pending execution rows right now. Once a strategy is active and scanning, this queue shows live checks and pending/failed execution states from <code style={{ fontSize: 11 }}>pending_conditional_orders</code>.
+                  No pending execution rows right now. Once a strategy is active
+                  and scanning, this queue shows live checks and pending/failed
+                  execution states from{" "}
+                  <code style={{ fontSize: 11 }}>
+                    pending_conditional_orders
+                  </code>
+                  .
                 </div>
               ) : (
                 <div className="order-feed">
                   {summary.pending_executions.map((p) => (
                     <div className="order-item" key={p.id}>
-                      <div className={`order-icon ${String(p.action || "").toLowerCase() === "buy" ? "buy" : "sell"}`}>
-                        {String(p.action || "").toUpperCase() === "BUY" ? "\u25B2" : "\u25BC"}
+                      <div
+                        className={`order-icon ${String(p.action || "").toLowerCase() === "buy" ? "buy" : "sell"}`}
+                      >
+                        {String(p.action || "").toUpperCase() === "BUY"
+                          ? "\u25B2"
+                          : "\u25BC"}
                       </div>
                       <div>
                         <div className="order-pair">
                           {p.symbol || "—"}{" "}
-                          <span style={{ color: "var(--accent-cyan)", fontSize: 11, textTransform: "uppercase" }}>{p.status}</span>
+                          <span
+                            style={{
+                              color: "var(--accent-cyan)",
+                              fontSize: 11,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {p.status}
+                          </span>
                         </div>
                         <div className="order-meta">
-                          strategy_id: {p.strategy_id || "—"} {p.last_checked_at ? `• checked ${p.last_checked_at}` : ""}
+                          strategy_id: {p.strategy_id || "—"}{" "}
+                          {p.last_checked_at
+                            ? `• checked ${p.last_checked_at}`
+                            : ""}
                         </div>
                         {p.error_message ? (
-                          <div style={{ fontSize: 11, color: "var(--accent-orange)", marginTop: 2, lineHeight: 1.3 }}>{p.error_message}</div>
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: "var(--accent-orange)",
+                              marginTop: 2,
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {p.error_message}
+                          </div>
                         ) : null}
                       </div>
                       <div>
@@ -1561,22 +2487,55 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(52,211,153,0.1)", color: "var(--accent-green)" }}>&#x1F4F6;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(52,211,153,0.1)",
+                      color: "var(--accent-green)",
+                    }}
+                  >
+                    &#x1F4F6;
+                  </span>
                   Live Monitoring
                 </div>
-                <span className="card-badge badge-green">{liveMonitorStrategies.length} running</span>
+                <span className="card-badge badge-green">
+                  {liveMonitorStrategies.length} running
+                </span>
               </div>
-              <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
-                Summary of strategies that are scanning or waiting on the engine. Open <strong style={{ color: "var(--accent-cyan)" }}>Live view</strong> on a card (or below) for candles, LTP, and the full condition matrix.
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  margin: "0 0 12px",
+                  lineHeight: 1.5,
+                }}
+              >
+                Summary of strategies that are scanning or waiting on the
+                engine. Open{" "}
+                <strong style={{ color: "var(--accent-cyan)" }}>
+                  Live view
+                </strong>{" "}
+                on a card (or below) for candles, LTP, and the full condition
+                matrix.
               </p>
               {liveMonitorStrategies.length === 0 ? (
-                <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>
-                  No active strategy monitors yet. Activate a strategy to list it here, then use Live view for charts and conditions.
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  No active strategy monitors yet. Activate a strategy to list
+                  it here, then use Live view for charts and conditions.
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 10 }}>
                   {liveMonitorStrategies.map((s) => {
-                    const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+                    const lcState = normalizeLifecycleState(
+                      s.lifecycle_state,
+                      Boolean(s.deployed),
+                    );
                     const { symbol: symHint } = chartRoutingFromStrategyCard(s);
                     return (
                       <div
@@ -1593,25 +2552,63 @@ export default function TradingSmartDashboard(props = {}) {
                           background: "rgba(10,14,23,0.45)",
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                            <span style={{ fontSize: 12, fontWeight: 700 }}>{s.name}</span>
-                            <span className="my-strat-card-type type-momentum">{s.type}</span>
-                            <span className={`strategy-tag ${strategyTagClass(lcState)}`}>{lifecycleLabel(lcState)}</span>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={{ fontSize: 12, fontWeight: 700 }}>
+                              {s.name}
+                            </span>
+                            <span className="my-strat-card-type type-momentum">
+                              {s.type}
+                            </span>
+                            <span
+                              className={`strategy-tag ${strategyTagClass(lcState)}`}
+                            >
+                              {lifecycleLabel(lcState)}
+                            </span>
                           </div>
-                          <span style={{ fontSize: 10, color: "var(--text-muted)" }}>
-                            Chart symbol: <span style={{ color: "var(--text-secondary)" }}>{symHint || "—"}</span>
+                          <span
+                            style={{ fontSize: 10, color: "var(--text-muted)" }}
+                          >
+                            Chart symbol:{" "}
+                            <span style={{ color: "var(--text-secondary)" }}>
+                              {symHint || "—"}
+                            </span>
                           </span>
                         </div>
                         <button
                           type="button"
                           className="action-btn btn-primary"
-                          style={{ padding: "6px 12px", fontSize: 11, borderRadius: 8, whiteSpace: "nowrap" }}
+                          style={{
+                            padding: "6px 12px",
+                            fontSize: 11,
+                            borderRadius: 8,
+                            whiteSpace: "nowrap",
+                          }}
                           disabled={!sessLive}
-                          title={!sessLive ? "Connect broker for live chart quotes" : "Open chart + conditions"}
+                          title={
+                            !sessLive
+                              ? "Connect broker for live chart quotes"
+                              : "Open chart + conditions"
+                          }
                           onClick={() => {
                             if (!sessLive) {
-                              toast.error("Connect broker (live session) to open Live view.");
+                              toast.error(
+                                "Connect broker (live session) to open Live view.",
+                              );
                               return;
                             }
                             setLiveViewTarget(s);
@@ -1630,12 +2627,28 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card" style={{ gridColumn: "1 / -1" }}>
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(99,102,241,0.1)", color: "var(--accent-blue)" }}>&#x1F4C8;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(99,102,241,0.1)",
+                      color: "var(--accent-blue)",
+                    }}
+                  >
+                    &#x1F4C8;
+                  </span>
                   Cumulative P&L (current level)
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: "var(--text-muted)", padding: "0 4px 12px" }}>
-                Horizontal line = your latest cumulative P&L from ChartMate. Intraday equity history is not wired in algo-only yet (widget uses additional pages/services for that).
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  padding: "0 4px 12px",
+                }}
+              >
+                Horizontal line = your latest cumulative P&L from ChartMate.
+                Intraday equity history is not wired in algo-only yet (widget
+                uses additional pages/services for that).
               </div>
               <div className="chart-area">
                 <canvas ref={canvasRef} className="chart-canvas" />
@@ -1646,7 +2659,15 @@ export default function TradingSmartDashboard(props = {}) {
             <div className="card activity-log">
               <div className="card-header">
                 <div className="card-title">
-                  <span className="card-title-icon" style={{ background: "rgba(251,191,36,0.1)", color: "var(--accent-yellow)" }}>&#x1F4CB;</span>
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(251,191,36,0.1)",
+                      color: "var(--accent-yellow)",
+                    }}
+                  >
+                    &#x1F4CB;
+                  </span>
                   System Activity Log
                 </div>
                 <span className="card-badge badge-yellow">Live</span>
@@ -1654,8 +2675,15 @@ export default function TradingSmartDashboard(props = {}) {
               <div className="log-entries" ref={logRef}>
                 {logs.map((l, i) => (
                   <div className="log-entry" key={i}>
-                    <span className="log-time">{l.time || new Date().toLocaleTimeString("en-US", { hour12: false })}</span>
-                    <span className={`log-type ${l.type}`}>[{l.type.toUpperCase()}]</span>
+                    <span className="log-time">
+                      {l.time ||
+                        new Date().toLocaleTimeString("en-US", {
+                          hour12: false,
+                        })}
+                    </span>
+                    <span className={`log-type ${l.type}`}>
+                      [{l.type.toUpperCase()}]
+                    </span>
                     <span className="log-msg">{l.msg}</span>
                   </div>
                 ))}
@@ -1666,12 +2694,32 @@ export default function TradingSmartDashboard(props = {}) {
       </div>
 
       {false && optionsPanel ? (
-        <ModalShell open={optionsModalOpen} title="Options — live execute" onClose={() => !optionsPanel.busy && setOptionsModalOpen(false)}>
+        <ModalShell
+          open={optionsModalOpen}
+          title="Options — live execute"
+          onClose={() => !optionsPanel.busy && setOptionsModalOpen(false)}
+        >
           <div className="strategy-form">
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12 }}>
-              Mirrors ChartMate <code style={{ fontSize: 10 }}>OptionsStrategyPage</code> execute params (iron condor / short strangle). Underlying lot size presets match the widget; edit if your contract differs.
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--text-muted)",
+                marginBottom: 12,
+              }}
+            >
+              Mirrors ChartMate{" "}
+              <code style={{ fontSize: 10 }}>OptionsStrategyPage</code> execute
+              params (iron condor / short strangle). Underlying lot size presets
+              match the widget; edit if your contract differs.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: 8,
+                marginBottom: 14,
+              }}
+            >
               {OPTIONS_WIZARD_STEPS.map((label, idx) => (
                 <button
                   key={label}
@@ -1681,7 +2729,10 @@ export default function TradingSmartDashboard(props = {}) {
                     padding: "6px 10px",
                     fontSize: 11,
                     opacity: optionsStep === idx ? 1 : 0.55,
-                    borderColor: optionsStep === idx ? "var(--accent-cyan)" : "var(--border-color)",
+                    borderColor:
+                      optionsStep === idx
+                        ? "var(--accent-cyan)"
+                        : "var(--border-color)",
                   }}
                   disabled={optionsPanel.busy}
                   onClick={() => setOptionsStep(idx)}
@@ -1697,7 +2748,9 @@ export default function TradingSmartDashboard(props = {}) {
                   <select
                     className="form-select"
                     value={optForm.strategy_type}
-                    onChange={(e) => setOptForm({ ...optForm, strategy_type: e.target.value })}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, strategy_type: e.target.value })
+                    }
                     disabled={optionsPanel.busy}
                   >
                     <option value="iron_condor">Iron condor</option>
@@ -1710,7 +2763,12 @@ export default function TradingSmartDashboard(props = {}) {
                     <input
                       className="form-input"
                       value={optForm.underlying}
-                      onChange={(e) => setOptForm({ ...optForm, underlying: e.target.value.toUpperCase() })}
+                      onChange={(e) =>
+                        setOptForm({
+                          ...optForm,
+                          underlying: e.target.value.toUpperCase(),
+                        })
+                      }
                       disabled={optionsPanel.busy}
                     />
                   </div>
@@ -1719,7 +2777,9 @@ export default function TradingSmartDashboard(props = {}) {
                     <select
                       className="form-select"
                       value={optForm.venue}
-                      onChange={(e) => setOptForm({ ...optForm, venue: e.target.value })}
+                      onChange={(e) =>
+                        setOptForm({ ...optForm, venue: e.target.value })
+                      }
                       disabled={optionsPanel.busy}
                     >
                       <option value="NSE_INDEX">NSE_INDEX (index)</option>
@@ -1728,12 +2788,16 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Expiry (optional, YYYY-MM-DD)</label>
+                  <label className="form-label">
+                    Expiry (optional, YYYY-MM-DD)
+                  </label>
                   <input
                     className="form-input"
                     placeholder="e.g. 2026-04-24"
                     value={optForm.expiry_date}
-                    onChange={(e) => setOptForm({ ...optForm, expiry_date: e.target.value })}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, expiry_date: e.target.value })
+                    }
                     disabled={optionsPanel.busy}
                   />
                 </div>
@@ -1745,7 +2809,9 @@ export default function TradingSmartDashboard(props = {}) {
                       type="number"
                       min={1}
                       value={optForm.lots}
-                      onChange={(e) => setOptForm({ ...optForm, lots: e.target.value })}
+                      onChange={(e) =>
+                        setOptForm({ ...optForm, lots: e.target.value })
+                      }
                       disabled={optionsPanel.busy}
                     />
                   </div>
@@ -1756,13 +2822,19 @@ export default function TradingSmartDashboard(props = {}) {
                       type="number"
                       min={1}
                       value={optForm.lot_size}
-                      onChange={(e) => setOptForm({ ...optForm, lot_size: e.target.value })}
+                      onChange={(e) =>
+                        setOptForm({ ...optForm, lot_size: e.target.value })
+                      }
                       disabled={optionsPanel.busy}
                     />
                     <button
                       type="button"
                       className="action-btn btn-primary"
-                      style={{ marginTop: 6, padding: "6px 10px", fontSize: 11 }}
+                      style={{
+                        marginTop: 6,
+                        padding: "6px 10px",
+                        fontSize: 11,
+                      }}
                       disabled={optionsPanel.busy}
                       onClick={() =>
                         setOptForm((f) => ({
@@ -1779,88 +2851,199 @@ export default function TradingSmartDashboard(props = {}) {
             ) : null}
             {optionsStep === 2 ? (
               <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Capital (₹)</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min={0}
-                  value={optForm.capital}
-                  onChange={(e) => setOptForm({ ...optForm, capital: e.target.value })}
-                  disabled={optionsPanel.busy}
-                />
+                <div className="form-group">
+                  <label className="form-label">Capital (₹)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={0}
+                    value={optForm.capital}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, capital: e.target.value })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Risk % (of capital)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.1"
+                    value={optForm.risk_pct}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, risk_pct: e.target.value })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Risk % (of capital)</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  step="0.1"
-                  value={optForm.risk_pct}
-                  onChange={(e) => setOptForm({ ...optForm, risk_pct: e.target.value })}
-                  disabled={optionsPanel.busy}
-                />
-              </div>
-            </div>
             ) : null}
             {optionsStep === 1 && optForm.strategy_type === "iron_condor" ? (
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Wing width (pts)</label>
-                  <input className="form-input" type="number" value={optForm.wing_width_pts} onChange={(e) => setOptForm({ ...optForm, wing_width_pts: e.target.value })} disabled={optionsPanel.busy} />
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={optForm.wing_width_pts}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, wing_width_pts: e.target.value })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Delta target</label>
-                  <input className="form-input" type="number" step="0.01" value={optForm.delta_target} onChange={(e) => setOptForm({ ...optForm, delta_target: e.target.value })} disabled={optionsPanel.busy} />
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.01"
+                    value={optForm.delta_target}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, delta_target: e.target.value })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
                 </div>
               </div>
             ) : optionsStep === 1 ? (
               <div className="form-group">
                 <label className="form-label">Delta target</label>
-                <input className="form-input" type="number" step="0.01" value={optForm.delta_target} onChange={(e) => setOptForm({ ...optForm, delta_target: e.target.value })} disabled={optionsPanel.busy} />
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.01"
+                  value={optForm.delta_target}
+                  onChange={(e) =>
+                    setOptForm({ ...optForm, delta_target: e.target.value })
+                  }
+                  disabled={optionsPanel.busy}
+                />
               </div>
             ) : null}
             {optionsStep === 1 ? (
               <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Min VIX</label>
-                <input className="form-input" type="number" step="0.1" value={optForm.min_vix} onChange={(e) => setOptForm({ ...optForm, min_vix: e.target.value })} disabled={optionsPanel.busy} />
+                <div className="form-group">
+                  <label className="form-label">Min VIX</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.1"
+                    value={optForm.min_vix}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, min_vix: e.target.value })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Min net premium (pts)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="1"
+                    value={optForm.min_net_premium}
+                    onChange={(e) =>
+                      setOptForm({
+                        ...optForm,
+                        min_net_premium: e.target.value,
+                      })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Min net premium (pts)</label>
-                <input className="form-input" type="number" step="1" value={optForm.min_net_premium} onChange={(e) => setOptForm({ ...optForm, min_net_premium: e.target.value })} disabled={optionsPanel.busy} />
-              </div>
-            </div>
             ) : null}
             {optionsStep === 1 && optForm.strategy_type === "strangle" ? (
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Roll trigger (pts)</label>
-                  <input className="form-input" type="number" value={optForm.roll_trigger_pts} onChange={(e) => setOptForm({ ...optForm, roll_trigger_pts: e.target.value })} disabled={optionsPanel.busy} />
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={optForm.roll_trigger_pts}
+                    onChange={(e) =>
+                      setOptForm({
+                        ...optForm,
+                        roll_trigger_pts: e.target.value,
+                      })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Max adjustments</label>
-                  <input className="form-input" type="number" min={0} value={optForm.max_adjustments} onChange={(e) => setOptForm({ ...optForm, max_adjustments: e.target.value })} disabled={optionsPanel.busy} />
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={0}
+                    value={optForm.max_adjustments}
+                    onChange={(e) =>
+                      setOptForm({
+                        ...optForm,
+                        max_adjustments: e.target.value,
+                      })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
                 </div>
               </div>
             ) : null}
             {optionsStep === 2 ? (
               <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Profit target (% of max profit)</label>
-                <input className="form-input" type="number" step="1" value={optForm.profit_target_pct} onChange={(e) => setOptForm({ ...optForm, profit_target_pct: e.target.value })} disabled={optionsPanel.busy} />
+                <div className="form-group">
+                  <label className="form-label">
+                    Profit target (% of max profit)
+                  </label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="1"
+                    value={optForm.profit_target_pct}
+                    onChange={(e) =>
+                      setOptForm({
+                        ...optForm,
+                        profit_target_pct: e.target.value,
+                      })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Stop loss (× max loss)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    step="0.1"
+                    value={optForm.stop_loss_mult}
+                    onChange={(e) =>
+                      setOptForm({ ...optForm, stop_loss_mult: e.target.value })
+                    }
+                    disabled={optionsPanel.busy}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Stop loss (× max loss)</label>
-                <input className="form-input" type="number" step="0.1" value={optForm.stop_loss_mult} onChange={(e) => setOptForm({ ...optForm, stop_loss_mult: e.target.value })} disabled={optionsPanel.busy} />
-              </div>
-            </div>
             ) : null}
             {optionsPanel.message ? (
-              <div style={{ fontSize: 12, color: "var(--accent-yellow)", marginBottom: 8 }}>{optionsPanel.message}</div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--accent-yellow)",
+                  marginBottom: 8,
+                }}
+              >
+                {optionsPanel.message}
+              </div>
             ) : null}
             {optionsPanel.locked ? (
-              <div style={{ fontSize: 12, color: "var(--accent-orange)", marginBottom: 8 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--accent-orange)",
+                  marginBottom: 8,
+                }}
+              >
                 Connect your broker (live session) before executing options.
               </div>
             ) : null}
@@ -1889,26 +3072,43 @@ export default function TradingSmartDashboard(props = {}) {
                   disabled={optionsPanel.busy || Boolean(optionsPanel.locked)}
                   onClick={() => {
                     void (async () => {
-                      const underlying = optForm.underlying.trim().toUpperCase() || "NIFTY";
+                      const underlying =
+                        optForm.underlying.trim().toUpperCase() || "NIFTY";
                       const lots = Math.max(1, parseInt(optForm.lots, 10) || 1);
-                      const lot_size = Math.max(1, parseInt(optForm.lot_size, 10) || lotUnitsForUnderlying(underlying));
-                      const exchange = optForm.venue === "NFO" ? "NFO" : "NSE_INDEX";
+                      const lot_size = Math.max(
+                        1,
+                        parseInt(optForm.lot_size, 10) ||
+                          lotUnitsForUnderlying(underlying),
+                      );
+                      const exchange =
+                        optForm.venue === "NFO" ? "NFO" : "NSE_INDEX";
                       const expiryRaw = optForm.expiry_date.trim();
                       const expiry_date = expiryRaw ? expiryRaw : undefined;
                       const capital = Number(optForm.capital) || 500000;
                       const risk_pct = (Number(optForm.risk_pct) || 2) / 100;
-                      const common = { underlying, exchange, expiry_date, lots, lot_size, capital, risk_pct };
+                      const common = {
+                        underlying,
+                        exchange,
+                        expiry_date,
+                        lots,
+                        lot_size,
+                        capital,
+                        risk_pct,
+                      };
                       let body = null;
                       if (optForm.strategy_type === "iron_condor") {
                         body = {
                           strategy_type: "iron_condor",
                           params: {
                             ...common,
-                            wing_width_pts: Number(optForm.wing_width_pts) || 200,
+                            wing_width_pts:
+                              Number(optForm.wing_width_pts) || 200,
                             delta_target: Number(optForm.delta_target) || 0.16,
                             min_vix: Number(optForm.min_vix) || 13,
-                            min_net_premium: Number(optForm.min_net_premium) || 35,
-                            profit_target_pct: (Number(optForm.profit_target_pct) || 45) / 100,
+                            min_net_premium:
+                              Number(optForm.min_net_premium) || 35,
+                            profit_target_pct:
+                              (Number(optForm.profit_target_pct) || 45) / 100,
                             stop_loss_mult: Number(optForm.stop_loss_mult) || 2,
                           },
                         };
@@ -1919,10 +3119,14 @@ export default function TradingSmartDashboard(props = {}) {
                             ...common,
                             delta_target: Number(optForm.delta_target) || 0.2,
                             min_vix: Number(optForm.min_vix) || 18,
-                            min_net_premium: Number(optForm.min_net_premium) || 35,
-                            roll_trigger_pts: Number(optForm.roll_trigger_pts) || 30,
-                            max_adjustments: Number(optForm.max_adjustments) || 2,
-                            profit_target_pct: (Number(optForm.profit_target_pct) || 50) / 100,
+                            min_net_premium:
+                              Number(optForm.min_net_premium) || 35,
+                            roll_trigger_pts:
+                              Number(optForm.roll_trigger_pts) || 30,
+                            max_adjustments:
+                              Number(optForm.max_adjustments) || 2,
+                            profit_target_pct:
+                              (Number(optForm.profit_target_pct) || 50) / 100,
                             stop_loss_mult: Number(optForm.stop_loss_mult) || 2,
                           },
                         };
@@ -1947,39 +3151,99 @@ export default function TradingSmartDashboard(props = {}) {
         }}
       >
         <div className="strategy-form">
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>
-            Same flow as ChartMate broker portfolio: set symbol, exchange, quantity, and product, then activate. Entry/exit automation runs when conditions match (server-side scanning).
+          <p
+            style={{
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              marginBottom: 12,
+            }}
+          >
+            Same flow as ChartMate broker portfolio: set symbol, exchange,
+            quantity, and product, then activate. Entry/exit automation runs
+            when conditions match (server-side scanning).
           </p>
           {goLiveTarget ? (
-            <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 12 }}>Strategy: <strong>{goLiveTarget.name}</strong></p>
+            <p
+              style={{
+                fontSize: 11,
+                color: "var(--text-muted)",
+                marginBottom: 12,
+              }}
+            >
+              Strategy: <strong>{goLiveTarget.name}</strong>
+            </p>
           ) : null}
           <div className="form-group">
             <label className="form-label">Symbol *</label>
-            <input className="form-input" value={goLiveForm.symbol} onChange={(e) => setGoLiveForm({ ...goLiveForm, symbol: e.target.value.toUpperCase() })} disabled={goLiveBusy} />
+            <input
+              className="form-input"
+              value={goLiveForm.symbol}
+              onChange={(e) =>
+                setGoLiveForm({
+                  ...goLiveForm,
+                  symbol: e.target.value.toUpperCase(),
+                })
+              }
+              disabled={goLiveBusy}
+            />
           </div>
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Exchange</label>
-              <select className="form-select" value={goLiveForm.exchange} onChange={(e) => setGoLiveForm({ ...goLiveForm, exchange: e.target.value })} disabled={goLiveBusy}>
+              <select
+                className="form-select"
+                value={goLiveForm.exchange}
+                onChange={(e) =>
+                  setGoLiveForm({ ...goLiveForm, exchange: e.target.value })
+                }
+                disabled={goLiveBusy}
+              >
                 {GO_LIVE_EXCHANGES.map((e) => (
-                  <option key={e} value={e}>{e}</option>
+                  <option key={e} value={e}>
+                    {e}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="form-group">
               <label className="form-label">Quantity *</label>
-              <input className="form-input" type="number" min={1} value={goLiveForm.quantity} onChange={(e) => setGoLiveForm({ ...goLiveForm, quantity: e.target.value })} disabled={goLiveBusy} />
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                value={goLiveForm.quantity}
+                onChange={(e) =>
+                  setGoLiveForm({ ...goLiveForm, quantity: e.target.value })
+                }
+                disabled={goLiveBusy}
+              />
             </div>
           </div>
           <div className="form-group">
             <label className="form-label">Product</label>
-            <select className="form-select" value={goLiveForm.product} onChange={(e) => setGoLiveForm({ ...goLiveForm, product: e.target.value })} disabled={goLiveBusy}>
+            <select
+              className="form-select"
+              value={goLiveForm.product}
+              onChange={(e) =>
+                setGoLiveForm({ ...goLiveForm, product: e.target.value })
+              }
+              disabled={goLiveBusy}
+            >
               {GO_LIVE_PRODUCTS.map((p) => (
-                <option key={p} value={p}>{p}</option>
+                <option key={p} value={p}>
+                  {p}
+                </option>
               ))}
             </select>
           </div>
-          <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              marginTop: 12,
+              flexWrap: "wrap",
+            }}
+          >
             <button
               type="button"
               className="action-btn btn-primary"
@@ -1987,35 +3251,54 @@ export default function TradingSmartDashboard(props = {}) {
               disabled={goLiveBusy || !chartmateActions?.onConfirmGoLive}
               onClick={() => {
                 void (async () => {
-                  if (!goLiveTarget || !chartmateActions?.onConfirmGoLive) return;
+                  if (!goLiveTarget || !chartmateActions?.onConfirmGoLive)
+                    return;
                   const qty = Math.floor(Number(goLiveForm.quantity));
                   if (!Number.isFinite(qty) || qty < 1) {
-                    toast.error("Invalid quantity", { description: "Enter a whole number ≥ 1." });
+                    toast.error("Invalid quantity", {
+                      description: "Enter a whole number ≥ 1.",
+                    });
                     return;
                   }
                   setGoLiveBusy(true);
                   try {
-                    const err = await chartmateActions.onConfirmGoLive(goLiveTarget.id, goLiveTarget.position_config, {
-                      symbol: goLiveForm.symbol,
-                      exchange: goLiveForm.exchange,
-                      quantity: qty,
-                      product: goLiveForm.product,
-                    });
+                    const err = await chartmateActions.onConfirmGoLive(
+                      goLiveTarget.id,
+                      goLiveTarget.position_config,
+                      {
+                        symbol: goLiveForm.symbol,
+                        exchange: goLiveForm.exchange,
+                        quantity: qty,
+                        product: goLiveForm.product,
+                      },
+                    );
                     if (err) {
                       const msg = typeof err === "string" ? err : String(err);
-                      toast.error("Strategy was not activated", { description: msg, duration: 12_000 });
+                      toast.error("Strategy was not activated", {
+                        description: msg,
+                        duration: 12_000,
+                      });
                       addLog("error", msg);
                     } else {
                       toast.success("Strategy activated", {
                         description: `${goLiveTarget.name} · ${String(goLiveForm.symbol || "").toUpperCase()} × ${qty}`,
                       });
-                      addLog("exec", `Strategy "${goLiveTarget.name}" activated (${goLiveForm.symbol} × ${qty})`);
+                      addLog(
+                        "exec",
+                        `Strategy "${goLiveTarget.name}" activated (${goLiveForm.symbol} × ${qty})`,
+                      );
                       chartmateActions.onRefresh?.();
                       setGoLiveTarget(null);
                     }
                   } catch (e) {
-                    const msg = e instanceof Error ? e.message : "Unexpected error during activation.";
-                    toast.error("Activation failed", { description: msg, duration: 12_000 });
+                    const msg =
+                      e instanceof Error
+                        ? e.message
+                        : "Unexpected error during activation.";
+                    toast.error("Activation failed", {
+                      description: msg,
+                      duration: 12_000,
+                    });
                     addLog("error", msg);
                   } finally {
                     setGoLiveBusy(false);
@@ -2025,7 +3308,12 @@ export default function TradingSmartDashboard(props = {}) {
             >
               {goLiveBusy ? "Activating…" : "Activate & start scanning"}
             </button>
-            <button type="button" className="action-btn btn-warning" disabled={goLiveBusy} onClick={() => setGoLiveTarget(null)}>
+            <button
+              type="button"
+              className="action-btn btn-warning"
+              disabled={goLiveBusy}
+              onClick={() => setGoLiveTarget(null)}
+            >
               Cancel
             </button>
           </div>
@@ -2034,17 +3322,31 @@ export default function TradingSmartDashboard(props = {}) {
 
       <ModalShell
         open={Boolean(liveViewTarget)}
-        title={liveViewTarget ? `Live view — ${liveViewTarget.name}` : "Live view"}
+        title={
+          liveViewTarget ? `Live view — ${liveViewTarget.name}` : "Live view"
+        }
         onClose={() => setLiveViewTarget(null)}
       >
         {liveViewTarget ? (
           <div className="strategy-form" style={{ maxWidth: 760 }}>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.55 }}>
-              Intraday candles refresh from the BFF; condition rows mirror the strategy engine snapshots (updates can be spaced out — that is normal during scanning).
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--text-secondary)",
+                marginBottom: 12,
+                lineHeight: 1.55,
+              }}
+            >
+              Intraday candles refresh from the BFF; condition rows mirror the
+              strategy engine snapshots (updates can be spaced out — that is
+              normal during scanning).
             </p>
             {(() => {
               const ch = chartRoutingFromStrategyCard(liveViewTarget);
-              const lvLc = normalizeLifecycleState(liveViewTarget.lifecycle_state, Boolean(liveViewTarget.deployed));
+              const lvLc = normalizeLifecycleState(
+                liveViewTarget.lifecycle_state,
+                Boolean(liveViewTarget.deployed),
+              );
               return (
                 <>
                   {sessionAccessToken ? (
@@ -2059,8 +3361,15 @@ export default function TradingSmartDashboard(props = {}) {
                       />
                     </div>
                   ) : (
-                    <p style={{ fontSize: 12, color: "var(--accent-orange)", marginBottom: 12 }}>
-                      Chart needs a signed-in session. Refresh the page or reconnect broker, then open Live view again.
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: "var(--accent-orange)",
+                        marginBottom: 12,
+                      }}
+                    >
+                      Chart needs a signed-in session. Refresh the page or
+                      reconnect broker, then open Live view again.
                     </p>
                   )}
                   <StrategyConditionPanel
@@ -2074,7 +3383,14 @@ export default function TradingSmartDashboard(props = {}) {
                 </>
               );
             })()}
-            <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 14,
+                flexWrap: "wrap",
+              }}
+            >
               {useChartmate && sessLive ? (
                 <button
                   type="button"
@@ -2104,11 +3420,16 @@ export default function TradingSmartDashboard(props = {}) {
               >
                 Edit strategy
               </button>
-              {useChartmate && typeof onCancelPendingForStrategy === "function" ? (
+              {useChartmate &&
+              typeof onCancelPendingForStrategy === "function" ? (
                 <button
                   type="button"
                   className="action-btn btn-warning"
-                  style={{ borderColor: "rgba(251,146,60,0.45)", color: "var(--accent-orange)", minWidth: 140 }}
+                  style={{
+                    borderColor: "rgba(251,146,60,0.45)",
+                    color: "var(--accent-orange)",
+                    minWidth: 140,
+                  }}
                   disabled={cancelPendingBusyId === liveViewTarget.id}
                   onClick={() => {
                     const id = liveViewTarget.id;
@@ -2117,16 +3438,23 @@ export default function TradingSmartDashboard(props = {}) {
                       try {
                         const err = await onCancelPendingForStrategy(id);
                         if (err) {
-                          const msg = typeof err === "string" ? err : String(err);
-                          toast.error("Could not cancel pending orders", { description: msg, duration: 10_000 });
+                          const msg =
+                            typeof err === "string" ? err : String(err);
+                          toast.error("Could not cancel pending orders", {
+                            description: msg,
+                            duration: 10_000,
+                          });
                           addLog("error", msg);
                           return;
                         }
                         toast.success("Pending orders cancelled");
                         chartmateActions?.onRefresh?.();
                       } catch (e) {
-                        const msg = e instanceof Error ? e.message : "Unexpected error.";
-                        toast.error("Cancel pending failed", { description: msg });
+                        const msg =
+                          e instanceof Error ? e.message : "Unexpected error.";
+                        toast.error("Cancel pending failed", {
+                          description: msg,
+                        });
                         addLog("error", msg);
                       } finally {
                         setCancelPendingBusyId(null);
@@ -2134,10 +3462,17 @@ export default function TradingSmartDashboard(props = {}) {
                     })();
                   }}
                 >
-                  {cancelPendingBusyId === liveViewTarget.id ? "Cancelling…" : "Cancel pending"}
+                  {cancelPendingBusyId === liveViewTarget.id
+                    ? "Cancelling…"
+                    : "Cancel pending"}
                 </button>
               ) : null}
-              <button type="button" className="action-btn btn-primary" style={{ minWidth: 90 }} onClick={() => setLiveViewTarget(null)}>
+              <button
+                type="button"
+                className="action-btn btn-primary"
+                style={{ minWidth: 90 }}
+                onClick={() => setLiveViewTarget(null)}
+              >
                 Close
               </button>
             </div>
@@ -2145,153 +3480,350 @@ export default function TradingSmartDashboard(props = {}) {
         ) : null}
       </ModalShell>
 
-      {false && <ModalShell open={showStratForm} title="Create strategy (ChartMate)" onClose={() => { setShowStratForm(false); setStratStep(0); }}>
-        <div className="strategy-form">
-          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12 }}>
-            Saves to ChartMate via <code style={{ fontSize: 11 }}>manage-strategy</code> create (same fields as portfolio strategy form). A <strong>live broker session</strong> is required only to <strong>Activate</strong> a strategy (symbol/qty popup), not to save the definition.
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 6, marginBottom: 14 }}>
-            {STRATEGY_WIZARD_STEPS.map((label, idx) => (
-              <button
-                key={label}
-                type="button"
-                className="action-btn btn-primary"
+      {false && (
+        <ModalShell
+          open={showStratForm}
+          title="Create strategy (ChartMate)"
+          onClose={() => {
+            setShowStratForm(false);
+            setStratStep(0);
+          }}
+        >
+          <div className="strategy-form">
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--text-secondary)",
+                marginBottom: 12,
+              }}
+            >
+              Saves to ChartMate via{" "}
+              <code style={{ fontSize: 11 }}>manage-strategy</code> create (same
+              fields as portfolio strategy form). A{" "}
+              <strong>live broker session</strong> is required only to{" "}
+              <strong>Activate</strong> a strategy (symbol/qty popup), not to
+              save the definition.
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                gap: 6,
+                marginBottom: 14,
+              }}
+            >
+              {STRATEGY_WIZARD_STEPS.map((label, idx) => (
+                <button
+                  key={label}
+                  type="button"
+                  className="action-btn btn-primary"
+                  style={{
+                    padding: "5px 8px",
+                    fontSize: 10,
+                    opacity: stratStep === idx ? 1 : 0.55,
+                    borderColor:
+                      stratStep === idx
+                        ? "var(--accent-cyan)"
+                        : "var(--border-color)",
+                  }}
+                  onClick={() => setStratStep(idx)}
+                >
+                  {idx + 1}. {label}
+                </button>
+              ))}
+            </div>
+            {stratStep === 0 ? (
+              <>
+                <div className="form-group">
+                  <label className="form-label">Strategy name</label>
+                  <input
+                    className="form-input"
+                    placeholder="e.g. Opening range breakout"
+                    value={stratForm.name}
+                    onChange={(e) =>
+                      setStratForm({ ...stratForm, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description</label>
+                  <input
+                    className="form-input"
+                    placeholder="Short note (optional)"
+                    value={stratForm.description}
+                    onChange={(e) =>
+                      setStratForm({
+                        ...stratForm,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Trading mode</label>
+                    <select
+                      className="form-select"
+                      value={stratForm.trading_mode}
+                      onChange={(e) =>
+                        setStratForm({
+                          ...stratForm,
+                          trading_mode: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="LONG">Long only (buy)</option>
+                      <option value="SHORT">Short only (sell)</option>
+                      <option value="BOTH">Both</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Session type</label>
+                    <select
+                      className="form-select"
+                      value={stratForm.is_intraday}
+                      onChange={(e) =>
+                        setStratForm({
+                          ...stratForm,
+                          is_intraday: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="true">Intraday (MIS-style window)</option>
+                      <option value="false">Positional / multi-day</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            ) : null}
+            {stratStep === 1 ? (
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Start time</label>
+                  <input
+                    className="form-input"
+                    value={stratForm.start_time}
+                    onChange={(e) =>
+                      setStratForm({ ...stratForm, start_time: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">End time</label>
+                  <input
+                    className="form-input"
+                    value={stratForm.end_time}
+                    onChange={(e) =>
+                      setStratForm({ ...stratForm, end_time: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Square-off</label>
+                  <input
+                    className="form-input"
+                    value={stratForm.squareoff_time}
+                    onChange={(e) =>
+                      setStratForm({
+                        ...stratForm,
+                        squareoff_time: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+            {stratStep === 2 ? (
+              <>
+                <div className="form-group">
+                  <label className="form-label">
+                    Symbols (comma-separated)
+                  </label>
+                  <input
+                    className="form-input"
+                    placeholder="RELIANCE, TCS, INFY"
+                    value={stratForm.symbols_raw}
+                    onChange={(e) =>
+                      setStratForm({
+                        ...stratForm,
+                        symbols_raw: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    Entry conditions (expression)
+                  </label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    placeholder="e.g. close > ema20 and rsi14 > 55"
+                    value={stratForm.entry_rule}
+                    onChange={(e) =>
+                      setStratForm({ ...stratForm, entry_rule: e.target.value })
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
+            {stratStep === 3 ? (
+              <>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Stop loss (%)</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      step="0.1"
+                      value={stratForm.stop_loss_pct}
+                      onChange={(e) =>
+                        setStratForm({
+                          ...stratForm,
+                          stop_loss_pct: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Take profit (%)</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      step="0.1"
+                      value={stratForm.take_profit_pct}
+                      onChange={(e) =>
+                        setStratForm({
+                          ...stratForm,
+                          take_profit_pct: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                    Exit conditions (expression)
+                  </label>
+                  <textarea
+                    className="form-input"
+                    rows={3}
+                    placeholder="e.g. close < ema20 or rsi14 < 45"
+                    value={stratForm.exit_rule}
+                    onChange={(e) =>
+                      setStratForm({ ...stratForm, exit_rule: e.target.value })
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
+            {stratStep === 4 ? (
+              <div
                 style={{
-                  padding: "5px 8px",
-                  fontSize: 10,
-                  opacity: stratStep === idx ? 1 : 0.55,
-                  borderColor: stratStep === idx ? "var(--accent-cyan)" : "var(--border-color)",
+                  fontSize: 12,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.6,
                 }}
-                onClick={() => setStratStep(idx)}
               >
-                {idx + 1}. {label}
+                Position setup (symbol, exchange, quantity, product) happens in{" "}
+                <strong>Activate strategy</strong> popup, same as ChartMate
+                go-live flow. This keeps strategy definition separate from
+                execution assignment.
+              </div>
+            ) : null}
+            {stratStep === 5 ? (
+              <div className="form-group">
+                <label className="form-label">Risk per trade (%)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  step="0.1"
+                  value={stratForm.risk_per_trade_pct}
+                  onChange={(e) =>
+                    setStratForm({
+                      ...stratForm,
+                      risk_per_trade_pct: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            ) : null}
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                className="action-btn btn-warning"
+                disabled={stratStep === 0}
+                onClick={() => setStratStep((s) => Math.max(0, s - 1))}
+              >
+                Back
               </button>
-            ))}
-          </div>
-          {stratStep === 0 ? (
-            <>
-              <div className="form-group">
-                <label className="form-label">Strategy name</label>
-                <input className="form-input" placeholder="e.g. Opening range breakout" value={stratForm.name}
-                  onChange={(e) => setStratForm({ ...stratForm, name: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <input className="form-input" placeholder="Short note (optional)" value={stratForm.description}
-                  onChange={(e) => setStratForm({ ...stratForm, description: e.target.value })} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Trading mode</label>
-                  <select className="form-select" value={stratForm.trading_mode} onChange={(e) => setStratForm({ ...stratForm, trading_mode: e.target.value })}>
-                    <option value="LONG">Long only (buy)</option>
-                    <option value="SHORT">Short only (sell)</option>
-                    <option value="BOTH">Both</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Session type</label>
-                  <select className="form-select" value={stratForm.is_intraday} onChange={(e) => setStratForm({ ...stratForm, is_intraday: e.target.value })}>
-                    <option value="true">Intraday (MIS-style window)</option>
-                    <option value="false">Positional / multi-day</option>
-                  </select>
-                </div>
-              </div>
-            </>
-          ) : null}
-          {stratStep === 1 ? (
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Start time</label>
-                <input className="form-input" value={stratForm.start_time} onChange={(e) => setStratForm({ ...stratForm, start_time: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">End time</label>
-                <input className="form-input" value={stratForm.end_time} onChange={(e) => setStratForm({ ...stratForm, end_time: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Square-off</label>
-                <input className="form-input" value={stratForm.squareoff_time} onChange={(e) => setStratForm({ ...stratForm, squareoff_time: e.target.value })} />
-              </div>
-            </div>
-          ) : null}
-          {stratStep === 2 ? (
-            <>
-              <div className="form-group">
-                <label className="form-label">Symbols (comma-separated)</label>
-                <input className="form-input" placeholder="RELIANCE, TCS, INFY" value={stratForm.symbols_raw}
-                  onChange={(e) => setStratForm({ ...stratForm, symbols_raw: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Entry conditions (expression)</label>
-                <textarea className="form-input" rows={3} placeholder="e.g. close > ema20 and rsi14 > 55" value={stratForm.entry_rule}
-                  onChange={(e) => setStratForm({ ...stratForm, entry_rule: e.target.value })} />
-              </div>
-            </>
-          ) : null}
-          {stratStep === 3 ? (
-            <>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Stop loss (%)</label>
-                  <input className="form-input" type="number" step="0.1" value={stratForm.stop_loss_pct}
-                    onChange={(e) => setStratForm({ ...stratForm, stop_loss_pct: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Take profit (%)</label>
-                  <input className="form-input" type="number" step="0.1" value={stratForm.take_profit_pct}
-                    onChange={(e) => setStratForm({ ...stratForm, take_profit_pct: e.target.value })} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Exit conditions (expression)</label>
-                <textarea className="form-input" rows={3} placeholder="e.g. close < ema20 or rsi14 < 45" value={stratForm.exit_rule}
-                  onChange={(e) => setStratForm({ ...stratForm, exit_rule: e.target.value })} />
-              </div>
-            </>
-          ) : null}
-          {stratStep === 4 ? (
-            <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              Position setup (symbol, exchange, quantity, product) happens in <strong>Activate strategy</strong> popup,
-              same as ChartMate go-live flow. This keeps strategy definition separate from execution assignment.
-            </div>
-          ) : null}
-          {stratStep === 5 ? (
-            <div className="form-group">
-              <label className="form-label">Risk per trade (%)</label>
-              <input className="form-input" type="number" step="0.1" value={stratForm.risk_per_trade_pct}
-                onChange={(e) => setStratForm({ ...stratForm, risk_per_trade_pct: e.target.value })} />
-            </div>
-          ) : null}
-          <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-            <button type="button" className="action-btn btn-warning" disabled={stratStep === 0} onClick={() => setStratStep((s) => Math.max(0, s - 1))}>
-              Back
-            </button>
-            {stratStep < STRATEGY_WIZARD_STEPS.length - 1 ? (
-              <button type="button" className="action-btn btn-primary" onClick={() => setStratStep((s) => Math.min(STRATEGY_WIZARD_STEPS.length - 1, s + 1))}>
-                Next
-              </button>
-            ) : (
-              <button type="button" className="action-btn btn-primary" style={{ flex: 1 }} onClick={async () => {
-                if (!stratForm.name) return;
-                if (useChartmate && chartmateActions?.onCreateStrategy) {
-                  const savedName = stratForm.name;
-                  const err = await chartmateActions.onCreateStrategy(stratForm);
-                  if (err) { addLog("error", err); return; }
-                  setStratForm(emptyStratForm());
+              {stratStep < STRATEGY_WIZARD_STEPS.length - 1 ? (
+                <button
+                  type="button"
+                  className="action-btn btn-primary"
+                  onClick={() =>
+                    setStratStep((s) =>
+                      Math.min(STRATEGY_WIZARD_STEPS.length - 1, s + 1),
+                    )
+                  }
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="action-btn btn-primary"
+                  style={{ flex: 1 }}
+                  onClick={async () => {
+                    if (!stratForm.name) return;
+                    if (useChartmate && chartmateActions?.onCreateStrategy) {
+                      const savedName = stratForm.name;
+                      const err =
+                        await chartmateActions.onCreateStrategy(stratForm);
+                      if (err) {
+                        addLog("error", err);
+                        return;
+                      }
+                      setStratForm(emptyStratForm());
+                      setShowStratForm(false);
+                      setStratStep(0);
+                      addLog(
+                        "info",
+                        `Strategy "${savedName}" saved to ChartMate`,
+                      );
+                      chartmateActions.onRefresh?.();
+                      return;
+                    }
+                    addLog(
+                      "error",
+                      "Sign in with ChartMate to save strategies.",
+                    );
+                  }}
+                >
+                  Save to ChartMate
+                </button>
+              )}
+              <button
+                type="button"
+                className="action-btn btn-warning"
+                onClick={() => {
                   setShowStratForm(false);
                   setStratStep(0);
-                  addLog("info", `Strategy "${savedName}" saved to ChartMate`);
-                  chartmateActions.onRefresh?.();
-                  return;
-                }
-                addLog("error", "Sign in with ChartMate to save strategies.");
-              }}>Save to ChartMate</button>
-            )}
-            <button type="button" className="action-btn btn-warning" onClick={() => { setShowStratForm(false); setStratStep(0); }}>Cancel</button>
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
-      </ModalShell>}
+        </ModalShell>
+      )}
 
       <AlgoStrategyBuilder
         open={showExactAlgoBuilder}
@@ -2304,7 +3836,12 @@ export default function TradingSmartDashboard(props = {}) {
           const wasEdit = Boolean(editAlgoTarget);
           setEditAlgoTarget(null);
           chartmateActions?.onRefresh?.();
-          addLog("info", wasEdit ? "Strategy updated via ChartMate builder" : "Strategy saved via ChartMate builder");
+          addLog(
+            "info",
+            wasEdit
+              ? "Strategy updated via ChartMate builder"
+              : "Strategy saved via ChartMate builder",
+          );
         }}
       />
       <OptionsStrategyBuilderDialog
