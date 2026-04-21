@@ -9,6 +9,44 @@ function formatVal(v: number | string | null | undefined): string {
   return String(v);
 }
 
+/** True when the latest engine snapshot says we are outside the tradable window (entries paused). */
+function snapshotOutsideMarketWindow(
+  reasons: unknown,
+  lifecycleReason: string | null | undefined,
+): boolean {
+  const lr = String(lifecycleReason ?? "").toLowerCase();
+  if (
+    lr.includes("outside_market") ||
+    lr.includes("outside market") ||
+    lr.includes("outside_trading") ||
+    lr.includes("outside trading")
+  ) {
+    return true;
+  }
+  if (!reasons || typeof reasons !== "object") return false;
+  try {
+    const blob = JSON.stringify(reasons).toLowerCase();
+    return blob.includes("outside_market_window") || blob.includes("outside market window");
+  } catch {
+    return false;
+  }
+}
+
+function formatEngineReasonLine(reasons: object): string {
+  const r = reasons as Record<string, unknown>;
+  const raw = String(r.reason ?? r.code ?? r.status ?? "").trim();
+  if (raw === "outside_market_window") {
+    return "Engine: outside market window — entries paused until the session / your window allows trading.";
+  }
+  if (raw) return raw.length > 120 ? `${raw.slice(0, 120)}…` : raw;
+  try {
+    const s = JSON.stringify(reasons);
+    return s.length > 140 ? `${s.slice(0, 140)}…` : s;
+  } catch {
+    return "";
+  }
+}
+
 function readinessFromEvent(event: {
   ready_count?: number | null;
   total_count?: number | null;
@@ -67,6 +105,16 @@ export function StrategyConditionPanel(props: {
     () => (event ? readinessFromEvent(event) : { ready: 0, total: 0 }),
     [event],
   );
+
+  const outsideWindow = useMemo(
+    () => snapshotOutsideMarketWindow(event?.reasons, lifecycleReason),
+    [event?.reasons, lifecycleReason],
+  );
+
+  const engineScanLifecycle =
+    lifecycleState === undefined ||
+    lifecycleState === "ACTIVE" ||
+    lifecycleState === "TRIGGERED";
 
   const pct = total > 0 ? Math.round((ready / total) * 100) : 0;
   const ringColor =
@@ -149,19 +197,37 @@ export function StrategyConditionPanel(props: {
         <span className="text-slate-500">Connect broker for live condition ticks</span>
       ) : stale ? (
         <div className="space-y-1">
-          <span className="text-amber-400">
-            No new engine snapshot in {staleLabelSec}s (ticks only move this forward when the scanner runs for this
-            symbol).
+          <span className={outsideWindow ? "text-slate-400" : "text-amber-400"}>
+            {outsideWindow
+              ? `No new snapshot in ${staleLabelSec}s — outside the tradable window the scanner often runs slowly; this is usually expected, not a dropped feed.`
+              : `No new engine snapshot in ${staleLabelSec}s (this row advances when the scanner saves a pass for this symbol).`}
           </span>
           <span className="block text-[10px] text-slate-500 leading-snug">
-            Chart LTP comes from the quote API; the &quot;Live&quot; column is from the last engine evaluation — they
-            can differ briefly.
+            Chart LTP comes from the quote stream (near real time). Condition &quot;Live&quot; values come from the last
+            engine snapshot in the database (updated on inserts, including via realtime).
+          </span>
+        </div>
+      ) : outsideWindow && engineScanLifecycle ? (
+        <div className="space-y-1">
+          <span className="text-amber-400/90">
+            Outside the tradable window — <strong className="font-semibold">entries are paused</strong>. The strategy
+            can still be &quot;on&quot;; the engine may keep periodic checks and write snapshots on its own cadence.
+          </span>
+          <span className="block text-[10px] text-slate-500 leading-snug">
+            Last engine snapshot {lastEval}. Chart LTP can move between snapshots — that is normal.
           </span>
         </div>
       ) : (
-        <span className={streamStale ? "text-amber-400" : "text-emerald-400"}>
-          {streamStale ? "Live data stale — reconnecting…" : `Last evaluated ${lastEval}`}
-        </span>
+        <div className="space-y-1">
+          <span className={streamStale ? "text-amber-400" : "text-emerald-400"}>
+            {streamStale ? "Live data stale — reconnecting…" : `Last engine snapshot ${lastEval}`}
+          </span>
+          {!streamStale ? (
+            <span className="block text-[10px] text-slate-500 leading-snug">
+              Quotes stream on the feed; this table updates as soon as a new snapshot is saved (not on every tick).
+            </span>
+          ) : null}
+        </div>
       )}
 
       {rows.length > 0 && (
@@ -195,7 +261,7 @@ export function StrategyConditionPanel(props: {
 
       {event?.reasons && typeof event.reasons === "object" && (
         <div className="text-[10px] text-muted-foreground/80 truncate" title={JSON.stringify(event.reasons)}>
-          {String((event.reasons as { reason?: unknown }).reason ?? "")}
+          {formatEngineReasonLine(event.reasons)}
         </div>
       )}
     </div>
