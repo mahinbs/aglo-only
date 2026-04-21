@@ -8,7 +8,7 @@ const STEP_NAMES = [
   "KYC",
   "Trading Profile",
   "Broker & API",
-  "Strategy Setup",
+  // "Strategy Setup",
   "Risk & Consent",
   "Review & Submit",
 ];
@@ -378,7 +378,7 @@ export default function AccessRequestPage() {
               </div>
             )}
 
-            {step === 5 && (
+            {/* {step === 5 && (
               <div className="step active">
                 <div className="step-title">Strategy setup</div>
                 <div className="form-group">
@@ -420,9 +420,9 @@ export default function AccessRequestPage() {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
 
-            {step === 6 && (
+            {step === 5 && (
               <div className="step active">
                 <div className="step-title">Risk &amp; consent</div>
                 <div className="consent-box">
@@ -446,7 +446,7 @@ export default function AccessRequestPage() {
               </div>
             )}
 
-            {step === 7 && (
+            {step === 6 && (
               <div className="step active">
                 <div className="step-title">Review &amp; submit</div>
                 <div className="review-grid">
