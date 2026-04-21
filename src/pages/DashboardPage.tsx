@@ -67,6 +67,8 @@ type Summary = {
   active_strategies_table?: Array<{
     name: string;
     status: string;
+    /** Mirrors `is_active` on the strategy row (used for lifecycle normalization). */
+    deployed?: boolean;
     trades: number;
     pnl: string;
     win: string;
@@ -198,6 +200,7 @@ function buildStrategyTableRows(
       {
         name: "No strategies yet",
         status: "paused",
+        deployed: false,
         trades: 0,
         pnl: formatLiveMoney(0, cur),
         win: "—",
@@ -225,6 +228,7 @@ function buildStrategyTableRows(
     return {
       name: displayName,
       status: normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active)).toLowerCase(),
+      deployed: Boolean(s.is_active),
       trades: tc,
       pnl: pnlStr,
       win: winStr,

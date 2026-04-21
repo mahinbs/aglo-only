@@ -1088,6 +1088,7 @@ export default function TradingSmartDashboard(props = {}) {
     () => ({
       name: "No strategies yet",
       status: "paused",
+      deployed: false,
       trades: 0,
       pnl: formatSignedDisplay(0, currencyMode),
       win: "—",
@@ -1101,19 +1102,13 @@ export default function TradingSmartDashboard(props = {}) {
       ? strategiesTable
       : [emptyStrategyRow];
   const activeStrategiesCount = strategiesData.filter((s) => {
-    const st = normalizeLifecycleState(
-      s.status,
-      String(s.status).toLowerCase() === "active",
-    );
+    const st = normalizeLifecycleState(s.status, Boolean(s.deployed));
     return (
       st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
     );
   }).length;
-  const strategyTagClass = (status) => {
-    const st = normalizeLifecycleState(
-      status,
-      String(status).toLowerCase() === "active",
-    );
+  const strategyTagClass = (rawLifecycle, deployed) => {
+    const st = normalizeLifecycleState(rawLifecycle, Boolean(deployed));
     if (st === "ACTIVE") return "tag-active";
     if (st === "WAITING_MARKET_OPEN") return "tag-waiting";
     if (st === "TRIGGERED") return "tag-triggered";
@@ -1841,7 +1836,7 @@ export default function TradingSmartDashboard(props = {}) {
                       </td>
                       <td>
                         <span
-                          className={`strategy-tag ${strategyTagClass(s.status)}`}
+                          className={`strategy-tag ${strategyTagClass(s.status, s.deployed)}`}
                           title={
                             s.lifecycle_reason || s.lifecycle_updated_at
                               ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
@@ -1851,7 +1846,7 @@ export default function TradingSmartDashboard(props = {}) {
                           {lifecycleLabel(
                             normalizeLifecycleState(
                               s.status,
-                              String(s.status).toLowerCase() === "active",
+                              Boolean(s.deployed),
                             ),
                           )}
                         </span>
@@ -2062,7 +2057,7 @@ export default function TradingSmartDashboard(props = {}) {
                             }}
                           >
                             <span
-                              className={`strategy-tag ${strategyTagClass(lcState)}`}
+                              className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
                               title={badgeTitle}
                             >
                               {lifecycleLabel(lcState)}
@@ -2708,7 +2703,7 @@ export default function TradingSmartDashboard(props = {}) {
                               {s.type}
                             </span>
                             <span
-                              className={`strategy-tag ${strategyTagClass(lcState)}`}
+                              className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
                             >
                               {lifecycleLabel(lcState)}
                             </span>
