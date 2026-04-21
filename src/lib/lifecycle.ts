@@ -9,6 +9,13 @@ export type LifecycleState =
 
 export function normalizeLifecycleState(raw: unknown, fallbackActive = false): LifecycleState {
   const v = String(raw ?? "").trim().toUpperCase();
+  // If the user turned the strategy off (`is_active` false), never show engine
+  // "live" states — DB `lifecycle_state` can lag until the next engine tick.
+  if (!fallbackActive) {
+    if (v === "ACTIVE" || v === "WAITING_MARKET_OPEN" || v === "TRIGGERED") {
+      return "PAUSED";
+    }
+  }
   if (
     v === "ACTIVE" ||
     v === "WAITING_MARKET_OPEN" ||

@@ -290,7 +290,21 @@ export default function DashboardPage() {
     setLoadErr(null);
     try {
       if (bffConfigured()) {
-        const s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
+        let s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
+        if (
+          !s.broker_session_live &&
+          (s.active_strategies_deployed ?? 0) > 0 &&
+          session.access_token
+        ) {
+          const pauseRes = await supabase.functions.invoke("manage-strategy", {
+            body: { action: "pause_all" },
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
+          if (!pauseRes.error && !pauseErr) {
+            s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
+          }
+        }
         setSummary(s);
         const uidBff = user?.id;
         if (uidBff) {
@@ -351,6 +365,25 @@ export default function DashboardPage() {
             token_expires_at?: string | null;
           } | null,
         );
+        let stratsData = (strats ?? []) as Record<string, unknown>[];
+        if (!gate.live && stratsData.some((row) => Boolean(row.is_active))) {
+          const pauseRes = await supabase.functions.invoke("manage-strategy", {
+            body: { action: "pause_all" },
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
+          if (!pauseRes.error && !pauseErr) {
+            const { data: stratsFresh } = await supabase
+              .from("user_strategies")
+              .select(
+                "id,name,description,is_active,risk_per_trade_pct,stop_loss_pct,take_profit_pct,symbols,position_config,is_intraday,trading_mode,start_time,end_time,squareoff_time,entry_conditions,exit_conditions,risk_config,chart_config,execution_days,paper_strategy_type,market_type,lifecycle_state,lifecycle_reason,lifecycle_updated_at,created_at",
+              )
+              .eq("user_id", uid)
+              .order("created_at", { ascending: false })
+              .limit(50);
+            stratsData = (stratsFresh ?? []) as Record<string, unknown>[];
+          }
+        }
         const broker_connected = gate.live;
         const nowMs = Date.now();
         const liveTrades = (trades ?? []).filter((t) => !Boolean(t.is_paper_trade)) as Record<string, unknown>[];
@@ -373,7 +406,7 @@ export default function DashboardPage() {
             })
           : [];
         const feed_paused = !gate.live;
-        const user_strategies = (strats ?? []).map((s: Record<string, unknown>) => {
+        const user_strategies = stratsData.map((s: Record<string, unknown>) => {
           const syms = (s.symbols as unknown[]) || [];
           const pairs = syms
             .map((x) => (typeof x === "string" ? x : (x as { symbol?: string })?.symbol || ""))
@@ -423,7 +456,7 @@ export default function DashboardPage() {
             : null;
         const pct_mtm =
           portfolio_value > 0 ? Math.round((100 * open_mtm) / portfolio_value) : null;
-        const deployed = (strats ?? []).filter((s: Record<string, unknown>) => s.is_active).length;
+        const deployed = stratsData.filter((s: Record<string, unknown>) => s.is_active).length;
         const pending_executions = (pendingRows ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id ?? ""),
           strategy_id: String(r.strategy_id ?? ""),
@@ -454,7 +487,7 @@ export default function DashboardPage() {
           pending_executions,
           user_strategies,
           active_strategies_table: buildStrategyTableRows(
-            (strats ?? []) as Record<string, unknown>[],
+            stratsData,
             scopedLive,
             currencyMode,
           ),
