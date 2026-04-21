@@ -73,7 +73,7 @@ export default function LoginPage() {
 
   if (!loading && user) {
     const r = searchParams.get("redirect");
-    return <Navigate to={r && r.startsWith("/") ? r : "/"} replace />;
+    return <Navigate to={r && r.startsWith("/") ? r : "/dashboard"} replace />;
   }
 
   const onSubmit = async (e: FormEvent) => {
@@ -93,7 +93,7 @@ export default function LoginPage() {
         return;
       }
       const r = searchParams.get("redirect");
-      navigate(r && r.startsWith("/") ? r : "/", { replace: true });
+      navigate(r && r.startsWith("/") ? r : "/dashboard", { replace: true });
     } finally {
       setBusy(false);
     }

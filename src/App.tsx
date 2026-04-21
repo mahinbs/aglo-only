@@ -12,7 +12,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/request-access" element={<AccessRequestPage />} />
-        <Route path="/landing" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/broker-callback" element={<BrokerCallbackPage />} />
         <Route
@@ -24,14 +24,14 @@ export default function App() {
           }
         />
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <RequireAuth>
               <DashboardPage />
             </RequireAuth>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

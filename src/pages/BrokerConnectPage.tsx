@@ -16,7 +16,7 @@ export default function BrokerConnectPage() {
   }
 
   if (!authLoading && !brokerLoading && brokerReady) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const onConnect = async () => {

@@ -43,7 +43,7 @@ export default function BrokerCallbackPage() {
         }
         setStatus("done");
         setMessage("Broker connected! Returning to dashboard…");
-        setTimeout(() => navigate("/", { replace: true }), 1200);
+        setTimeout(() => navigate("/dashboard", { replace: true }), 1200);
       } catch (e: unknown) {
         setStatus("error");
         setMessage(e instanceof Error ? e.message : "Unexpected error");
