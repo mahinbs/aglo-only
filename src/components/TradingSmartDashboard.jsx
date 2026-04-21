@@ -454,6 +454,61 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   border-color:rgba(56,189,248,0.35);
   background:rgba(56,189,248,0.12);
 }
+.devreq-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  padding: 20px;
+}
+.devreq-modal {
+  width: min(1100px, 96vw);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(180deg, rgba(6, 12, 24, 0.96), rgba(5, 9, 18, 0.96));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  padding: 18px;
+}
+.devreq-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.devreq-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.devreq-modal-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.devreq-modal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.5);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+.devreq-modal-close:hover {
+  color: var(--text-primary);
+  border-color: var(--border-glow);
+}
 
 /* RISK GAUGE */
 .risk-gauge { display:flex; align-items:center; gap:20px; margin-top:12px; }
@@ -564,6 +619,8 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   .hero{grid-template-columns:1fr}
   .stats-row{grid-template-columns:1fr 1fr}
   .topnav{padding:0 16px}
+  .devreq-modal{padding:14px}
+  .devreq-modal-grid{grid-template-columns:1fr}
 }
 `;
 
@@ -789,6 +846,21 @@ export default function TradingSmartDashboard(props = {}) {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
+  // Development request modal behaviors
+  useEffect(() => {
+    if (!showDevRequest) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setShowDevRequest(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showDevRequest]);
+
   // Draw chart on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -872,7 +944,7 @@ export default function TradingSmartDashboard(props = {}) {
     for (let i = 0; i <= 5; i++) {
       const val = min + (range / 5) * (5 - i);
       const y = pad.top + (ch / 5) * i;
-      ctx.fillText("$" + (val / 1000).toFixed(0) + "k", w - 4, y + 4);
+      ctx.fillText("₹" + (val / 1000).toFixed(0) + "k", w - 4, y + 4);
     }
   }, [chartData]);
 
@@ -1901,6 +1973,16 @@ export default function TradingSmartDashboard(props = {}) {
               <div className="strategy-builder">
                 {/* Left: Strategy Cards */}
                 <div className="strategy-cards">
+                <button
+                    type="button"
+                    className="btn-add-strategy"
+                    onClick={() => {
+                      setStratStep(0);
+                      setShowExactAlgoBuilder(true);
+                    }}
+                  >
+                    + Create New Strategy
+                  </button>
                   {myStrategies.map((s) => {
                     const lcState = normalizeLifecycleState(
                       s.lifecycle_state,
@@ -2276,16 +2358,6 @@ export default function TradingSmartDashboard(props = {}) {
                       </div>
                     );
                   })}
-                  <button
-                    type="button"
-                    className="btn-add-strategy"
-                    onClick={() => {
-                      setStratStep(0);
-                      setShowExactAlgoBuilder(true);
-                    }}
-                  >
-                    + Create New Strategy
-                  </button>
                 </div>
 
                 <div>
@@ -2661,21 +2733,41 @@ export default function TradingSmartDashboard(props = {}) {
                 <button
                   className="action-btn btn-primary"
                   style={{ padding: "6px 16px", fontSize: 12 }}
-                  onClick={() => setShowDevRequest(!showDevRequest)}
+                  onClick={() => setShowDevRequest(true)}
                 >
-                  {showDevRequest ? "Close" : "+ New Request"}
+                  + New Request
                 </button>
               </div>
 
               {showDevRequest && (
                 <div
+                  className="devreq-modal-overlay"
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 24,
                     marginBottom: 24,
                   }}
+                  onClick={() => setShowDevRequest(false)}
                 >
+                  <div
+                    className="devreq-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Strategy development request form"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="devreq-modal-head">
+                      <div className="devreq-modal-title">
+                        Submit Strategy Development Request
+                      </div>
+                      <button
+                        type="button"
+                        className="devreq-modal-close"
+                        aria-label="Close strategy development request form"
+                        onClick={() => setShowDevRequest(false)}
+                      >
+                        &#x2715;
+                      </button>
+                    </div>
+                    <div className="devreq-modal-grid">
                   <div className="strategy-form">
                     <div
                       style={{
@@ -2996,6 +3088,8 @@ export default function TradingSmartDashboard(props = {}) {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
                     </div>
                   </div>
                 </div>
