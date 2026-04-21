@@ -15,7 +15,6 @@ import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { StrategyLiveChart } from "./StrategyLiveChart";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
-import '../styles/'
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
 const DEFAULT_USD_PER_INR = 1 / 83;
@@ -3855,6 +3854,7 @@ export default function TradingSmartDashboard(props = {}) {
       />
       {/* Toaster for broker-gate notifications and strategy feedback */}
       <Toaster richColors position="top-right" />
+
     </>
   );
 }
