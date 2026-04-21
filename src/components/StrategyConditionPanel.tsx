@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useConditionEvents, type ConditionRow } from "../hooks/useConditionEvents";
-import type { LifecycleState } from "../lib/lifecycle";
+import { isMarketClosedReason, type LifecycleState } from "../lib/lifecycle";
 
 function formatVal(v: number | string | null | undefined): string {
   if (v === null || v === undefined) return "—";
@@ -37,6 +37,7 @@ export function StrategyConditionPanel(props: {
   /** When false, hides the title row (e.g. live modal already shows strategy name). */
   showStrategyTitle?: boolean;
   staleAfterMs?: number;
+  lifecycleReason?: string | null;
 }) {
   const {
     strategyId,
@@ -46,6 +47,7 @@ export function StrategyConditionPanel(props: {
     lifecycleState,
     showStrategyTitle = true,
     staleAfterMs,
+    lifecycleReason,
   } = props;
   const isLiveLifecycle =
     lifecycleState === undefined ||
@@ -132,15 +134,30 @@ export function StrategyConditionPanel(props: {
               : "Stopped — activate to resume"}
         </span>
       ) : !isLiveLifecycle ? (
-        <span className="text-slate-500">Paused — activate to see live conditions</span>
+        <span className="text-slate-500">
+          {lifecycleState === "PAUSED" && lifecycleReason?.trim()
+            ? `Paused — ${lifecycleReason.trim().slice(0, 160)}${lifecycleReason.trim().length > 160 ? "…" : ""}`
+            : "Paused — activate to see live conditions"}
+        </span>
       ) : lifecycleState === "WAITING_MARKET_OPEN" ? (
-        <span className="text-amber-400">Waiting for strategy trading window (market/session timing)</span>
+        <span className="text-amber-400">
+          {isMarketClosedReason(lifecycleReason)
+            ? "Outside the cash session or your strategy window — scanning pauses until it reopens."
+            : "Waiting for strategy trading window (market/session timing)"}
+        </span>
       ) : !brokerLive ? (
         <span className="text-slate-500">Connect broker for live condition ticks</span>
       ) : stale ? (
-        <span className="text-amber-400">
-          Waiting for engine update (no new condition snapshot in {staleLabelSec}s)
-        </span>
+        <div className="space-y-1">
+          <span className="text-amber-400">
+            No new engine snapshot in {staleLabelSec}s (ticks only move this forward when the scanner runs for this
+            symbol).
+          </span>
+          <span className="block text-[10px] text-slate-500 leading-snug">
+            Chart LTP comes from the quote API; the &quot;Live&quot; column is from the last engine evaluation — they
+            can differ briefly.
+          </span>
+        </div>
       ) : (
         <span className={streamStale ? "text-amber-400" : "text-emerald-400"}>
           {streamStale ? "Live data stale — reconnecting…" : `Last evaluated ${lastEval}`}

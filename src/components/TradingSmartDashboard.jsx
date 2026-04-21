@@ -700,6 +700,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [goLiveBusy, setGoLiveBusy] = useState(false);
   const [liveViewTarget, setLiveViewTarget] = useState(null);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
+  const [liveModalStopBusy, setLiveModalStopBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [stratStep, setStratStep] = useState(0);
   const [optionsStep, setOptionsStep] = useState(0);
@@ -3514,9 +3515,10 @@ export default function TradingSmartDashboard(props = {}) {
                 lineHeight: 1.55,
               }}
             >
-              Intraday candles refresh from the BFF; condition rows mirror the
-              strategy engine snapshots (updates can be spaced out — that is
-              normal during scanning).
+              Intraday candles refresh from the BFF; condition rows mirror the strategy engine snapshots (updates can be
+              spaced out — that is normal during scanning). Condition rows are not every quote tick. Intraday algos auto-pause
+              after the cash session unless you still have an open live position — then use{" "}
+              <strong>Stop strategy</strong> when you are done.
             </p>
             {(() => {
               const ch = chartRoutingFromStrategyCard(liveViewTarget);
@@ -3536,6 +3538,10 @@ export default function TradingSmartDashboard(props = {}) {
                         height={260}
                         interval="5m"
                       />
+                      <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.45 }}>
+                        Chart LTP = quote stream. Condition &quot;Live&quot; column = last engine pass for that symbol — small
+                        gaps are normal.
+                      </p>
                     </div>
                   ) : (
                     <p
@@ -3555,6 +3561,7 @@ export default function TradingSmartDashboard(props = {}) {
                     brokerLive={sessLive}
                     streamStale={positionsStreamStale}
                     lifecycleState={lvLc}
+                    lifecycleReason={liveViewTarget.lifecycle_reason ?? null}
                     showStrategyTitle={false}
                   />
                 </>
@@ -3568,6 +3575,42 @@ export default function TradingSmartDashboard(props = {}) {
                 flexWrap: "wrap",
               }}
             >
+              {useChartmate && liveViewTarget.deployed && chartmateActions?.onToggleDeploy ? (
+                <button
+                  type="button"
+                  className="action-btn btn-warning"
+                  style={{ minWidth: 130, borderColor: "rgba(248,113,113,0.45)", color: "var(--accent-red)" }}
+                  disabled={liveModalStopBusy}
+                  title="Turn off scanning for this strategy (same as Stop on the card)"
+                  onClick={() => {
+                    void (async () => {
+                      if (!liveViewTarget || !chartmateActions?.onToggleDeploy) return;
+                      setLiveModalStopBusy(true);
+                      try {
+                        const err = await chartmateActions.onToggleDeploy(liveViewTarget.id, false);
+                        if (err) {
+                          const msg = typeof err === "string" ? err : String(err);
+                          toast.error("Could not stop strategy", { description: msg, duration: 10_000 });
+                          addLog("error", msg);
+                          return;
+                        }
+                        toast.success("Strategy stopped", { description: liveViewTarget.name });
+                        addLog("warn", `Strategy "${liveViewTarget.name}" stopped from Live view`);
+                        chartmateActions.onRefresh?.();
+                        setLiveViewTarget(null);
+                      } catch (e) {
+                        const msg = e instanceof Error ? e.message : "Unexpected error.";
+                        toast.error("Stop failed", { description: msg });
+                        addLog("error", msg);
+                      } finally {
+                        setLiveModalStopBusy(false);
+                      }
+                    })();
+                  }}
+                >
+                  {liveModalStopBusy ? "Stopping…" : "Stop strategy"}
+                </button>
+              ) : null}
               {useChartmate && sessLive ? (
                 <button
                   type="button"
