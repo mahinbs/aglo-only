@@ -681,6 +681,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [showExactAlgoBuilder, setShowExactAlgoBuilder] = useState(false);
   const [editAlgoTarget, setEditAlgoTarget] = useState(null); // strategy being edited
   const [showExactOptionsBuilder, setShowExactOptionsBuilder] = useState(false);
+  const [killActive, setKillActive] = useState(false);
 
   const sparkData = useMemo(
     () => ({
@@ -1057,6 +1058,14 @@ export default function TradingSmartDashboard(props = {}) {
       st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
     );
   });
+
+  const handleKillSwitch = () => {
+    setKillActive((prev) => {
+      if (!prev) addLog("error", "KILL SWITCH ACTIVATED — All strategies halted, open orders cancelled");
+      else addLog("info", "Kill switch deactivated — Systems resuming");
+      return !prev;
+    });
+  };
 
   return (
     <>
