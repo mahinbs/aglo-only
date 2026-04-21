@@ -454,61 +454,6 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   border-color:rgba(56,189,248,0.35);
   background:rgba(56,189,248,0.12);
 }
-.devreq-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(2, 6, 23, 0.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 4000;
-  padding: 20px;
-}
-.devreq-modal {
-  width: min(1100px, 96vw);
-  max-height: 90vh;
-  overflow: auto;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-  background: linear-gradient(180deg, rgba(6, 12, 24, 0.96), rgba(5, 9, 18, 0.96));
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-  padding: 18px;
-}
-.devreq-modal-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-.devreq-modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-.devreq-modal-title {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-.devreq-modal-close {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  border: 1px solid var(--border-color);
-  background: rgba(15, 23, 42, 0.5);
-  color: var(--text-secondary);
-  font-size: 16px;
-  cursor: pointer;
-}
-.devreq-modal-close:hover {
-  color: var(--text-primary);
-  border-color: var(--border-glow);
-}
 
 /* RISK GAUGE */
 .risk-gauge { display:flex; align-items:center; gap:20px; margin-top:12px; }
@@ -619,8 +564,6 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   .hero{grid-template-columns:1fr}
   .stats-row{grid-template-columns:1fr 1fr}
   .topnav{padding:0 16px}
-  .devreq-modal{padding:14px}
-  .devreq-modal-grid{grid-template-columns:1fr}
 }
 `;
 
@@ -4089,33 +4032,30 @@ export default function TradingSmartDashboard(props = {}) {
 
       {showDevRequest && (
         <div
-          className="devreq-modal-overlay"
-          style={{
-            marginBottom: 24,
-          }}
+          className="fixed inset-0 z-[4000] flex items-center justify-center bg-[rgba(2,6,23,0.72)] p-5 backdrop-blur-[6px]"
           onClick={() => setShowDevRequest(false)}
         >
           <div
-            className="devreq-modal"
+            className="max-h-[90vh] w-[min(1100px,96vw)] overflow-auto rounded-[14px] border border-[var(--border-color)] bg-[linear-gradient(180deg,rgba(6,12,24,0.96),rgba(5,9,18,0.96))] p-[14px] shadow-[0_30px_80px_rgba(0,0,0,0.6)] md:p-[18px]"
             role="dialog"
             aria-modal="true"
             aria-label="Strategy development request form"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="devreq-modal-head">
-              <div className="devreq-modal-title">
+            <div className="mb-[14px] flex items-center justify-between gap-3">
+              <div className="text-[13px] font-semibold uppercase tracking-[2px] text-[var(--text-secondary)]">
                 Submit Strategy Development Request
               </div>
               <button
                 type="button"
-                className="devreq-modal-close"
+                className="h-[34px] w-[34px] cursor-pointer rounded-[9px] border border-[var(--border-color)] bg-[rgba(15,23,42,0.5)] text-base text-[var(--text-secondary)] transition-colors hover:border-[var(--border-glow)] hover:text-[var(--text-primary)]"
                 aria-label="Close strategy development request form"
                 onClick={() => setShowDevRequest(false)}
               >
                 &#x2715;
               </button>
             </div>
-            <div className="devreq-modal-grid">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="strategy-form">
                 <div
                   style={{
