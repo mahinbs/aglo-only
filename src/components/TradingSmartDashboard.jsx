@@ -754,16 +754,28 @@ export default function TradingSmartDashboard(props = {}) {
   const chartData = useMemo(() => {
     const pointsByTimeline = { "1D": 48, "1W": 64, "1M": 88, ALL: 140 };
     const points = pointsByTimeline[equityTimeline] ?? 88;
-    const rawRef = Number(summary?.portfolio_value ?? summary?.cumulative_pnl ?? 0);
+    const rawRef = Number(
+      summary?.portfolio_value ?? summary?.cumulative_pnl ?? 0,
+    );
     const reference =
       Number.isFinite(rawRef) && rawRef !== 0
         ? Math.abs(convertInrSourceAmount(rawRef, currencyMode))
         : 275000;
-    const startFactorByTimeline = { "1D": 0.96, "1W": 0.92, "1M": 0.86, ALL: 0.76 };
+    const startFactorByTimeline = {
+      "1D": 0.96,
+      "1W": 0.92,
+      "1M": 0.86,
+      ALL: 0.76,
+    };
     const startFactor = startFactorByTimeline[equityTimeline] ?? 0.86;
     const start = reference * startFactor;
     const driftPerStep = (reference - start) / Math.max(1, points - 1);
-    const waveAmpByTimeline = { "1D": 0.0012, "1W": 0.0018, "1M": 0.0021, ALL: 0.0024 };
+    const waveAmpByTimeline = {
+      "1D": 0.0012,
+      "1W": 0.0018,
+      "1M": 0.0021,
+      ALL: 0.0024,
+    };
     const waveAmp = reference * (waveAmpByTimeline[equityTimeline] ?? 0.0021);
     let value = start;
     const series = [];
@@ -774,7 +786,12 @@ export default function TradingSmartDashboard(props = {}) {
       series.push(Math.max(reference * 0.4, value));
     }
     return series;
-  }, [equityTimeline, summary?.portfolio_value, summary?.cumulative_pnl, currencyMode]);
+  }, [
+    equityTimeline,
+    summary?.portfolio_value,
+    summary?.cumulative_pnl,
+    currencyMode,
+  ]);
 
   // Clock
   useEffect(() => {
@@ -800,8 +817,8 @@ export default function TradingSmartDashboard(props = {}) {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [logs]);
 
-   // Draw chart on canvas
-   useEffect(() => {
+  // Draw chart on canvas
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -811,7 +828,8 @@ export default function TradingSmartDashboard(props = {}) {
     canvas.style.width = rect.width + "px";
     canvas.style.height = rect.height + "px";
     ctx.setTransform(2, 0, 0, 2, 0, 0);
-    const w = rect.width, h = rect.height;
+    const w = rect.width,
+      h = rect.height;
     ctx.clearRect(0, 0, w, h);
     if (chartData.length < 2) return;
     const min = Math.min(...chartData) * 0.998;
@@ -825,7 +843,10 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.lineWidth = 1;
     for (let i = 0; i <= 5; i++) {
       const y = pad.top + (ch / 5) * i;
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
 
     const gradient = ctx.createLinearGradient(0, pad.top, 0, h);
@@ -844,21 +865,34 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.fill();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(toX(i), toY(v)); else ctx.lineTo(toX(i), toY(v)); });
+    chartData.forEach((v, i) => {
+      if (i === 0) ctx.moveTo(toX(i), toY(v));
+      else ctx.lineTo(toX(i), toY(v));
+    });
     ctx.strokeStyle = "#38bdf8";
     ctx.lineWidth = 2.5;
     ctx.lineJoin = "round";
     ctx.stroke();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => { if (i === 0) ctx.moveTo(toX(i), toY(v)); else ctx.lineTo(toX(i), toY(v)); });
+    chartData.forEach((v, i) => {
+      if (i === 0) ctx.moveTo(toX(i), toY(v));
+      else ctx.lineTo(toX(i), toY(v));
+    });
     ctx.strokeStyle = "rgba(56,189,248,0.3)";
     ctx.lineWidth = 6;
     ctx.stroke();
 
-    const lx = toX(chartData.length - 1), ly = toY(chartData[chartData.length - 1]);
-    ctx.beginPath(); ctx.arc(lx, ly, 5, 0, Math.PI * 2); ctx.fillStyle = "#38bdf8"; ctx.fill();
-    ctx.beginPath(); ctx.arc(lx, ly, 10, 0, Math.PI * 2); ctx.fillStyle = "rgba(56,189,248,0.2)"; ctx.fill();
+    const lx = toX(chartData.length - 1),
+      ly = toY(chartData[chartData.length - 1]);
+    ctx.beginPath();
+    ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+    ctx.fillStyle = "#38bdf8";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(lx, ly, 10, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(56,189,248,0.2)";
+    ctx.fill();
 
     ctx.fillStyle = "rgba(148,163,184,0.5)";
     ctx.font = "11px JetBrains Mono";
@@ -1062,7 +1096,11 @@ export default function TradingSmartDashboard(props = {}) {
 
   const handleKillSwitch = () => {
     setKillActive((prev) => {
-      if (!prev) addLog("error", "KILL SWITCH ACTIVATED — All strategies halted, open orders cancelled");
+      if (!prev)
+        addLog(
+          "error",
+          "KILL SWITCH ACTIVATED — All strategies halted, open orders cancelled",
+        );
       else addLog("info", "Kill switch deactivated — Systems resuming");
       return !prev;
     });
@@ -1658,7 +1696,7 @@ export default function TradingSmartDashboard(props = {}) {
                       &#x21BB; Refresh data
                     </button>
                   )}
-                  
+
                   <div
                     style={{
                       fontSize: 11,
@@ -2649,14 +2687,20 @@ export default function TradingSmartDashboard(props = {}) {
                   Equity Curve
                 </div>
                 <div className="timeline-switch">
-                  {["1D", "1W", "1M", "ALL"].map((key) => (
+                  {["1D", "1W", "1M", "ALL"].map((r) => (
                     <button
-                      key={key}
-                      type="button"
-                      className={`timeline-btn ${equityTimeline === key ? "active" : ""}`}
-                      onClick={() => setEquityTimeline(key)}
+                      key={r}
+                      className="action-btn btn-primary"
+                      style={{ padding: "6px 14px", fontSize: 11 }}
+                      onClick={() => {
+                        const d = [2400000];
+                        const n = { "1D": 24, "1W": 50, "1M": 90, ALL: 200 }[r];
+                        for (let i = 1; i < n; i++)
+                          d.push(d[i - 1] + (Math.random() - 0.42) * 8000);
+                        setChartData(d);
+                      }}
                     >
-                      {key}
+                      {r}
                     </button>
                   ))}
                 </div>
@@ -3877,7 +3921,6 @@ export default function TradingSmartDashboard(props = {}) {
       />
       {/* Toaster for broker-gate notifications and strategy feedback */}
       <Toaster richColors position="top-right" />
-
     </>
   );
 }
