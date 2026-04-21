@@ -8,7 +8,6 @@ const STEP_NAMES = [
   "KYC",
   "Trading Profile",
   "Broker & API",
-  // "Strategy Setup",
   "Risk & Consent",
   "Review & Submit",
 ];
@@ -377,50 +376,6 @@ export default function AccessRequestPage() {
                 </div>
               </div>
             )}
-
-            {/* {step === 5 && (
-              <div className="step active">
-                <div className="step-title">Strategy setup</div>
-                <div className="form-group">
-                  <label className="form-label">Strategy type</label>
-                  <select className="form-select" value={form.strategy} onChange={(e) => setForm({ ...form, strategy: e.target.value })}>
-                    <option value="">Select</option>
-                    <option>Trend Following</option>
-                    <option>Mean Reversion</option>
-                    <option>Options</option>
-                    <option>Scalping</option>
-                  </select>
-                </div>
-                <div className="form-grid" style={{ marginTop: 12 }}>
-                  <div className="form-group">
-                    <div className="slider-group">
-                      <div className="slider-header">
-                        <label className="form-label">Risk / trade %</label>
-                        <span className="slider-value">{form.riskPerTrade}%</span>
-                      </div>
-                      <input type="range" min="0.5" max="5" step="0.5" value={form.riskPerTrade} onChange={(e) => setForm({ ...form, riskPerTrade: e.target.value })} />
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <div className="slider-group">
-                      <div className="slider-header">
-                        <label className="form-label">Max daily loss %</label>
-                        <span className="slider-value">{form.maxDailyLoss}%</span>
-                      </div>
-                      <input type="range" min="1" max="10" step="0.5" value={form.maxDailyLoss} onChange={(e) => setForm({ ...form, maxDailyLoss: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
-                <div className="radio-group" style={{ marginTop: 16 }}>
-                  {["Fully Automated", "Semi-Automated"].map((m) => (
-                    <label key={m} className={`radio-option ${form.mode === m ? "selected" : ""}`}>
-                      <input type="radio" name="mode" checked={form.mode === m} onChange={() => setForm({ ...form, mode: m })} />
-                      {m}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )} */}
 
             {step === 5 && (
               <div className="step active">
