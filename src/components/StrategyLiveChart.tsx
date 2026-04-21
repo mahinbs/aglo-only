@@ -299,8 +299,8 @@ export function StrategyLiveChart({
   }, [seriesApi, accessToken, symbol, quoteExchange, interval]);
 
   return (
-    <div className="rounded-md border border-border/50 bg-muted/10 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-border/40 text-[10px] text-muted-foreground">
+    <div className="overflow-hidden rounded-md border border-border/50 bg-muted/10">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-2 py-1 text-[10px] text-muted-foreground">
         <span className="font-mono truncate">
           {symbol.toUpperCase()} · {interval} · {historyExchange}
           {spot != null ? <span className="text-foreground ml-2">LTP {spot.toFixed(2)}</span> : null}

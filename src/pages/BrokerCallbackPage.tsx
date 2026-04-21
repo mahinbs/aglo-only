@@ -52,8 +52,18 @@ export default function BrokerCallbackPage() {
   }, [navigate]);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#06080d", color: "#e2e8f0", padding: 24 }}>
-      <div style={{ textAlign: "center", maxWidth: 360 }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#06080d",
+        color: "#e2e8f0",
+        padding: 24,
+      }}
+    >
+      <div style={{ textAlign: "center", maxWidth: 420, width: "100%" }}>
         {status === "saving" && <p style={{ fontSize: 14 }}>{message}</p>}
         {status === "done" && <p style={{ fontSize: 14, color: "#34d399" }}>{message}</p>}
         {status === "error" && (

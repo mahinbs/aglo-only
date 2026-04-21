@@ -317,10 +317,10 @@ export function AlgoOnlyOptionsWorkspace(props?: {
   };
 
   return (
-    <div className="w-full overflow-auto pb-2">
+    <div className="w-full overflow-x-hidden pb-2">
       {/* Header */}
       <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
-        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 px-3 py-4 sm:flex-row sm:items-center sm:px-6">
           <div>
             <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
@@ -333,7 +333,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
               )}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1 text-right">
+          <div className="flex w-full flex-col items-start gap-1 text-left sm:w-auto sm:items-end sm:text-right">
             {accountCaps?.limits && (
               <div className="text-[10px] text-muted-foreground font-mono">
                 Active{" "}
@@ -351,11 +351,15 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                 ) : null}
               </div>
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <Button variant="ghost" size="sm" onClick={fetchStrategies}>
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button size="sm" onClick={() => { setEditStrategy(null); setShowBuilder(true); }}>
+            <Button
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => { setEditStrategy(null); setShowBuilder(true); }}
+            >
               <Plus className="h-4 w-4 mr-1" />New Strategy
             </Button>
             </div>
@@ -363,7 +367,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="space-y-6 p-3 sm:p-6">
         {/* Broker not connected warning */}
         {!brokerConnected && (
           <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
@@ -481,7 +485,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                             />
                           </div>
                         ) : null}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
                           <div className="flex justify-between"><span className="text-muted-foreground">ORB Duration</span><span>{(s.orb_config as any)?.orb_duration_mins ?? 15} min</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground">Momentum Bars</span><span>{(s.orb_config as any)?.momentum_bars ?? 3}</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground">Time Exit</span><span>{(s.exit_rules as any)?.time_exit_hhmm ?? "15:15"}</span></div>

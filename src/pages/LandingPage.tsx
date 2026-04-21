@@ -8,7 +8,8 @@ export default function LandingPage() {
       style={{
         border: "none",
         width: "100%",
-        height: "100vh",
+        height: "100dvh",
+        minHeight: "100vh",
         display: "block",
         background: "#060912",
       }}

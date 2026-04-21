@@ -5,17 +5,7 @@ export function ModalShell({ open, title, onClose, children }) {
   if (!open) return null;
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 400,
-        background: "rgba(0,0,0,0.75)",
-        backdropFilter: "blur(10px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-      }}
+      className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 p-3 backdrop-blur-[10px] sm:p-5"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
@@ -25,49 +15,29 @@ export function ModalShell({ open, title, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="ts-modal-title"
-        style={{
-          width: "min(560px, calc(100vw - 32px))",
-          maxHeight: "min(88vh, 900px)",
-          overflow: "auto",
-          borderRadius: 16,
-          border: "1px solid rgba(56, 189, 248, 0.22)",
-          background: "linear-gradient(165deg, rgba(12, 17, 28, 0.98), rgba(6, 8, 13, 0.99))",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.65), 0 0 40px rgba(56, 189, 248, 0.06)",
-        }}
+        className="max-h-[88vh] w-[min(560px,calc(100vw-24px))] overflow-auto rounded-2xl border border-cyan-400/25 bg-[linear-gradient(165deg,rgba(12,17,28,0.98),rgba(6,8,13,0.99))] shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_40px_rgba(56,189,248,0.06)] sm:w-[min(560px,calc(100vw-32px))]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "16px 18px",
-            borderBottom: "1px solid rgba(56, 189, 248, 0.1)",
-          }}
+          className="flex items-center justify-between border-b border-cyan-400/10 px-4 py-3 sm:px-[18px] sm:py-4"
         >
-          <h2 id="ts-modal-title" style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#f1f5f9", fontFamily: "Orbitron, sans-serif", letterSpacing: 0.5 }}>
+          <h2
+            id="ts-modal-title"
+            className="m-0 pr-2 text-sm font-bold tracking-[0.5px] text-slate-100 sm:text-[15px]"
+            style={{ fontFamily: "Orbitron, sans-serif" }}
+          >
             {title}
           </h2>
           <button
             type="button"
             aria-label="Close"
             onClick={() => onClose?.()}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              border: "1px solid rgba(148, 163, 184, 0.25)",
-              background: "rgba(15, 23, 42, 0.6)",
-              color: "#94a3b8",
-              cursor: "pointer",
-              fontSize: 20,
-              lineHeight: 1,
-            }}
+            className="h-9 w-9 cursor-pointer rounded-[10px] border border-slate-400/25 bg-slate-900/60 text-[20px] leading-none text-slate-400"
           >
             ×
           </button>
         </div>
-        <div style={{ padding: "18px 20px 22px" }}>{children}</div>
+        <div className="px-4 pb-5 pt-4 sm:px-5 sm:pb-[22px] sm:pt-[18px]">{children}</div>
       </div>
     </div>
   );

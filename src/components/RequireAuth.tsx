@@ -8,7 +8,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="login-screen" style={{ position: "fixed" }}>
+      <div className="login-screen">
         <div className="bg-grid" />
         <div className="bg-orbs">
           <div className="orb orb-1" />
@@ -16,7 +16,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
           <div className="orb orb-3" />
         </div>
         <div className="scanlines" />
-        <p style={{ position: "relative", zIndex: 3, color: "var(--text-muted)" }}>Loading…</p>
+        <p className="relative z-[3] px-4 text-center text-[13px] text-[var(--text-muted)]">Loading…</p>
       </div>
     );
   }

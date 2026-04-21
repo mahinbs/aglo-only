@@ -756,7 +756,7 @@ export default function DashboardPage() {
   return (
     <div style={{ position: "relative" }}>
       {loadErr && (
-        <div style={{ position: "fixed", top: 8, right: 8, zIndex: 200, background: "rgba(127,29,29,0.9)", color: "#fecaca", padding: "8px 12px", borderRadius: 8, fontSize: 12 }}>
+        <div style={{ position: "fixed", top: 8, right: 8, left: 8, zIndex: 200, background: "rgba(127,29,29,0.9)", color: "#fecaca", padding: "8px 12px", borderRadius: 8, fontSize: 12, maxWidth: 560, marginLeft: "auto" }}>
           {loadErr}
         </div>
       )}

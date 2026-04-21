@@ -79,7 +79,7 @@ export function StrategyConditionPanel(props: {
   const rows: ConditionRow[] = Array.isArray(event?.conditions) ? (event!.conditions as ConditionRow[]) : [];
 
   return (
-    <div className="rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[11px] text-muted-foreground space-y-2">
+    <div className="space-y-2 rounded-md border border-white/10 bg-black/20 px-2 py-2 text-[10px] text-muted-foreground sm:text-[11px]">
       {showStrategyTitle ? (
         <div className="flex items-center justify-between gap-2">
           <span className="font-medium text-foreground/90 truncate">{strategyName}</span>
@@ -148,8 +148,8 @@ export function StrategyConditionPanel(props: {
       )}
 
       {rows.length > 0 && (
-        <div className="border border-white/5 rounded overflow-hidden">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto rounded border border-white/5">
+          <table className="min-w-[520px] w-full border-collapse text-left">
             <thead>
               <tr className="bg-white/5 text-[10px] uppercase tracking-wide">
                 <th className="px-1.5 py-1 font-medium">Condition</th>

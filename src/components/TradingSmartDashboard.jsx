@@ -564,6 +564,13 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   .hero{grid-template-columns:1fr}
   .stats-row{grid-template-columns:1fr 1fr}
   .topnav{padding:0 16px}
+  .card{padding:16px}
+  .card-header{flex-wrap:wrap;gap:10px}
+  .timeline-switch{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .strategy-table{display:block;overflow-x:auto}
+  .strategy-table thead,.strategy-table tbody,.strategy-table tr{white-space:nowrap}
+  .log-entry{flex-wrap:wrap;gap:4px 10px}
+  .log-time{min-width:unset}
 }
 `;
 
@@ -2360,13 +2367,7 @@ export default function TradingSmartDashboard(props = {}) {
                         (ChartMate{" "}
                         <code style={{ fontSize: 10 }}>manage-strategy</code>).
                       </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr 1fr",
-                          gap: 8,
-                        }}
-                      >
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                         <div className="my-strat-param">
                           <span className="my-strat-param-label">Total</span>
                           <span className="my-strat-param-value">
@@ -2734,6 +2735,8 @@ export default function TradingSmartDashboard(props = {}) {
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 10,
                       }}
                     >
                       <div>
@@ -2889,7 +2892,7 @@ export default function TradingSmartDashboard(props = {}) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                 gap: 8,
                 marginBottom: 14,
               }}
@@ -3502,7 +3505,7 @@ export default function TradingSmartDashboard(props = {}) {
         onClose={() => setLiveViewTarget(null)}
       >
         {liveViewTarget ? (
-          <div className="strategy-form" style={{ maxWidth: 760 }}>
+          <div className="strategy-form w-full max-w-[760px]">
             <p
               style={{
                 fontSize: 12,
@@ -3569,7 +3572,7 @@ export default function TradingSmartDashboard(props = {}) {
                 <button
                   type="button"
                   className="action-btn btn-primary"
-                  style={{ flex: 1, minWidth: 140 }}
+                  style={{ flex: 1 }}
                   disabled={goLiveBusy}
                   title="Merge another symbol into this strategy (same manage-strategy flow as portfolio)"
                   onClick={() => {
@@ -3585,7 +3588,7 @@ export default function TradingSmartDashboard(props = {}) {
               <button
                 type="button"
                 className="action-btn btn-warning"
-                style={{ minWidth: 120 }}
+                style={{ minWidth: 120, flex: "1 1 auto" }}
                 onClick={() => {
                   setEditAlgoTarget(liveViewTarget._raw ?? liveViewTarget);
                   setShowExactAlgoBuilder(true);
@@ -3602,7 +3605,8 @@ export default function TradingSmartDashboard(props = {}) {
                   style={{
                     borderColor: "rgba(251,146,60,0.45)",
                     color: "var(--accent-orange)",
-                    minWidth: 140,
+                    minWidth: 120,
+                    flex: "1 1 auto",
                   }}
                   disabled={cancelPendingBusyId === liveViewTarget.id}
                   onClick={() => {
@@ -3644,7 +3648,7 @@ export default function TradingSmartDashboard(props = {}) {
               <button
                 type="button"
                 className="action-btn btn-primary"
-                style={{ minWidth: 90 }}
+                style={{ minWidth: 100, flex: "1 1 auto" }}
                 onClick={() => setLiveViewTarget(null)}
               >
                 Close
@@ -3681,7 +3685,7 @@ export default function TradingSmartDashboard(props = {}) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                 gap: 6,
                 marginBottom: 14,
               }}

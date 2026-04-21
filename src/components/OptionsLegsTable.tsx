@@ -101,8 +101,8 @@ export function OptionsLegsTable(props: {
   }
 
   return (
-    <div className="rounded-md border border-border/50 bg-muted/10 overflow-hidden text-[11px]">
-      <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-border/40 text-muted-foreground">
+    <div className="overflow-hidden rounded-md border border-border/50 bg-muted/10 text-[10px] sm:text-[11px]">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-2 py-1 text-muted-foreground">
         <span>Legs &amp; live P&amp;L</span>
         <div className="flex items-center gap-2">
           {streamStale ? <span className="text-amber-400">Stream stale</span> : null}
@@ -121,7 +121,7 @@ export function OptionsLegsTable(props: {
         <p className="text-muted-foreground px-2 py-3">No open legs for this strategy.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="min-w-[560px] w-full border-collapse">
             <thead>
               <tr className="text-left text-muted-foreground/80 border-b border-border/40">
                 <th className="px-2 py-1 font-medium">Leg</th>
