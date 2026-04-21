@@ -6,6 +6,7 @@ import { isMarketClosedReason, normalizeLifecycleState } from "../lib/lifecycle"
 import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
+import { computeTradeAnalytics } from "../lib/tradePerformance";
 
 type Summary = {
   configured?: boolean;
@@ -74,6 +75,18 @@ type Summary = {
       lifecycle_reason?: string | null;
       lifecycle_updated_at?: string | null;
   }>;
+  equity_curve?: Array<{ t: number; v: number }>;
+  sharpe_ratio?: number | null;
+  max_drawdown_pct?: number | null;
+  avg_trade_duration_sec?: number | null;
+};
+
+export type StrategyDevRequestCard = {
+  id: string;
+  name: string;
+  status: string;
+  submitted: string;
+  eta: string;
 };
 
 function brokerSessionLiveFromIntegration(integ: {
@@ -262,6 +275,7 @@ function normalizeSymbolRow(row: unknown): { symbol: string; exchange: string; q
 export default function DashboardPage() {
   const { user, session, loading, signOut } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [strategyDevRequests, setStrategyDevRequests] = useState<StrategyDevRequestCard[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [connectBusy, setConnectBusy] = useState(false);
   // INR-only mode for now.
@@ -278,6 +292,26 @@ export default function DashboardPage() {
       if (bffConfigured()) {
         const s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
         setSummary(s);
+        const uidBff = user?.id;
+        if (uidBff) {
+          const { data: devRows, error: devErr } = await supabase
+            .from("strategy_development_requests")
+            .select("id,strategy_name,status,eta,created_at")
+            .eq("user_id", uidBff)
+            .order("created_at", { ascending: false })
+            .limit(24);
+          if (!devErr && devRows) {
+            setStrategyDevRequests(
+              devRows.map((r) => ({
+                id: String(r.id),
+                name: String(r.strategy_name ?? "Request"),
+                status: String(r.status ?? "submitted").toLowerCase(),
+                submitted: String(r.created_at ?? "").slice(0, 10) || "—",
+                eta: r.eta ? String(r.eta).slice(0, 10) : "—",
+              })),
+            );
+          }
+        }
         return;
       }
         const uid = user?.id;
@@ -291,7 +325,9 @@ export default function DashboardPage() {
             .maybeSingle(),
           supabase
             .from("active_trades")
-            .select("id,symbol,action,status,entry_price,shares,current_pnl,strategy_type,strategy_id,is_paper_trade,entry_time")
+            .select(
+              "id,symbol,action,status,entry_price,shares,current_pnl,strategy_type,strategy_id,is_paper_trade,entry_time,exit_time",
+            )
             .eq("user_id", uid)
             .order("entry_time", { ascending: false })
             .limit(200),
@@ -398,13 +434,15 @@ export default function DashboardPage() {
           last_checked_at: r.last_checked_at ? formatEntryTimeShort(r.last_checked_at) : null,
           error_message: r.error_message ? String(r.error_message) : null,
         }));
+        const perf = computeTradeAnalytics(scopedLive, nowMs, LIVE_TRADE_LOOKBACK_DAYS);
+        const today_pnl = open_mtm + perf.today_realized_pnl;
         setSummary({
           broker_connected,
           broker_credentials_configured: gate.hasCreds,
           broker_session_live: gate.live,
           token_expires_at: gate.tokenExpiresAt,
           portfolio_value: portfolio_value || 0,
-          today_pnl: open_mtm,
+          today_pnl,
           cumulative_pnl,
           win_rate_pct,
           open_positions_pct_mtm: pct_mtm,
@@ -420,7 +458,28 @@ export default function DashboardPage() {
             scopedLive,
             currencyMode,
           ),
+          equity_curve: perf.equity_curve,
+          sharpe_ratio: perf.sharpe_ratio,
+          max_drawdown_pct: perf.max_drawdown_pct,
+          avg_trade_duration_sec: perf.avg_trade_duration_sec ?? undefined,
         });
+        const { data: devRows2, error: devErr2 } = await supabase
+          .from("strategy_development_requests")
+          .select("id,strategy_name,status,eta,created_at")
+          .eq("user_id", uid)
+          .order("created_at", { ascending: false })
+          .limit(24);
+        if (!devErr2 && devRows2) {
+          setStrategyDevRequests(
+            devRows2.map((r) => ({
+              id: String(r.id),
+              name: String(r.strategy_name ?? "Request"),
+              status: String(r.status ?? "submitted").toLowerCase(),
+              submitted: String(r.created_at ?? "").slice(0, 10) || "—",
+              eta: r.eta ? String(r.eta).slice(0, 10) : "—",
+            })),
+          );
+        }
     } catch (e: unknown) {
       setLoadErr(e instanceof Error ? e.message : "Failed to load dashboard");
     }
@@ -649,6 +708,79 @@ export default function DashboardPage() {
     [session?.user?.id, refresh],
   );
 
+  const onPauseAllStrategies = useCallback(async (): Promise<string | null> => {
+    if (!session?.access_token) return "Not signed in";
+    const res = await supabase.functions.invoke("manage-strategy", {
+      body: { action: "pause_all" },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const msg = (res.data as { error?: string } | null)?.error;
+    if (res.error) return res.error.message;
+    if (msg) return msg;
+    await refresh();
+    return null;
+  }, [session?.access_token, refresh]);
+
+  const onEmergencyKill = useCallback(async (): Promise<string | null> => {
+    if (!session?.access_token) return "Not signed in";
+    const pauseRes = await supabase.functions.invoke("manage-strategy", {
+      body: { action: "pause_all" },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
+    if (pauseRes.error) return pauseRes.error.message;
+    if (pauseErr) return pauseErr;
+    await supabase.functions.invoke("broker-order-action", {
+      body: { action: "cancel_all" },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    await refresh();
+    return null;
+  }, [session?.access_token, refresh]);
+
+  const onSubmitStrategyDevRequest = useCallback(
+    async (payload: {
+      strategy_name: string;
+      description: string;
+      market: string;
+      priority: string;
+      contact_email: string;
+      file: File | null;
+    }): Promise<string | null> => {
+      if (!session?.access_token || !user?.id) return "Not signed in";
+      let document_object_path: string | null = null;
+      if (payload.file) {
+        const safe = payload.file.name.replace(/[^\w.\-()+ ]+/g, "_").slice(0, 120);
+        const objectPath = `${user.id}/${Date.now()}_${safe}`;
+        const up = await supabase.storage
+          .from("strategy-dev-docs")
+          .upload(objectPath, payload.file, {
+            contentType: "application/pdf",
+            upsert: false,
+          });
+        if (up.error) return up.error.message;
+        document_object_path = objectPath;
+      }
+      const res = await supabase.functions.invoke("submit-strategy-dev-request", {
+        body: {
+          strategy_name: payload.strategy_name,
+          description: payload.description || null,
+          market: payload.market || null,
+          priority: payload.priority,
+          contact_email: payload.contact_email || null,
+          document_object_path,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const msg = (res.data as { error?: string } | null)?.error;
+      if (res.error) return res.error.message;
+      if (msg) return msg;
+      await refresh();
+      return null;
+    },
+    [session?.access_token, user?.id, refresh],
+  );
+
   const onOptionsExecuteBody = useCallback(
     async (body: { strategy_type: string; params: Record<string, unknown> }) => {
       if (!session?.access_token) return;
@@ -776,6 +908,10 @@ export default function DashboardPage() {
         onSignOut={() => void signOut()}
         sessionAccessToken={session.access_token ?? null}
         onCancelPendingForStrategy={onCancelPendingForStrategy}
+        strategyDevRequests={strategyDevRequests}
+        onSubmitStrategyDevRequest={onSubmitStrategyDevRequest}
+        onPauseAllStrategies={onPauseAllStrategies}
+        onEmergencyKill={onEmergencyKill}
       />
     </div>
   );

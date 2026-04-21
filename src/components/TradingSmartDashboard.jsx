@@ -645,6 +645,10 @@ export default function TradingSmartDashboard(props = {}) {
     setCurrencyMode = null,
     sessionAccessToken = null,
     onCancelPendingForStrategy = null,
+    strategyDevRequests = null,
+    onSubmitStrategyDevRequest = null,
+    onPauseAllStrategies = null,
+    onEmergencyKill = null,
   } = props;
 
   const [time, setTime] = useState("");
@@ -708,7 +712,10 @@ export default function TradingSmartDashboard(props = {}) {
   const [editAlgoTarget, setEditAlgoTarget] = useState(null); // strategy being edited
   const [showExactOptionsBuilder, setShowExactOptionsBuilder] = useState(false);
   const [killActive, setKillActive] = useState(false);
+  const [killBusy, setKillBusy] = useState(false);
+  const [pauseAllBusy, setPauseAllBusy] = useState(false);
   const [showDevRequest, setShowDevRequest] = useState(false);
+  const [devSubmitBusy, setDevSubmitBusy] = useState(false);
 
   const [devForm, setDevForm] = useState({
     strategyName: "",
@@ -718,29 +725,9 @@ export default function TradingSmartDashboard(props = {}) {
     email: "",
     pdfName: "",
   });
-  const [devRequests, setDevRequests] = useState([
-    {
-      id: "dr1",
-      name: "Ichimoku Cloud Breakout",
-      status: "in_progress",
-      submitted: "2026-04-10",
-      eta: "2026-04-18",
-    },
-    {
-      id: "dr2",
-      name: "Volume Profile Reversal",
-      status: "completed",
-      submitted: "2026-03-28",
-      eta: "2026-04-05",
-    },
-  ]);
+  const devList = Array.isArray(strategyDevRequests) ? strategyDevRequests : [];
   const fileInputRef = useRef(null);
-  const [chartData, setChartData] = useState(() => {
-    const d = [2400000];
-    for (let i = 1; i < 90; i++)
-      d.push(d[i - 1] + (Math.random() - 0.42) * 8000);
-    return d;
-  });
+  const devPdfFileRef = useRef(null);
 
   const sparkData = useMemo(
     () => ({
@@ -750,6 +737,40 @@ export default function TradingSmartDashboard(props = {}) {
     }),
     [summary?.portfolio_value, summary?.cumulative_pnl, summary?.today_pnl],
   );
+
+  const chartSeriesValues = useMemo(() => {
+    const raw = summary?.equity_curve;
+    const now = Date.now();
+    const windowsMs =
+      equityTimeline === "1D"
+        ? 86400000
+        : equityTimeline === "1W"
+          ? 7 * 86400000
+          : equityTimeline === "1M"
+            ? 30 * 86400000
+            : Number.MAX_SAFE_INTEGER;
+    let pts =
+      Array.isArray(raw) && raw.length > 0
+        ? raw.filter(
+            (p) =>
+              p &&
+              typeof p.t === "number" &&
+              typeof p.v === "number" &&
+              now - p.t <= windowsMs,
+          )
+        : [];
+    if (pts.length < 2) {
+      const end = Number(summary?.cumulative_pnl);
+      const endV = Number.isFinite(end) ? end : 0;
+      const startT =
+        windowsMs === Number.MAX_SAFE_INTEGER ? now - 90 * 86400000 : now - windowsMs;
+      pts = [
+        { t: startT, v: 0 },
+        { t: now, v: endV },
+      ];
+    }
+    return pts.map((p) => p.v);
+  }, [summary?.equity_curve, summary?.cumulative_pnl, equityTimeline]);
 
   const riskScore = useMemo(() => {
     // Risk score is only meaningful when broker session is live (real closed trades feed in).
@@ -845,9 +866,9 @@ export default function TradingSmartDashboard(props = {}) {
     const w = rect.width,
       h = rect.height;
     ctx.clearRect(0, 0, w, h);
-    if (chartData.length < 2) return;
-    const min = Math.min(...chartData) * 0.998;
-    const max = Math.max(...chartData) * 1.002;
+    if (chartSeriesValues.length < 2) return;
+    const min = Math.min(...chartSeriesValues) * 0.998;
+    const max = Math.max(...chartSeriesValues) * 1.002;
     const range = max - min;
     const pad = { top: 20, bottom: 30, left: 0, right: 0 };
     const cw = w - pad.left - pad.right;
@@ -867,19 +888,19 @@ export default function TradingSmartDashboard(props = {}) {
     gradient.addColorStop(0, "rgba(56,189,248,0.15)");
     gradient.addColorStop(0.5, "rgba(99,102,241,0.05)");
     gradient.addColorStop(1, "rgba(56,189,248,0)");
-    const toX = (i) => pad.left + (i / (chartData.length - 1)) * cw;
+    const toX = (i) => pad.left + (i / (chartSeriesValues.length - 1)) * cw;
     const toY = (v) => pad.top + ch - ((v - min) / range) * ch;
 
     ctx.beginPath();
     ctx.moveTo(toX(0), h);
-    chartData.forEach((v, i) => ctx.lineTo(toX(i), toY(v)));
-    ctx.lineTo(toX(chartData.length - 1), h);
+    chartSeriesValues.forEach((v, i) => ctx.lineTo(toX(i), toY(v)));
+    ctx.lineTo(toX(chartSeriesValues.length - 1), h);
     ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => {
+    chartSeriesValues.forEach((v, i) => {
       if (i === 0) ctx.moveTo(toX(i), toY(v));
       else ctx.lineTo(toX(i), toY(v));
     });
@@ -889,7 +910,7 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.stroke();
 
     ctx.beginPath();
-    chartData.forEach((v, i) => {
+    chartSeriesValues.forEach((v, i) => {
       if (i === 0) ctx.moveTo(toX(i), toY(v));
       else ctx.lineTo(toX(i), toY(v));
     });
@@ -897,8 +918,8 @@ export default function TradingSmartDashboard(props = {}) {
     ctx.lineWidth = 6;
     ctx.stroke();
 
-    const lx = toX(chartData.length - 1),
-      ly = toY(chartData[chartData.length - 1]);
+    const lx = toX(chartSeriesValues.length - 1),
+      ly = toY(chartSeriesValues[chartSeriesValues.length - 1]);
     ctx.beginPath();
     ctx.arc(lx, ly, 5, 0, Math.PI * 2);
     ctx.fillStyle = "#38bdf8";
@@ -916,7 +937,7 @@ export default function TradingSmartDashboard(props = {}) {
       const y = pad.top + (ch / 5) * i;
       ctx.fillText("₹" + (val / 1000).toFixed(0) + "k", w - 4, y + 4);
     }
-  }, [chartData]);
+  }, [chartSeriesValues]);
 
   const formatUptime = (s) => {
     const hh = Math.floor(s / 3600);
@@ -1109,15 +1130,51 @@ export default function TradingSmartDashboard(props = {}) {
   });
 
   const handleKillSwitch = () => {
-    setKillActive((prev) => {
-      if (!prev)
+    if (killBusy) return;
+    if (killActive) {
+      setKillActive(false);
+      addLog(
+        "info",
+        "Kill switch cleared (UI). Strategies stay paused until you activate them again.",
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        "Activate kill switch? This pauses every strategy and sends cancel-all to your broker for open orders.",
+      )
+    ) {
+      return;
+    }
+    if (!useChartmate || !onEmergencyKill) {
+      toast.error("Connect to ChartMate to use the kill switch.");
+      return;
+    }
+    void (async () => {
+      setKillBusy(true);
+      try {
+        const err = await onEmergencyKill();
+        if (err) {
+          toast.error("Kill switch could not complete", { description: err });
+          addLog("error", err);
+          return;
+        }
+        setKillActive(true);
         addLog(
           "error",
-          "KILL SWITCH ACTIVATED — All strategies halted, open orders cancelled",
+          "KILL SWITCH — All strategies paused; broker cancel-all requested.",
         );
-      else addLog("info", "Kill switch deactivated — Systems resuming");
-      return !prev;
-    });
+        toast.success("Kill switch executed", {
+          description: "Strategies paused and open orders cancellation sent.",
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unexpected error";
+        toast.error("Kill switch failed", { description: msg });
+        addLog("error", msg);
+      } finally {
+        setKillBusy(false);
+      }
+    })();
   };
 
   return (
@@ -1670,15 +1727,17 @@ export default function TradingSmartDashboard(props = {}) {
                 </div>
                 <div className="robot-actions">
                   <div className="kill-switch-container">
-                    <button
-                      className={`kill-switch ${killActive ? "active" : ""}`}
-                      onClick={handleKillSwitch}
-                    >
+                  <button
+                    type="button"
+                    className={`kill-switch ${killActive ? "active" : ""}`}
+                    disabled={killBusy || pauseAllBusy}
+                    onClick={handleKillSwitch}
+                  >
                       <span className="kill-icon">
                         {killActive ? "\u26D4" : "\u26A0"}
                       </span>
                       <span className="kill-text">
-                        {killActive ? "ACTIVATED" : "KILL SWITCH"}
+                        {killBusy ? "WORKING…" : killActive ? "ACTIVATED" : "KILL SWITCH"}
                       </span>
                     </button>
                     <div className="kill-label">
@@ -1688,15 +1747,33 @@ export default function TradingSmartDashboard(props = {}) {
                     </div>
                   </div>
                   <button
+                    type="button"
                     className="action-btn btn-warning"
-                    onClick={() =>
-                      addLog(
-                        "warn",
-                        "Pause command issued — Pausing all strategies...",
-                      )
-                    }
+                    disabled={pauseAllBusy || killBusy || !useChartmate || !onPauseAllStrategies}
+                    onClick={() => {
+                      void (async () => {
+                        if (!onPauseAllStrategies) return;
+                        setPauseAllBusy(true);
+                        try {
+                          const err = await onPauseAllStrategies();
+                          if (err) {
+                            toast.error("Could not pause strategies", { description: err });
+                            addLog("error", err);
+                            return;
+                          }
+                          addLog("warn", "All strategies paused (deploy off + pending rows cleared).");
+                          toast.success("All strategies paused");
+                        } catch (e) {
+                          const msg = e instanceof Error ? e.message : "Unexpected error";
+                          toast.error("Pause all failed", { description: msg });
+                          addLog("error", msg);
+                        } finally {
+                          setPauseAllBusy(false);
+                        }
+                      })();
+                    }}
                   >
-                    &#x23F8; Pause All Strategies
+                    {pauseAllBusy ? "Pausing…" : "\u23F8 Pause All Strategies"}
                   </button>
                   {chartmateActions?.onRefresh && (
                     <button
@@ -2725,7 +2802,7 @@ export default function TradingSmartDashboard(props = {}) {
                     gap: 12,
                   }}
                 >
-                  {devRequests.map((r) => (
+                  {devList.map((r) => (
                     <div
                       key={r.id}
                       style={{
@@ -2761,7 +2838,13 @@ export default function TradingSmartDashboard(props = {}) {
                         </div>
                       </div>
                       <span
-                        className={`strategy-tag ${r.status === "completed" ? "tag-active" : r.status === "in_progress" ? "tag-paused" : ""}`}
+                        className={`strategy-tag ${
+                          r.status === "completed" || r.status === "delivered"
+                            ? "tag-active"
+                            : r.status === "in_progress"
+                              ? "tag-paused"
+                              : ""
+                        }`}
                         style={
                           r.status === "submitted"
                             ? {
@@ -2771,11 +2854,11 @@ export default function TradingSmartDashboard(props = {}) {
                             : {}
                         }
                       >
-                        {r.status === "completed"
+                        {r.status === "completed" || r.status === "delivered"
                           ? "DELIVERED"
                           : r.status === "in_progress"
                             ? "IN PROGRESS"
-                            : "SUBMITTED"}
+                            : String(r.status || "submitted").toUpperCase()}
                       </span>
                     </div>
                   ))}
@@ -2802,15 +2885,9 @@ export default function TradingSmartDashboard(props = {}) {
                   {["1D", "1W", "1M", "ALL"].map((r) => (
                     <button
                       key={r}
-                      className="action-btn btn-primary"
-                      style={{ padding: "6px 14px", fontSize: 11 }}
-                      onClick={() => {
-                        const d = [2400000];
-                        const n = { "1D": 24, "1W": 50, "1M": 90, ALL: 200 }[r];
-                        for (let i = 1; i < n; i++)
-                          d.push(d[i - 1] + (Math.random() - 0.42) * 8000);
-                        setChartData(d);
-                      }}
+                      type="button"
+                      className={`timeline-btn${equityTimeline === r ? " active" : ""}`}
+                      onClick={() => setEquityTimeline(r)}
                     >
                       {r}
                     </button>
@@ -2824,9 +2901,9 @@ export default function TradingSmartDashboard(props = {}) {
                   padding: "0 4px 12px",
                 }}
               >
-                INR curve preview from current account metrics with timeline
-                filters. Live historical granularity will follow the full
-                ChartMate feed.
+                Cumulative live P&L (closed trades in scope; aligns with hero totals when connected).
+                Range filters the same series; data comes from your ChartMate trade
+                history when the broker session is live.
               </div>
               <div className="chart-area">
                 <canvas ref={canvasRef} className="chart-canvas" />
@@ -4212,8 +4289,9 @@ export default function TradingSmartDashboard(props = {}) {
                       style={{ display: "none" }}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file)
-                          setDevForm({ ...devForm, pdfName: file.name });
+                        devPdfFileRef.current = file ?? null;
+                        if (file) setDevForm({ ...devForm, pdfName: file.name });
+                        else setDevForm({ ...devForm, pdfName: "" });
                       }}
                     />
                     <button
@@ -4246,6 +4324,7 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 </div>
                 <button
+                  type="button"
                   className="action-btn btn-primary"
                   style={{
                     padding: 14,
@@ -4256,44 +4335,60 @@ export default function TradingSmartDashboard(props = {}) {
                     borderColor: "rgba(167,139,250,0.4)",
                     color: "var(--accent-purple)",
                   }}
+                  disabled={devSubmitBusy || !onSubmitStrategyDevRequest}
                   onClick={() => {
-                    if (!devForm.strategyName) return;
-                    setDevRequests((prev) => [
-                      ...prev,
-                      {
-                        id: "dr" + Date.now(),
-                        name: devForm.strategyName,
-                        status: "submitted",
-                        submitted: new Date().toISOString().slice(0, 10),
-                        eta: new Date(
-                          Date.now() +
-                            (devForm.urgency === "rush"
-                              ? 2
-                              : devForm.urgency === "priority"
-                                ? 5
-                                : 10) *
-                              86400000,
-                        )
-                          .toISOString()
-                          .slice(0, 10),
-                      },
-                    ]);
-                    addLog(
-                      "info",
-                      `Strategy development request submitted: "${devForm.strategyName}"`,
-                    );
-                    setDevForm({
-                      strategyName: "",
-                      description: "",
-                      market: "crypto",
-                      urgency: "normal",
-                      email: "",
-                      pdfName: "",
-                    });
-                    setShowDevRequest(false);
+                    void (async () => {
+                      if (!devForm.strategyName.trim()) {
+                        toast.error("Enter a strategy name");
+                        return;
+                      }
+                      if (!onSubmitStrategyDevRequest) {
+                        toast.error("Submit is not available");
+                        return;
+                      }
+                      setDevSubmitBusy(true);
+                      try {
+                        const err = await onSubmitStrategyDevRequest({
+                          strategy_name: devForm.strategyName.trim(),
+                          description: devForm.description.trim(),
+                          market: devForm.market,
+                          priority: devForm.urgency,
+                          contact_email: devForm.email.trim(),
+                          file: devPdfFileRef.current,
+                        });
+                        if (err) {
+                          toast.error("Request failed", { description: err });
+                          addLog("error", err);
+                          return;
+                        }
+                        addLog(
+                          "info",
+                          `Strategy development request submitted: "${devForm.strategyName}"`,
+                        );
+                        toast.success("Request saved", {
+                          description: "Our team has been notified when email is configured.",
+                        });
+                        setDevForm({
+                          strategyName: "",
+                          description: "",
+                          market: "crypto",
+                          urgency: "normal",
+                          email: "",
+                          pdfName: "",
+                        });
+                        devPdfFileRef.current = null;
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                        setShowDevRequest(false);
+                      } catch (e) {
+                        const msg = e instanceof Error ? e.message : "Unexpected error";
+                        toast.error("Submit failed", { description: msg });
+                      } finally {
+                        setDevSubmitBusy(false);
+                      }
+                    })();
                   }}
                 >
-                  &#x1F680; Submit Development Request
+                  {devSubmitBusy ? "Submitting…" : "🚀 Submit Development Request"}
                 </button>
               </div>
 
