@@ -464,7 +464,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 
 /* MY STRATEGY PANEL */
 .my-strategy-panel { grid-column:1/-1; }
-.strategy-builder { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.strategy-builder { display:grid; grid-template-columns:1fr; gap:20px; }
 .strategy-form { display:flex; flex-direction:column; gap:14px; }
 .form-group { display:flex; flex-direction:column; gap:6px; }
 .form-label { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); font-weight:600; }
@@ -1645,18 +1645,6 @@ export default function TradingSmartDashboard(props = {}) {
                   >
                     &#x23F8; Pause All Strategies
                   </button>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      marginBottom: 6,
-                      textAlign: "left",
-                    }}
-                  >
-                    Use <strong>Connect broker</strong> for Zerodha (same flow
-                    as ChartMate). Options and strategy deploy run only with a
-                    live broker session.
-                  </div>
                   {chartmateActions?.onRefresh && (
                     <button
                       type="button"
@@ -1669,6 +1657,19 @@ export default function TradingSmartDashboard(props = {}) {
                       &#x21BB; Refresh data
                     </button>
                   )}
+                  
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                      marginBottom: 6,
+                      textAlign: "left",
+                    }}
+                  >
+                    Use <strong>Connect broker</strong> for Zerodha (same flow
+                    as ChartMate). Options and strategy deploy run only with a
+                    live broker session.
+                  </div>
                 </div>
               </div>
             </div>
