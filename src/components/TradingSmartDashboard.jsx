@@ -759,6 +759,66 @@ export default function TradingSmartDashboard(props = {}) {
           month: "short",
         })
       : null;
+  const sharpeRatio = (() => {
+    const candidates = [
+      summary?.sharpe_ratio,
+      summary?.sharpe,
+      summary?.performance?.sharpe_ratio,
+      summary?.risk?.sharpe_ratio,
+    ];
+    for (const value of candidates) {
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  })();
+  const maxDrawdownPct = (() => {
+    const candidates = [
+      summary?.max_drawdown_pct,
+      summary?.drawdown_pct,
+      summary?.performance?.max_drawdown_pct,
+      summary?.risk?.max_drawdown_pct,
+    ];
+    for (const value of candidates) {
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  })();
+  const avgTradeDurationSec = (() => {
+    const candidates = [
+      summary?.avg_trade_duration_sec,
+      summary?.average_trade_duration_sec,
+      summary?.performance?.avg_trade_duration_sec,
+      summary?.timing?.avg_trade_duration_sec,
+    ];
+    for (const value of candidates) {
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  })();
+  const avgLatencyMs = (() => {
+    const candidates = [
+      summary?.avg_latency_ms,
+      summary?.latency_ms,
+      summary?.execution_latency_ms,
+      summary?.performance?.avg_latency_ms,
+    ];
+    for (const value of candidates) {
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  })();
+  const formatDuration = (seconds) => {
+    const n = Number(seconds);
+    if (!Number.isFinite(n) || n < 0) return "—";
+    const total = Math.round(n);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m}m ${s}s`;
+  };
 
   const emptyStrategyRow = useMemo(
     () => ({
@@ -897,14 +957,14 @@ export default function TradingSmartDashboard(props = {}) {
           {/* HERO */}
           <div className="hero">
             <div className="hero-card">
-              <div className="hero-label">Open Position Exposure</div>
+              <div className="hero-label">Total Portfolio Value</div>
               <div className="hero-value neutral">
                 {formatUnsignedDisplay(displayPortfolio, currencyMode)}
               </div>
               <div className={`hero-change ${pctMtm != null && pctMtm < 0 ? "" : "up"}`}>
                 {pctMtm != null ? (
                   <>
-                    Open positions MTM {pctMtm >= 0 ? "+" : ""}
+                    Today's Algo P&L {pctMtm >= 0 ? "+" : ""}
                     {pctMtm.toFixed(2)}% vs exposure
                   </>
                 ) : (
@@ -922,7 +982,7 @@ export default function TradingSmartDashboard(props = {}) {
               <Sparkline data={sparkData.s2} color="#34d399" />
             </div>
             <div className="hero-card">
-              <div className="hero-label">Open positions MTM</div>
+              <div className="hero-label">Today's Algo P&L</div>
               <div className={`hero-value ${displayToday >= 0 ? "positive" : "neutral"}`}>
                 {formatSignedDisplay(displayToday, currencyMode)}
               </div>
@@ -991,6 +1051,61 @@ export default function TradingSmartDashboard(props = {}) {
                     style={{
                       width: `${Math.min(100, (Number(summary?.active_strategies_deployed) || 0) * 15)}%`,
                       background: "linear-gradient(90deg,var(--accent-green),var(--accent-cyan))",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Sharpe Ratio</div>
+              <div className="stat-value" style={{ color: sharpeRatio != null ? "var(--accent-cyan)" : "var(--text-muted)" }}>
+                {sharpeRatio != null ? sharpeRatio.toFixed(2) : "—"}
+              </div>
+              <div className="progress-container">
+                <div className="progress-bar-bg">
+                  <div
+                    className="progress-bar-fill"
+                    style={{
+                      width: sharpeRatio != null ? `${Math.min(100, Math.max(0, (sharpeRatio / 3) * 100))}%` : "0%",
+                      background: "linear-gradient(90deg,var(--accent-cyan),var(--accent-blue))",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Max Drawdown</div>
+              <div className="stat-value" style={{ color: maxDrawdownPct != null ? "var(--accent-orange)" : "var(--text-muted)" }}>
+                {maxDrawdownPct != null ? `${maxDrawdownPct > 0 ? "-" : ""}${Math.abs(maxDrawdownPct).toFixed(1)}%` : "—"}
+              </div>
+              <div className="progress-container">
+                <div className="progress-bar-bg">
+                  <div
+                    className="progress-bar-fill"
+                    style={{
+                      width: maxDrawdownPct != null ? `${Math.min(100, Math.abs(maxDrawdownPct) * 2)}%` : "0%",
+                      background: "linear-gradient(90deg,var(--accent-yellow),var(--accent-orange))",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Avg Trade Duration</div>
+              <div className="stat-value" style={{ color: avgTradeDurationSec != null ? "var(--text-primary)" : "var(--text-muted)" }}>
+                {formatDuration(avgTradeDurationSec)}
+              </div>
+              <div className="progress-container">
+                <div className="progress-label">
+                  <span>Latency</span>
+                  <span>{avgLatencyMs != null ? `${Math.round(avgLatencyMs)}ms` : "—"}</span>
+                </div>
+                <div className="progress-bar-bg">
+                  <div
+                    className="progress-bar-fill"
+                    style={{
+                      width: avgLatencyMs != null ? `${Math.min(100, Math.max(0, (avgLatencyMs / 80) * 100))}%` : "0%",
+                      background: "linear-gradient(90deg,#2dd4bf,var(--accent-cyan))",
                     }}
                   />
                 </div>
