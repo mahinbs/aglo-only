@@ -1447,6 +1447,111 @@ export default function TradingSmartDashboard(props = {}) {
         </nav>
 
         <div className="main">
+          <div
+            style={{
+              background:
+                "linear-gradient(135deg,rgba(56,189,248,0.08),rgba(99,102,241,0.08))",
+              border: "1px solid rgba(56,189,248,0.15)",
+              borderRadius: 16,
+              padding: "20px 28px",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 20,
+              transition: "all 0.5s ease",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div
+                style={{
+                  fontSize: 40,
+                  animation: "pulse 2s ease-in-out infinite",
+                }}
+              >
+                &#x1F916;
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'Orbitron',sans-serif",
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "var(--accent-cyan)",
+                    letterSpacing: 2,
+                    transition: "color 0.5s",
+                  }}
+                >
+                  TSA-7 AUTONOMOUS ENGINE
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: killActive
+                      ? "var(--accent-orange)"
+                      : "var(--accent-green)",
+                    fontFamily: "'JetBrains Mono',monospace",
+                    marginTop: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    transition: "color 0.5s",
+                  }}
+                >
+                  <span
+                    className={`status-dot ${killActive ? "warn" : "live"}`}
+                  />
+                  {killActive
+                    ? "Emergency Stop Active"
+                    : sessLive
+                      ? "Engine Running"
+                      : "Engine Idle (Reconnect broker)"}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: 2,
+                  }}
+                >
+                  Uptime
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'JetBrains Mono',monospace",
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {formatUptime(uptimeSec)}
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`kill-switch ${killActive ? "active" : ""}`}
+                onClick={handleKillSwitch}
+                disabled={killBusy || pauseAllBusy}
+                style={{
+                  width: 64,
+                  height: 64,
+                  fontSize: 10,
+                  transition: "all 0.4s",
+                }}
+              >
+                <span className="kill-icon" style={{ fontSize: 22 }}>
+                  {killActive ? "\u26D4" : "\u26A0"}
+                </span>
+                <span className="kill-text">
+                  {killBusy ? "WORKING…" : killActive ? "LOCKED" : "STOP"}
+                </span>
+              </button>
+            </div>
+          </div>
           {/* HERO */}
           <div className="hero">
             <div className="hero-card">
