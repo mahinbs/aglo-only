@@ -764,6 +764,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [orders, setOrders] = useState([]);
   const [logs, setLogs] = useState([]);
   const [myStrategies, setMyStrategies] = useState([]);
+  const [liveMonitorPage, setLiveMonitorPage] = useState(1);
   const [showStratForm, setShowStratForm] = useState(false);
   const emptyStratForm = () => ({
     name: "",
@@ -920,8 +921,19 @@ export default function TradingSmartDashboard(props = {}) {
         ...prev,
         { type, msg, time: now.toLocaleTimeString("en-US", { hour12: false }) },
       ];
-      return next.slice(-50);
+      return next.slice(-500);
     });
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("algo-only-system-logs-v1");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) setLogs(parsed.slice(-500));
+    } catch {
+      // ignore storage parse issues
+    }
   }, []);
 
   useEffect(() => {
@@ -956,6 +968,14 @@ export default function TradingSmartDashboard(props = {}) {
   // Auto-scroll log
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [logs]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("algo-only-system-logs-v1", JSON.stringify(logs.slice(-500)));
+    } catch {
+      // ignore storage write issues
+    }
   }, [logs]);
 
   // Development request modal behaviors
@@ -1102,7 +1122,7 @@ export default function TradingSmartDashboard(props = {}) {
   const liveTradesCount =
     sessLive && Number.isFinite(brokerTradesCount)
       ? brokerTradesCount
-      : (summary?.recent_orders_count ?? 0);
+      : (summary?.recent_orders_count ?? orders.length ?? 0);
   const liveOpenOrdersCount =
     sessLive && Number.isFinite(brokerOpenOrdersCount)
       ? brokerOpenOrdersCount
@@ -1198,16 +1218,24 @@ export default function TradingSmartDashboard(props = {}) {
     setGoLiveRememberSymbol(false);
   }, [goLiveTarget]);
   // Only show real numbers when broker session is live — avoid showing paper/stale data as real values.
+  const fallbackTodayPnl =
+    Array.isArray(orders) && orders.length
+      ? orders.reduce((acc, o) => acc + Number(o?.pnl || 0), 0)
+      : 0;
   const displayPortfolio =
-    sessLive && typeof summary?.portfolio_value === "number"
-      ? summary.portfolio_value
+    sessLive
+      ? (liveCashAvailable != null
+          ? liveCashAvailable
+          : (typeof summary?.portfolio_value === "number" ? summary.portfolio_value : 0))
       : 0;
   const displayCumulative =
     sessLive && typeof summary?.cumulative_pnl === "number"
       ? summary.cumulative_pnl
       : 0;
   const displayToday =
-    sessLive && typeof summary?.today_pnl === "number" ? summary.today_pnl : 0;
+    sessLive
+      ? (typeof summary?.today_pnl === "number" ? summary.today_pnl : fallbackTodayPnl)
+      : 0;
   const pctMtm =
     sessLive && typeof summary?.open_positions_pct_mtm === "number"
       ? summary.open_positions_pct_mtm
@@ -1305,6 +1333,10 @@ export default function TradingSmartDashboard(props = {}) {
       st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
     );
   }).length;
+  const activeStrategiesRows = strategiesData.filter((s) => {
+    const st = normalizeLifecycleState(s.status, Boolean(s.deployed));
+    return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+  });
   const strategyTagClass = (rawLifecycle, deployed) => {
     const st = normalizeLifecycleState(rawLifecycle, Boolean(deployed));
     if (st === "ACTIVE") return "tag-active";
@@ -1321,6 +1353,30 @@ export default function TradingSmartDashboard(props = {}) {
       st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
     );
   });
+  const liveMonitorPages = Math.max(1, Math.ceil(liveMonitorStrategies.length / 10));
+  const liveMonitorPageSafe = Math.min(liveMonitorPages, Math.max(1, liveMonitorPage));
+  const liveMonitorSlice = liveMonitorStrategies.slice(
+    (liveMonitorPageSafe - 1) * 10,
+    liveMonitorPageSafe * 10,
+  );
+
+  useEffect(() => {
+    if (liveMonitorPage > liveMonitorPages) {
+      setLiveMonitorPage(liveMonitorPages);
+    }
+  }, [liveMonitorPage, liveMonitorPages]);
+
+  const strategyKindTag = (strategy) => {
+    const mt = String(
+      strategy?.market_type ??
+        strategy?.marketType ??
+        strategy?.type ??
+        "",
+    )
+      .trim()
+      .toLowerCase();
+    return mt.includes("option") ? "options" : "equity";
+  };
 
   const handleKillSwitch = () => {
     if (killBusy) return;
@@ -1353,6 +1409,14 @@ export default function TradingSmartDashboard(props = {}) {
           return;
         }
         setKillActive(true);
+        setMyStrategies((prev) =>
+          prev.map((s) => ({
+            ...s,
+            deployed: false,
+            lifecycle_state: "PAUSED",
+          })),
+        );
+        setLiveViewTarget(null);
         addLog(
           "error",
           "KILL SWITCH — All strategies paused; broker cancel-all requested.",
@@ -1973,22 +2037,6 @@ export default function TradingSmartDashboard(props = {}) {
                   >
                     Assigned Strategies
                   </div>
-                  <button
-                    type="button"
-                    className="action-btn btn-primary"
-                    style={{
-                      padding: "5px 12px",
-                      fontSize: 11,
-                      borderRadius: 999,
-                      letterSpacing: 0.5,
-                    }}
-                    onClick={() => {
-                      setStratStep(0);
-                      setShowExactAlgoBuilder(true);
-                    }}
-                  >
-                    + Add
-                  </button>
                 </div>
 
                 {liveMonitorStrategies.length === 0 ? (
@@ -2009,7 +2057,7 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 ) : (
                   <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                    {liveMonitorStrategies.map((s) => {
+                    {liveMonitorSlice.map((s) => {
                       const lcState = normalizeLifecycleState(
                         s.lifecycle_state,
                         Boolean(s.deployed),
@@ -2067,7 +2115,7 @@ export default function TradingSmartDashboard(props = {}) {
                                 {s.name}
                               </span>
                               <span className="my-strat-card-type type-momentum">
-                                {String(s.type || "STRATEGY").toUpperCase()}
+                                {strategyKindTag(s).toUpperCase()}
                               </span>
                             </div>
                             <div
@@ -2149,6 +2197,7 @@ export default function TradingSmartDashboard(props = {}) {
                               display: "flex",
                               alignItems: "center",
                               gap: 8,
+                              flexWrap: "wrap",
                             }}
                           >
                             <span
@@ -2171,11 +2220,8 @@ export default function TradingSmartDashboard(props = {}) {
                             </span>
                             <button
                               type="button"
-                              title={
-                                !sessLive
-                                  ? "Connect broker for live chart quotes"
-                                  : "Open chart + conditions"
-                              }
+                              className="strat-action-btn strat-btn-deploy"
+                              title={!sessLive ? "Connect broker for live chart quotes" : "Open chart + conditions"}
                               disabled={!sessLive}
                               onClick={() => {
                                 if (!sessLive) {
@@ -2186,47 +2232,75 @@ export default function TradingSmartDashboard(props = {}) {
                                 }
                                 setLiveViewTarget(s);
                               }}
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: "50%",
-                                border: "1px solid rgba(244,63,94,0.45)",
-                                background: "rgba(244,63,94,0.12)",
-                                color: "var(--accent-red)",
-                                cursor: !sessLive ? "not-allowed" : "pointer",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 15,
-                                opacity: !sessLive ? 0.5 : 1,
-                              }}
                             >
-                              &#x25A0;
+                              Live View
                             </button>
                             <button
                               type="button"
-                              title="Open live detail panel"
-                              onClick={() => setLiveViewTarget(s)}
-                              style={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: "50%",
-                                border: "1px solid rgba(56,189,248,0.3)",
-                                background: "rgba(15,23,42,0.5)",
-                                color: "var(--text-muted)",
-                                cursor: "pointer",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: 15,
+                              className="strat-action-btn strat-btn-edit"
+                              title="Pause strategy scan"
+                              onClick={async () => {
+                                if (!chartmateActions?.onToggleDeploy) return;
+                                const err = await chartmateActions.onToggleDeploy(s.id, false);
+                                if (err) {
+                                  toast.error("Could not pause strategy", { description: String(err) });
+                                  return;
+                                }
+                                addLog("warn", `Strategy "${s.name}" paused`);
+                                chartmateActions.onRefresh?.();
                               }}
                             >
-                              &#x2715;
+                              Pause
+                            </button>
+                            <button
+                              type="button"
+                              className="strat-action-btn strat-btn-delete"
+                              title="Stop strategy and cancel queued entries"
+                              onClick={async () => {
+                                if (!chartmateActions?.onToggleDeploy) return;
+                                const err = await chartmateActions.onToggleDeploy(s.id, false);
+                                if (err) {
+                                  toast.error("Could not stop strategy", { description: String(err) });
+                                  return;
+                                }
+                                if (typeof onCancelPendingForStrategy === "function") {
+                                  await onCancelPendingForStrategy(s.id);
+                                }
+                                addLog("warn", `Strategy "${s.name}" stopped`);
+                                chartmateActions.onRefresh?.();
+                              }}
+                            >
+                              Stop
                             </button>
                           </div>
                         </div>
                       );
                     })}
+                    {liveMonitorPages > 1 ? (
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+                        <button
+                          type="button"
+                          className="action-btn btn-primary"
+                          style={{ padding: "4px 10px", fontSize: 11 }}
+                          disabled={liveMonitorPageSafe <= 1}
+                          onClick={() => setLiveMonitorPage((p) => Math.max(1, p - 1))}
+                        >
+                          Prev
+                        </button>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center" }}>
+                          Page {liveMonitorPageSafe} / {liveMonitorPages}
+                        </span>
+                        <button
+                          type="button"
+                          className="action-btn btn-primary"
+                          style={{ padding: "4px 10px", fontSize: 11 }}
+                          disabled={liveMonitorPageSafe >= liveMonitorPages}
+                          onClick={() => setLiveMonitorPage((p) => Math.min(liveMonitorPages, p + 1))}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -2713,6 +2787,7 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
 
             {/* STRATEGIES */}
+            {false ? (
             <div className="card">
               <div className="card-header">
                 <div className="card-title">
@@ -2742,10 +2817,19 @@ export default function TradingSmartDashboard(props = {}) {
                   </tr>
                 </thead>
                 <tbody>
-                  {strategiesData.map((s, idx) => (
+                  {activeStrategiesRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ color: "var(--text-muted)" }}>
+                        No active strategies right now.
+                      </td>
+                    </tr>
+                  ) : activeStrategiesRows.map((s, idx) => (
                     <tr key={`${s.name}-${idx}`}>
                       <td>
-                        <span className="strategy-name">{s.name}</span>
+                        <span className="strategy-name">{s.name}</span>{" "}
+                        <span className="my-strat-card-type type-momentum">
+                          {strategyKindTag(s).toUpperCase()}
+                        </span>
                       </td>
                       <td>
                         <span
@@ -2813,6 +2897,7 @@ export default function TradingSmartDashboard(props = {}) {
                 </div>
               </div>
             </div>
+            ) : null}
 
             {/* LIVE ORDERS */}
             <div className="card">
@@ -2904,6 +2989,86 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="card" style={{ gridColumn: "1 / -1" }}>
+              <div className="card-header">
+                <div className="card-title">
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(167,139,250,0.1)",
+                      color: "var(--accent-purple)",
+                    }}
+                  >
+                    &#x23F3;
+                  </span>
+                  Pending Execution Queue
+                </div>
+                <span className="card-badge badge-blue">
+                  {(summary?.pending_executions ?? []).length} rows
+                </span>
+              </div>
+              {!summary?.pending_executions?.length ? (
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  No pending execution rows right now. Once a strategy is active
+                  and scanning, this queue shows live checks and pending/failed
+                  execution states from{" "}
+                  <code style={{ fontSize: 11 }}>
+                    pending_conditional_orders
+                  </code>
+                  .
+                </div>
+              ) : (
+                <div className="order-feed">
+                  {summary.pending_executions.map((p) => (
+                    <div className="order-item" key={p.id}>
+                      <div
+                        className={`order-icon ${String(p.action || "").toLowerCase() === "buy" ? "buy" : "sell"}`}
+                      >
+                        {String(p.action || "").toUpperCase() === "BUY"
+                          ? "\u25B2"
+                          : "\u25BC"}
+                      </div>
+                      <div>
+                        <div className="order-pair">
+                          {p.symbol || "—"}{" "}
+                          <span
+                            style={{
+                              color: "var(--accent-cyan)",
+                              fontSize: 11,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {p.status}
+                          </span>
+                        </div>
+                        <div className="order-meta">
+                          strategy_id: {p.strategy_id || "—"}{" "}
+                          {p.last_checked_at
+                            ? `• checked ${p.last_checked_at}`
+                            : ""}
+                        </div>
+                        {p.error_message ? (
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: "var(--accent-orange)",
+                              marginTop: 2,
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {p.error_message}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div>
+                        <div className="order-time">{p.created_at || "—"}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ═══ MY STRATEGY PANEL ═══ */}
@@ -3043,7 +3208,7 @@ export default function TradingSmartDashboard(props = {}) {
                                 textTransform: "uppercase",
                               }}
                             >
-                              {String(s.type || "strategy")}
+                              {strategyKindTag(s)}
                             </span>
                           </div>
                           <div
@@ -3170,198 +3335,49 @@ export default function TradingSmartDashboard(props = {}) {
                             </>
                           ) : (
                             <>
-                              {!s.deployed ? (
-                                <button
-                                  type="button"
-                                  className="strat-action-btn strat-btn-deploy"
-                                  style={{
-                                    borderRadius: 999,
-                                    padding: "4px 10px",
-                                    ...(!sessLive
-                                      ? { opacity: 0.6, cursor: "pointer" }
-                                      : {}),
-                                  }}
-                                  title={
-                                    !sessLive
-                                      ? "Connect broker (live session) to activate"
-                                      : "Activate this strategy live"
-                                  }
-                                  onClick={() => {
-                                    if (!sessLive) {
-                                      toast.error(
-                                        "Broker not connected — connect your broker (live session) before activating a strategy.",
-                                        {
-                                          description:
-                                            "Click 'Connect broker' in the top navigation bar.",
-                                        },
-                                      );
-                                      addLog(
-                                        "warn",
-                                        "Connect broker (live session) before activating a strategy.",
-                                      );
-                                      return;
-                                    }
-                                    setGoLiveTarget(s);
-                                    setGoLiveForm(defaultsGoLiveFromCard(s));
-                                    setGoLiveRememberSymbol(
-                                      Boolean(
-                                        s?.position_config &&
-                                          typeof s.position_config === "object" &&
-                                          s.position_config.activation_defaults &&
-                                          typeof s.position_config.activation_defaults === "object" &&
-                                          String(s.position_config.activation_defaults.symbol || "").trim(),
-                                      ),
+                              <button
+                                type="button"
+                                className="strat-action-btn strat-btn-deploy"
+                                style={{
+                                  borderRadius: 999,
+                                  padding: "4px 10px",
+                                  ...(!sessLive ? { opacity: 0.6, cursor: "pointer" } : {}),
+                                }}
+                                title={
+                                  !sessLive
+                                    ? "Connect broker (live session) to activate"
+                                    : "Activate this strategy live"
+                                }
+                                onClick={() => {
+                                  if (!sessLive) {
+                                    toast.error(
+                                      "Broker not connected — connect your broker (live session) before activating a strategy.",
+                                      {
+                                        description:
+                                          "Click 'Connect broker' in the top navigation bar.",
+                                      },
                                     );
-                                  }}
-                                >
-                                  Deploy
-                                </button>
-                              ) : (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="strat-action-btn strat-btn-deploy"
-                                    title="Candles, LTP refresh, and full condition table"
-                                    onClick={() => {
-                                      if (!sessLive) {
-                                        toast.error(
-                                          "Connect broker (live session) to load the chart and live quotes.",
-                                          {
-                                            description:
-                                              "Use Connect broker in the top bar, then open Live view again.",
-                                          },
-                                        );
-                                        addLog(
-                                          "warn",
-                                          "Live view needs a live broker session for chart quotes.",
-                                        );
-                                        return;
-                                      }
-                                      setLiveViewTarget(s);
-                                    }}
-                                    style={{ borderRadius: 999, padding: "4px 10px" }}
-                                  >
-                                    Live
-                                  </button>
-                                  <button
-                                    className="strat-action-btn strat-btn-edit"
-                                    style={{ borderRadius: 999, padding: "4px 10px" }}
-                                    onClick={async () => {
-                                      if (
-                                        useChartmate &&
-                                        chartmateActions?.onToggleDeploy
-                                      ) {
-                                        const err =
-                                          await chartmateActions.onToggleDeploy(
-                                            s.id,
-                                            false,
-                                          );
-                                        if (err) {
-                                          const msg =
-                                            typeof err === "string"
-                                              ? err
-                                              : String(err);
-                                          toast.error(
-                                            "Could not stop strategy",
-                                            {
-                                              description: msg,
-                                              duration: 10_000,
-                                            },
-                                          );
-                                          addLog("error", msg);
-                                          return;
-                                        }
-                                        addLog(
-                                          "warn",
-                                          `Strategy "${s.name}" stopped`,
-                                        );
-                                        chartmateActions.onRefresh?.();
-                                        return;
-                                      }
-                                      setMyStrategies((prev) =>
-                                        prev.map((x) =>
-                                          x.id === s.id
-                                            ? { ...x, deployed: false }
-                                            : x,
-                                        ),
-                                      );
-                                      addLog(
-                                        "warn",
-                                        `Strategy "${s.name}" stopped (local preview)`,
-                                      );
-                                    }}
-                                  >
-                                    Stop
-                                  </button>
-                                  {useChartmate &&
-                                  typeof onCancelPendingForStrategy ===
-                                    "function" ? (
-                                    <button
-                                      type="button"
-                                      className="strat-action-btn strat-btn-edit"
-                                      style={{
-                                        borderColor: "rgba(251,146,60,0.45)",
-                                        color: "var(--accent-orange)",
-                                      }}
-                                      title="Cancel queued conditional entry rows for this strategy only (does not flatten open positions)"
-                                      disabled={cancelPendingBusyId === s.id}
-                                      onClick={() => {
-                                        void (async () => {
-                                          setCancelPendingBusyId(s.id);
-                                          try {
-                                            const err =
-                                              await onCancelPendingForStrategy(
-                                                s.id,
-                                              );
-                                            if (err) {
-                                              const msg =
-                                                typeof err === "string"
-                                                  ? err
-                                                  : String(err);
-                                              toast.error(
-                                                "Could not cancel pending orders",
-                                                {
-                                                  description: msg,
-                                                  duration: 10_000,
-                                                },
-                                              );
-                                              addLog("error", msg);
-                                              return;
-                                            }
-                                            toast.success(
-                                              "Pending orders cancelled",
-                                              {
-                                                description: `Cleared queued rows for “${s.name}”.`,
-                                              },
-                                            );
-                                            addLog(
-                                              "exec",
-                                              `Cancelled pending conditional orders for "${s.name}"`,
-                                            );
-                                            chartmateActions?.onRefresh?.();
-                                          } catch (e) {
-                                            const msg =
-                                              e instanceof Error
-                                                ? e.message
-                                                : "Unexpected error.";
-                                            toast.error(
-                                              "Cancel pending failed",
-                                              { description: msg },
-                                            );
-                                            addLog("error", msg);
-                                          } finally {
-                                            setCancelPendingBusyId(null);
-                                          }
-                                        })();
-                                      }}
-                                    >
-                                      {cancelPendingBusyId === s.id
-                                        ? "Cancelling…"
-                                        : "⏸ Cancel pending"}
-                                    </button>
-                                  ) : null}
-                                </>
-                              )}
+                                    addLog(
+                                      "warn",
+                                      "Connect broker (live session) before activating a strategy.",
+                                    );
+                                    return;
+                                  }
+                                  setGoLiveTarget(s);
+                                  setGoLiveForm(defaultsGoLiveFromCard(s));
+                                  setGoLiveRememberSymbol(
+                                    Boolean(
+                                      s?.position_config &&
+                                        typeof s.position_config === "object" &&
+                                        s.position_config.activation_defaults &&
+                                        typeof s.position_config.activation_defaults === "object" &&
+                                        String(s.position_config.activation_defaults.symbol || "").trim(),
+                                    ),
+                                  );
+                                }}
+                              >
+                                Activate Strategy
+                              </button>
                               <button
                                 type="button"
                                 className="strat-action-btn strat-btn-edit"
@@ -3565,88 +3581,6 @@ export default function TradingSmartDashboard(props = {}) {
                 />
               </div>
             </div>
-
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="card-header">
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(167,139,250,0.1)",
-                      color: "var(--accent-purple)",
-                    }}
-                  >
-                    &#x23F3;
-                  </span>
-                  Pending Execution Queue
-                </div>
-                <span className="card-badge badge-blue">
-                  {(summary?.pending_executions ?? []).length} rows
-                </span>
-              </div>
-              {!summary?.pending_executions?.length ? (
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  No pending execution rows right now. Once a strategy is active
-                  and scanning, this queue shows live checks and pending/failed
-                  execution states from{" "}
-                  <code style={{ fontSize: 11 }}>
-                    pending_conditional_orders
-                  </code>
-                  .
-                </div>
-              ) : (
-                <div className="order-feed">
-                  {summary.pending_executions.map((p) => (
-                    <div className="order-item" key={p.id}>
-                      <div
-                        className={`order-icon ${String(p.action || "").toLowerCase() === "buy" ? "buy" : "sell"}`}
-                      >
-                        {String(p.action || "").toUpperCase() === "BUY"
-                          ? "\u25B2"
-                          : "\u25BC"}
-                      </div>
-                      <div>
-                        <div className="order-pair">
-                          {p.symbol || "—"}{" "}
-                          <span
-                            style={{
-                              color: "var(--accent-cyan)",
-                              fontSize: 11,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {p.status}
-                          </span>
-                        </div>
-                        <div className="order-meta">
-                          strategy_id: {p.strategy_id || "—"}{" "}
-                          {p.last_checked_at
-                            ? `• checked ${p.last_checked_at}`
-                            : ""}
-                        </div>
-                        {p.error_message ? (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "var(--accent-orange)",
-                              marginTop: 2,
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            {p.error_message}
-                          </div>
-                        ) : null}
-                      </div>
-                      <div>
-                        <div className="order-time">{p.created_at || "—"}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          
 
             {/* ═══ REQUEST DEVELOPER TO CODE STRATEGY ═══ */}
             <div className="card" style={{ gridColumn: "1 / -1" }}>

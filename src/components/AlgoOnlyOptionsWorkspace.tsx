@@ -32,7 +32,6 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  Pause,
   Plus,
   RefreshCw,
   Trash2,
@@ -58,11 +57,7 @@ import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrat
 import { OptionChainViewer } from "@/components/options/OptionChainViewer";
 import {
   fetchExpiryDates,
-  executeStrategy,
   instrumentTypeForUnderlying,
-  isOptionsApiConfigured,
-  lotUnitsForUnderlying,
-  type StrategyType,
   type NormalizedExpiryItem,
 } from "@/lib/optionsApi";
 import {
@@ -73,49 +68,6 @@ import {
 import type { OptionsStrategy } from "@/pages/OptionsStrategyPage";
 
 // ── helpers (same as widget) ────────────────────────────────────────────────
-
-function styleLabel(style: string): string {
-  const map: Record<string, string> = {
-    buying: "Buying", selling: "Selling", spread: "Spread",
-    straddle: "Straddle", strangle: "Strangle", iron_condor: "Iron Condor",
-  };
-  return map[style] ?? style;
-}
-
-function resolveStrategyType(s: OptionsStrategy): StrategyType | null {
-  const ec = (s.entry_conditions ?? {}) as Record<string, unknown>;
-  const explicit = String(ec.strategy_type ?? "").toLowerCase();
-  if (["iron_condor","strangle","bull_put_spread","jade_lizard","orb_buying"].includes(explicit)) return explicit as StrategyType;
-  if (s.strategy_style === "iron_condor") return "iron_condor";
-  if (s.strategy_style === "strangle") return "strangle";
-  return "orb_buying";
-}
-
-function buildExecuteParams(s: OptionsStrategy): Record<string, unknown> {
-  const ec = (s.entry_conditions ?? {}) as Record<string, unknown>;
-  const er = (s.exit_rules ?? {}) as Record<string, unknown>;
-  const rc = (s.risk_config ?? {}) as Record<string, unknown>;
-  const lots = Math.max(1, Number(rc.lot_size ?? 1));
-  const lotUnits = lotUnitsForUnderlying(s.underlying);
-  const explicitExpiry = typeof rc.explicit_expiry_iso === "string" ? rc.explicit_expiry_iso : undefined;
-  const common = {
-    underlying: s.underlying, exchange: "NSE_INDEX",
-    expiry_date: explicitExpiry || undefined,
-    lots, lot_size: lotUnits, capital: Number(rc.capital ?? 500000),
-    risk_pct: Number(ec.risk_pct ?? 0.02),
-  };
-  const st = resolveStrategyType(s);
-  if (st === "iron_condor") return { ...common, wing_width_pts: Number(ec.wing_width_pts ?? 200), delta_target: Number(ec.delta_target ?? 0.16), min_vix: Number(ec.min_vix ?? 13), min_net_premium: Number(ec.min_net_premium ?? 35), profit_target_pct: Number(er.profit_target_pct ?? 45) / 100, stop_loss_mult: Number(er.stop_loss_mult ?? 2) };
-  if (st === "strangle") return { ...common, delta_target: Number(ec.delta_target ?? 0.2), min_vix: Number(ec.min_vix ?? 18), min_net_premium: Number(ec.min_net_premium ?? 35), roll_trigger_pts: Number(ec.roll_trigger_pts ?? 30), max_adjustments: Number(ec.max_adjustments ?? 2), profit_target_pct: Number(er.profit_target_pct ?? 50) / 100, stop_loss_mult: Number(er.stop_loss_mult ?? 2) };
-  const orb = (s.orb_config ?? {}) as Record<string, unknown>;
-  return { underlying: s.underlying, exchange_underlying: "NSE", exchange_options: "NFO", expiry_type: s.expiry_type === "monthly" ? "monthly" : "weekly", strike_offset: s.strike_selection, lots, lot_size: lotUnits, orb_duration_mins: Number(orb.orb_duration_mins ?? 15), min_range_pct: Number(orb.min_range_pct ?? 0.2), max_range_pct: Number(orb.max_range_pct ?? 1.0), momentum_bars: Number(orb.momentum_bars ?? 3), trade_direction: s.trade_direction, expiry_day_guard: Boolean(ec.expiry_day_guard ?? true), sl_pct: Number(er.sl_pct ?? 30), tp_pct: Number(er.tp_pct ?? 50), trailing_enabled: Boolean(er.trailing_enabled ?? true), trail_after_pct: Number(er.trail_after_pct ?? 30), trail_pct: Number(er.trail_pct ?? 15), time_exit_hhmm: String(er.time_exit_hhmm ?? "15:15"), max_reentry_count: Number(er.max_reentry_count ?? 1) };
-}
-
-function directionColor(dir: string): string {
-  if (dir === "bullish") return "text-[var(--accent-green)]";
-  if (dir === "bearish") return "text-[var(--accent-red)]";
-  return "text-[var(--accent-orange)]";
-}
 
 function directionIcon(dir: string) {
   if (dir === "bullish")
@@ -251,55 +203,6 @@ export function AlgoOnlyOptionsWorkspace(props?: {
     }
   };
 
-  const handleExecuteNow = async (strategy: OptionsStrategy) => {
-    if (!brokerConnected) {
-      toast.error("Connect your broker (live session) before executing.");
-      return;
-    }
-    const lo = accountCaps?.limits?.orders ?? 10;
-    const ao = accountCaps?.activeOrders;
-    if (typeof ao === "number" && ao >= lo) {
-      toast.error(`Live order cap reached (${ao}/${lo}). Pause or close trades before new execution.`);
-      return;
-    }
-    const ls = accountCaps?.limits?.strategies ?? 10;
-    const ast = accountCaps?.activeStrategies;
-    if (typeof ast === "number" && ast >= ls) {
-      toast.error(`Active strategy cap reached (${ast}/${ls}).`);
-      return;
-    }
-    if (bffConfigured() && session?.access_token) {
-      try {
-        const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
-          `/api/account/preflight?strategy_id=${encodeURIComponent(strategy.id)}`,
-          session.access_token,
-        );
-        if (!pf.can_execute) {
-          toast.error(pf.reason ?? "Preflight blocked execution.");
-          return;
-        }
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Preflight failed");
-        return;
-      }
-    }
-    if (!isOptionsApiConfigured()) {
-      toast.error("Set VITE_OPTIONS_API_URL to execute options strategies.");
-      return;
-    }
-    const st = resolveStrategyType(strategy);
-    if (!st) { toast.error("Unsupported strategy type."); return; }
-    try {
-      const params = buildExecuteParams(strategy);
-      const res = await executeStrategy(st, params, false, strategy.id) as Record<string, unknown>;
-      if (res?.executed === false) { toast.info(String(res?.reason ?? "No trade signal at this moment.")); return; }
-      toast.success(`Live execution sent: ${String((res?.signal as any)?.strategy ?? st)} · ${String((res?.order_result as any)?.status ?? "ok")}`);
-      await fetchStrategies();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Execution failed");
-    }
-  };
-
   const openActivateLive = async (strategy: OptionsStrategy) => {
     if (!brokerConnected) {
       toast.error("Connect your broker (live session) before activating a live options strategy.", { description: "Click 'Connect broker' in the top nav bar to authenticate with your broker." });
@@ -390,7 +293,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
         {!brokerConnected && (
           <div className="flex items-center gap-3 rounded-lg border border-[rgba(251,146,60,0.35)] bg-[rgba(251,146,60,0.08)] px-4 py-3 text-sm text-[var(--accent-orange)]">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>Broker session not live. Connect broker via the top nav bar to activate or execute options strategies. Viewing and editing strategies is always available.</span>
+            <span>Broker session not live. Connect broker via the top nav bar to activate options strategies. Viewing and editing strategies is always available.</span>
           </div>
         )}
 
@@ -443,22 +346,28 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                         <div className="min-w-0">
                           <CardTitle className="text-base truncate">{s.name}</CardTitle>
                           <CardDescription className="text-xs">
-                            {s.underlying} · {s.exchange} · {styleLabel(s.strategy_style)} ·{" "}
-                            <span className={directionColor(s.trade_direction)}>{s.trade_direction}</span>
+                            {s.underlying} · {s.exchange}
                           </CardDescription>
                           <div className="mt-2">
-                            <StrategyConditionPanel
-                              strategyId={s.id}
-                              strategyName={s.name}
-                              symbol={String(s.underlying || "").trim().toUpperCase()}
-                              brokerLive={brokerConnected}
-                              streamStale={positionsStreamStale}
-                              lifecycleState={lcState}
-                            />
+                            {s.is_active ? (
+                              <StrategyConditionPanel
+                                strategyId={s.id}
+                                strategyName={s.name}
+                                symbol={String(s.underlying || "").trim().toUpperCase()}
+                                brokerLive={brokerConnected}
+                                streamStale={positionsStreamStale}
+                                lifecycleState={lcState}
+                              />
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground">
+                                Activate strategy to view live conditions.
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        <Badge variant="secondary" className="text-[10px] uppercase">OPTIONS</Badge>
                         <Badge
                           variant="secondary"
                           className={`text-[10px] ${lifecycleBadgeClass(lcState)}`}
@@ -535,22 +444,6 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                         Edit
                       </Button>
 
-                      {/* Execute Now — live only, broker gated */}
-                      <Button
-                        variant="outline" size="sm"
-                        className="h-7 px-2 text-xs border-[rgba(52,211,153,0.4)] text-[var(--accent-green)] hover:bg-[rgba(52,211,153,0.12)]"
-                        onClick={() => void handleExecuteNow(s)}
-                        disabled={
-                          !brokerConnected ||
-                          (typeof accountCaps?.activeOrders === "number" &&
-                            typeof accountCaps?.limits?.orders === "number" &&
-                            accountCaps.activeOrders >= accountCaps.limits.orders)
-                        }
-                        title={brokerConnected ? "Execute live now" : "Connect broker to execute"}
-                      >
-                        <Zap className="h-3 w-3 mr-1" />Execute Now
-                      </Button>
-
                       {/* Active / Paused controls */}
                       {s.is_active ? (
                         <Button
@@ -559,7 +452,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                           className="h-7 px-2 text-xs border-[rgba(251,146,60,0.4)] text-[var(--accent-orange)] hover:bg-[rgba(251,146,60,0.12)]"
                           onClick={() => handlePause(s)}
                         >
-                          <Pause className="h-3 w-3 mr-1" />Pause
+                          Pause
                         </Button>
                       ) : (
                         <Button

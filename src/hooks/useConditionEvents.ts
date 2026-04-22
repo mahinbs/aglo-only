@@ -26,6 +26,10 @@ export type StrategyConditionEventRow = {
 const DEFAULT_STALE_MS = 30_000;
 let _condEventsChannelSeq = 0;
 
+function normalizeSym(v: unknown): string {
+  return String(v || "").trim().toUpperCase();
+}
+
 export function useConditionEvents(
   strategyId: string | null | undefined,
   opts?: { staleAfterMs?: number; symbol?: string | null },
@@ -38,7 +42,7 @@ export function useConditionEvents(
   const [nowTick, setNowTick] = useState(() => Date.now());
 
   const sid = (strategyId || "").trim();
-  const symbolFilter = String(opts?.symbol || "").trim().toUpperCase();
+  const symbolFilter = normalizeSym(opts?.symbol);
 
   useEffect(() => {
     const t = window.setInterval(() => setNowTick(Date.now()), 1000);
@@ -54,19 +58,28 @@ export function useConditionEvents(
     let cancelled = false;
 
     void (async () => {
-      let q = supabase
+      const q = supabase
         .from("strategy_condition_events")
         .select(
           "id,strategy_id,symbol,matched,all_matched,ready_count,total_count,conditions,reasons,at,created_at",
         )
-        .eq("strategy_id", sid);
-      if (symbolFilter) {
-        q = q.eq("symbol", symbolFilter);
-      }
-      const { data, error } = await q.order("created_at", { ascending: false }).limit(1).maybeSingle();
+        .eq("strategy_id", sid)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      const { data, error } = await q;
 
-      if (!cancelled && !error && data) {
-        setEvent(data as StrategyConditionEventRow);
+      if (!cancelled && !error) {
+        const rows = Array.isArray(data) ? (data as StrategyConditionEventRow[]) : [];
+        if (!rows.length) {
+          setEvent(null);
+          return;
+        }
+        if (!symbolFilter) {
+          setEvent(rows[0] ?? null);
+          return;
+        }
+        const matched = rows.find((r) => normalizeSym(r.symbol) === symbolFilter) ?? null;
+        setEvent(matched);
       }
     })();
 
@@ -84,12 +97,11 @@ export function useConditionEvents(
           event: "INSERT",
           schema: "public",
           table: "strategy_condition_events",
-          filter: symbolFilter
-            ? `strategy_id=eq.${sid},symbol=eq.${symbolFilter}`
-            : `strategy_id=eq.${sid}`,
+          filter: `strategy_id=eq.${sid}`,
         },
         (payload) => {
           const row = payload.new as StrategyConditionEventRow;
+          if (symbolFilter && normalizeSym(row.symbol) !== symbolFilter) return;
           setEvent(row);
         },
       )

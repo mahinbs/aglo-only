@@ -269,6 +269,11 @@ export function StrategyConditionPanel(props: {
           </table>
         </div>
       )}
+      {rows.length === 0 && isLiveLifecycle && brokerLive ? (
+        <div className="rounded border border-white/5 bg-white/[0.02] px-2 py-1.5 text-[10px] text-muted-foreground">
+          Waiting for first condition snapshot{symbol ? ` for ${symbol}` : ""}. The scanner table appears once the engine saves a pass.
+        </div>
+      ) : null}
 
       {event?.reasons && typeof event.reasons === "object" && (
         <div className="text-[10px] text-muted-foreground/80 truncate" title={JSON.stringify(event.reasons)}>
