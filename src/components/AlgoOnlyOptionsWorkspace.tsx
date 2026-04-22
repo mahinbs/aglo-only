@@ -344,13 +344,13 @@ export function AlgoOnlyOptionsWorkspace(props?: {
       style={workspaceThemeVars}
     >
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-border/60 bg-[rgba(6,8,13,0.94)] backdrop-blur-sm">
+      <div className="">
         <div className="flex flex-col justify-between gap-4 px-3 py-4 sm:flex-row sm:items-center sm:px-6">
           <div>
-            <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            {/* <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
               <Zap className="h-5 w-5 text-primary" />
               Options Strategies
-            </h1>
+            </h1> */}
             <p className="text-sm text-muted-foreground mt-0.5">
               Live F&amp;O execution — broker connection required.{" "}
               {!brokerConnected && (
@@ -379,12 +379,6 @@ export function AlgoOnlyOptionsWorkspace(props?: {
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <button className="action-btn btn-primary" onClick={fetchStrategies}>
               <RefreshCw className="h-4 w-4" />
-            </button>
-            <button
-              className="w-full sm:w-auto action-btn btn-primary"
-              onClick={() => { setEditStrategy(null); setShowBuilder(true); }}
-            >
-              <Plus className="h-4 w-4 mr-1" />New Strategy
             </button>
             </div>
           </div>
