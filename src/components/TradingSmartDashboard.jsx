@@ -778,6 +778,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [pauseAllBusy, setPauseAllBusy] = useState(false);
   const [showDevRequest, setShowDevRequest] = useState(false);
   const [devSubmitBusy, setDevSubmitBusy] = useState(false);
+  const [strategyCreateMenuOpen, setStrategyCreateMenuOpen] = useState(false);
 
   const [devForm, setDevForm] = useState({
     strategyName: "",
@@ -2869,23 +2870,84 @@ export default function TradingSmartDashboard(props = {}) {
                   </span>
                   My Strategies
                 </div>
-                <span className="card-badge badge-blue">
-                  {myStrategies.length} Saved
-                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    position: "relative",
+                  }}
+                >
+                  <span className="card-badge badge-blue">
+                    {myStrategies.length} Saved
+                  </span>
+                  <button
+                    type="button"
+                    className="action-btn btn-primary"
+                    style={{ padding: "6px 14px", fontSize: 11 }}
+                    onClick={() =>
+                      setStrategyCreateMenuOpen((prev) => !prev)
+                    }
+                  >
+                    + Create Strategy
+                  </button>
+                  {strategyCreateMenuOpen ? (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 8px)",
+                        right: 0,
+                        minWidth: 210,
+                        borderRadius: 10,
+                        border: "1px solid var(--border-color)",
+                        background: "rgba(6,8,13,0.96)",
+                        boxShadow: "0 18px 36px rgba(0,0,0,0.45)",
+                        padding: 8,
+                        zIndex: 30,
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="action-btn btn-primary"
+                        style={{
+                          justifyContent: "flex-start",
+                          padding: "8px 10px",
+                          fontSize: 11,
+                          borderRadius: 8,
+                        }}
+                        onClick={() => {
+                          setStratStep(0);
+                          setStrategyCreateMenuOpen(false);
+                          setShowExactAlgoBuilder(true);
+                        }}
+                      >
+                        New Algo Strategy
+                      </button>
+                      <button
+                        type="button"
+                        className="action-btn btn-primary"
+                        style={{
+                          justifyContent: "flex-start",
+                          padding: "8px 10px",
+                          fontSize: 11,
+                          borderRadius: 8,
+                        }}
+                        onClick={() => {
+                          setStrategyCreateMenuOpen(false);
+                          setShowExactOptionsBuilder(true);
+                        }}
+                      >
+                        Options Strategy
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <div className="strategy-builder">
                 {/* Left: Strategy Cards */}
                 <div className="strategy-cards">
-                  <button
-                    type="button"
-                    className="btn-add-strategy"
-                    onClick={() => {
-                      setStratStep(0);
-                      setShowExactAlgoBuilder(true);
-                    }}
-                  >
-                    + Create New Strategy
-                  </button>
                   {myStrategies.map((s) => {
                     const lcState = normalizeLifecycleState(
                       s.lifecycle_state,
@@ -3306,9 +3368,9 @@ export default function TradingSmartDashboard(props = {}) {
                         }}
                       >
                         Your strategy portfolio at a glance. Use{" "}
-                        <strong>+ Create New Strategy</strong> for a popup form
-                        (ChartMate{" "}
-                        <code style={{ fontSize: 10 }}>manage-strategy</code>).
+                        <strong>+ Create Strategy</strong> to choose between{" "}
+                        <strong>New Algo Strategy</strong> and{" "}
+                        <strong>Options Strategy</strong>.
                       </div>
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                         <div className="my-strat-param">
@@ -3364,41 +3426,46 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Options Strategies — exact ChartMate OptionsStrategiesWorkspace embedded */}
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="card-header" style={{ marginBottom: 0 }}>
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(52,211,153,0.1)",
-                      color: "var(--accent-green)",
-                    }}
-                  >
-                    &#x1F4CA;
-                  </span>
-                  Options Strategies
-                </div>
-                <span className="card-badge badge-green">
-                  Live · chartmate-options-api
-                </span>
-              </div>
-              {/* AlgoOnlyOptionsWorkspace — live-only, broker-gated, no paper/backtest buttons */}
-              <AlgoOnlyOptionsWorkspace
-                accountCaps={{
-                  activeOrders: activeOrdersCap,
-                  activeStrategies: activeStrategiesCap,
-                  limits: {
-                    orders: capOrdersLimit,
-                    strategies: capStrategiesLimit,
-                  },
-                  cash: brokerSnap?.cash_available,
+              <div
+                style={{
+                  marginTop: 18,
+                  paddingTop: 16,
+                  borderTop: "1px solid var(--border-color)",
                 }}
-                positionsStreamStale={positionsStreamStale}
-                optionsPositionsFrame={optionsPositionsFrame}
-              />
+              >
+                <div className="card-header" style={{ marginBottom: 0 }}>
+                  <div className="card-title">
+                    <span
+                      className="card-title-icon"
+                      style={{
+                        background: "rgba(52,211,153,0.1)",
+                        color: "var(--accent-green)",
+                      }}
+                    >
+                      &#x1F4CA;
+                    </span>
+                    Options Strategies
+                  </div>
+                  <span className="card-badge badge-green">
+                    Live · chartmate-options-api
+                  </span>
+                </div>
+                {/* AlgoOnlyOptionsWorkspace — live-only, broker-gated, no paper/backtest buttons */}
+                <AlgoOnlyOptionsWorkspace
+                  accountCaps={{
+                    activeOrders: activeOrdersCap,
+                    activeStrategies: activeStrategiesCap,
+                    limits: {
+                      orders: capOrdersLimit,
+                      strategies: capStrategiesLimit,
+                    },
+                    cash: brokerSnap?.cash_available,
+                  }}
+                  positionsStreamStale={positionsStreamStale}
+                  optionsPositionsFrame={optionsPositionsFrame}
+                />
+              </div>
             </div>
 
             <div className="card" style={{ gridColumn: "1 / -1" }}>
