@@ -397,7 +397,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 
 /* ROBOT PANEL */
 .robot-panel { grid-column:1/-1; }
-.robot-grid { display:grid; grid-template-columns:260px 1fr 260px; gap:24px; align-items:center; }
+.robot-grid { display:grid; grid-template-columns:1fr; gap:24px; align-items:center; }
 .robot-avatar { display:flex; flex-direction:column; align-items:center; gap:16px; }
 .robot-ring { width:140px; height:140px; border-radius:50%; position:relative; display:flex; align-items:center; justify-content:center; }
 .robot-ring::before { content:''; position:absolute; inset:0; border-radius:50%;
@@ -1642,143 +1642,541 @@ export default function TradingSmartDashboard(props = {}) {
           </div>
 
             {/* LIVE MONITORING */}
-            <div className="card mb-[24px]">
-              <div className="card-header">
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(52,211,153,0.1)",
-                      color: "var(--accent-green)",
-                    }}
-                  >
-                    &#x1F4F6;
-                  </span>
-                  Live Monitoring
-                </div>
-                <span className="card-badge badge-green">
-                  {liveMonitorStrategies.length} running
-                </span>
-              </div>
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  margin: "0 0 12px",
-                  lineHeight: 1.5,
-                }}
-              >
-                Summary of strategies that are scanning or waiting on the
-                engine. Open{" "}
-                <strong style={{ color: "var(--accent-cyan)" }}>
-                  Live view
-                </strong>{" "}
-                on a card (or below) for candles, LTP, and the full condition
-                matrix.
-              </p>
-              {liveMonitorStrategies.length === 0 ? (
+            <div
+              className="card mb-[24px]"
+              style={{
+                padding: 0,
+                overflow: "hidden",
+                background:
+                  "linear-gradient(120deg, rgba(5,10,22,0.95), rgba(4,15,34,0.92) 52%, rgba(9,14,33,0.95))",
+                border: "1px solid rgba(56,189,248,0.16)",
+                boxShadow: "0 0 0 1px rgba(56,189,248,0.08) inset",
+              }}
+            >
+              <div style={{ padding: "18px 18px 12px" }}>
                 <div
                   style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    lineHeight: 1.6,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
                   }}
                 >
-                  No active strategy monitors yet. Activate a strategy to list
-                  it here, then use Live view for charts and conditions.
-                </div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {liveMonitorStrategies.map((s) => {
-                    const lcState = normalizeLifecycleState(
-                      s.lifecycle_state,
-                      Boolean(s.deployed),
-                    );
-                    const { symbol: symHint } = chartRoutingFromStrategyCard(s);
-                    return (
-                      <div
-                        key={`live-${s.id}`}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(250,204,21,0.12)",
+                        border: "1px solid rgba(250,204,21,0.25)",
+                        fontSize: 16,
+                      }}
+                    >
+                      &#x1F1EE;&#x1F1F3;
+                    </span>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          flexWrap: "wrap",
-                          border: "1px solid var(--border-color)",
-                          borderRadius: 10,
-                          padding: "10px 12px",
-                          background: "rgba(10,14,23,0.45)",
+                          fontSize: 28,
+                          color: "rgba(148,163,184,0.45)",
+                          lineHeight: 1,
                         }}
                       >
+                        |
+                      </span>
+                      <div
+                        style={{
+                          fontSize: 27,
+                          textTransform: "uppercase",
+                          letterSpacing: 1.5,
+                          fontWeight: 700,
+                          color: "var(--text-secondary)",
+                          fontFamily: "'JetBrains Mono',monospace",
+                        }}
+                      >
+                        {String(summary?.broker || "ZERODHA")} (INDIA -
+                        NSE/BSE)
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        borderRadius: 999,
+                        padding: "6px 12px",
+                        border: "1px solid rgba(52,211,153,0.35)",
+                        background: "rgba(16,185,129,0.12)",
+                        color: "var(--accent-green)",
+                        fontFamily: "'JetBrains Mono',monospace",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ● {sessLive ? "LIVE" : "OFFLINE"}
+                    </span>
+                    <button
+                      type="button"
+                      className="action-btn"
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 11,
+                        borderRadius: 10,
+                        borderColor: "rgba(244,63,94,0.3)",
+                        color: "var(--accent-red)",
+                        background: "rgba(244,63,94,0.09)",
+                      }}
+                      onClick={handleKillSwitch}
+                      disabled={killBusy || pauseAllBusy}
+                    >
+                      {killBusy ? "Working..." : killActive ? "Kill Active" : "Disconnect"}
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 10,
+                    border: "1px solid rgba(56,189,248,0.12)",
+                    background: "rgba(6,13,28,0.7)",
+                    padding: "8px 12px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto 1fr",
+                    gap: 8,
+                    alignItems: "center",
+                    fontSize: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "var(--text-muted)",
+                      fontFamily: "'JetBrains Mono',monospace",
+                    }}
+                  >
+                    {time || "00:00:00"} IST
+                  </span>
+                  <span
+                    style={{
+                      color: sessLive ? "var(--accent-green)" : "var(--accent-orange)",
+                      justifySelf: "center",
+                      fontWeight: 700,
+                      letterSpacing: 0.6,
+                    }}
+                  >
+                    {sessLive ? "MARKET OPEN" : "BROKER OFFLINE"}
+                  </span>
+                  <span
+                    style={{
+                      justifySelf: "end",
+                      color: "var(--text-secondary)",
+                      fontSize: 12,
+                    }}
+                  >
+                    {liveMonitorStrategies.length}/{myStrategies.length || 0}{" "}
+                    strategies
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      borderRadius: 10,
+                      padding: "9px 12px",
+                      border: "1px solid rgba(56,189,248,0.12)",
+                      background: "rgba(7,20,43,0.55)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: 1.8,
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      Balance
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontSize: 30,
+                        fontWeight: 700,
+                        fontFamily: "'JetBrains Mono',monospace",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      {formatUnsignedDisplay(displayPortfolio, currencyMode)}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: 10,
+                      padding: "9px 12px",
+                      border: "1px solid rgba(56,189,248,0.12)",
+                      background: "rgba(7,20,43,0.55)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: 1.8,
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      Today P&L
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontSize: 30,
+                        fontWeight: 700,
+                        fontFamily: "'JetBrains Mono',monospace",
+                        color:
+                          displayToday >= 0
+                            ? "var(--accent-green)"
+                            : "var(--accent-red)",
+                      }}
+                    >
+                      {formatSignedDisplay(displayToday, currencyMode)}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      borderRadius: 10,
+                      padding: "9px 12px",
+                      border: "1px solid rgba(56,189,248,0.12)",
+                      background: "rgba(7,20,43,0.55)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: 1.8,
+                        color: "var(--text-muted)",
+                      }}
+                    >
+                      Trades
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontSize: 30,
+                        fontWeight: 700,
+                        fontFamily: "'JetBrains Mono',monospace",
+                        color: "var(--accent-cyan)",
+                      }}
+                    >
+                      {sessLive ? String(liveTradesCount ?? 0) : "--"}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      letterSpacing: 2.8,
+                      textTransform: "uppercase",
+                      color: "var(--text-muted)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Assigned Strategies
+                  </div>
+                  <button
+                    type="button"
+                    className="action-btn btn-primary"
+                    style={{
+                      padding: "5px 12px",
+                      fontSize: 11,
+                      borderRadius: 999,
+                      letterSpacing: 0.5,
+                    }}
+                    onClick={() => {
+                      setStratStep(0);
+                      setShowExactAlgoBuilder(true);
+                    }}
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                {liveMonitorStrategies.length === 0 ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: 12,
+                      color: "var(--text-muted)",
+                      lineHeight: 1.6,
+                      border: "1px dashed rgba(56,189,248,0.18)",
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      background: "rgba(10,14,23,0.45)",
+                    }}
+                  >
+                    No active strategy monitors yet. Activate a strategy to list
+                    it here, then use Live view for charts and conditions.
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                    {liveMonitorStrategies.map((s) => {
+                      const lcState = normalizeLifecycleState(
+                        s.lifecycle_state,
+                        Boolean(s.deployed),
+                      );
+                      const lifecycleText = lifecycleLabel(lcState);
+                      const statusPill =
+                        lcState === "ACTIVE" || lcState === "TRIGGERED"
+                          ? "LIVE"
+                          : lifecycleText.toUpperCase();
+                      const statusColor =
+                        lcState === "ACTIVE" || lcState === "TRIGGERED"
+                          ? "var(--accent-green)"
+                          : lcState === "FAILED" || lcState === "CANCELLED"
+                            ? "var(--accent-red)"
+                            : "var(--accent-yellow)";
+                      const monitorPerf = strategiesData.find(
+                        (row) =>
+                          String(row?.name || "").trim().toLowerCase() ===
+                          String(s?.name || "").trim().toLowerCase(),
+                      );
+                      const { symbol: symHint } = chartRoutingFromStrategyCard(s);
+                      return (
                         <div
+                          key={`live-${s.id}`}
                           style={{
+                            border: "1px solid rgba(56,189,248,0.13)",
+                            borderRadius: 12,
+                            padding: "12px 14px",
+                            background: "rgba(5,12,27,0.72)",
                             display: "flex",
-                            flexDirection: "column",
-                            gap: 4,
-                            minWidth: 0,
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            flexWrap: "wrap",
                           }}
                         >
                           <div
                             style={{
                               display: "flex",
-                              alignItems: "center",
+                              flexDirection: "column",
                               gap: 8,
-                              flexWrap: "wrap",
+                              minWidth: 0,
+                              flex: "1 1 420px",
                             }}
                           >
-                            <span style={{ fontSize: 12, fontWeight: 700 }}>
-                              {s.name}
-                            </span>
-                            <span className="my-strat-card-type type-momentum">
-                              {s.type}
-                            </span>
-                            <span
-                              className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                flexWrap: "wrap",
+                              }}
                             >
-                              {lifecycleLabel(lcState)}
-                            </span>
+                              <span style={{ fontSize: 29, fontWeight: 800 }}>
+                                {s.name}
+                              </span>
+                              <span className="my-strat-card-type type-momentum">
+                                {String(s.type || "STRATEGY").toUpperCase()}
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontFamily: "'JetBrains Mono',monospace",
+                                  fontSize: 20,
+                                  padding: "2px 8px",
+                                  borderRadius: 6,
+                                  border: "1px solid rgba(56,189,248,0.14)",
+                                  color: "var(--text-secondary)",
+                                  background: "rgba(15,23,42,0.55)",
+                                }}
+                              >
+                                {String(s.pairs || symHint || "—").toUpperCase()}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "'JetBrains Mono',monospace",
+                                  fontSize: 20,
+                                  padding: "2px 8px",
+                                  borderRadius: 6,
+                                  background: "rgba(16,185,129,0.1)",
+                                  color: sessLive
+                                    ? monitorPerf?.pnlColor ||
+                                      (displayToday >= 0
+                                        ? "var(--accent-green)"
+                                        : "var(--accent-red)")
+                                    : "var(--text-muted)",
+                                }}
+                              >
+                                {sessLive
+                                  ? monitorPerf?.pnl ||
+                                    formatSignedDisplay(displayToday, currencyMode)
+                                  : "--"}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "'JetBrains Mono',monospace",
+                                  fontSize: 20,
+                                  padding: "2px 8px",
+                                  borderRadius: 6,
+                                  background: "rgba(15,23,42,0.55)",
+                                  color: "var(--text-secondary)",
+                                }}
+                              >
+                                {sessLive
+                                  ? `${Number(monitorPerf?.trades || 0).toLocaleString()} trades`
+                                  : "-- trades"}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "'JetBrains Mono',monospace",
+                                  fontSize: 20,
+                                  padding: "2px 8px",
+                                  borderRadius: 6,
+                                  background: "rgba(56,189,248,0.1)",
+                                  color: sessLive
+                                    ? monitorPerf?.winColor || "var(--accent-cyan)"
+                                    : "var(--text-muted)",
+                                }}
+                              >
+                                {sessLive
+                                  ? `${String(monitorPerf?.win || "0%")} win`
+                                  : "--"}
+                              </span>
+                            </div>
                           </div>
-                          <span
-                            style={{ fontSize: 10, color: "var(--text-muted)" }}
+
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
                           >
-                            Chart symbol:{" "}
-                            <span style={{ color: "var(--text-secondary)" }}>
-                              {symHint || "—"}
+                            <span
+                              style={{
+                                fontSize: 10,
+                                borderRadius: 6,
+                                padding: "3px 8px",
+                                border: `1px solid ${statusColor}33`,
+                                background:
+                                  statusPill === "LIVE"
+                                    ? "rgba(16,185,129,0.12)"
+                                    : "rgba(251,191,36,0.1)",
+                                color: statusColor,
+                                fontWeight: 700,
+                                letterSpacing: 1,
+                                fontFamily: "'JetBrains Mono',monospace",
+                              }}
+                            >
+                              {statusPill}
                             </span>
-                          </span>
+                            <button
+                              type="button"
+                              title={
+                                !sessLive
+                                  ? "Connect broker for live chart quotes"
+                                  : "Open chart + conditions"
+                              }
+                              disabled={!sessLive}
+                              onClick={() => {
+                                if (!sessLive) {
+                                  toast.error(
+                                    "Connect broker (live session) to open Live view.",
+                                  );
+                                  return;
+                                }
+                                setLiveViewTarget(s);
+                              }}
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                border: "1px solid rgba(244,63,94,0.45)",
+                                background: "rgba(244,63,94,0.12)",
+                                color: "var(--accent-red)",
+                                cursor: !sessLive ? "not-allowed" : "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 15,
+                                opacity: !sessLive ? 0.5 : 1,
+                              }}
+                            >
+                              &#x25A0;
+                            </button>
+                            <button
+                              type="button"
+                              title="Open live detail panel"
+                              onClick={() => setLiveViewTarget(s)}
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: "50%",
+                                border: "1px solid rgba(56,189,248,0.3)",
+                                background: "rgba(15,23,42,0.5)",
+                                color: "var(--text-muted)",
+                                cursor: "pointer",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 15,
+                              }}
+                            >
+                              &#x2715;
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          className="action-btn btn-primary"
-                          style={{
-                            padding: "6px 12px",
-                            fontSize: 11,
-                            borderRadius: 8,
-                            whiteSpace: "nowrap",
-                          }}
-                          disabled={!sessLive}
-                          title={
-                            !sessLive
-                              ? "Connect broker for live chart quotes"
-                              : "Open chart + conditions"
-                          }
-                          onClick={() => {
-                            if (!sessLive) {
-                              toast.error(
-                                "Connect broker (live session) to open Live view.",
-                              );
-                              return;
-                            }
-                            setLiveViewTarget(s);
-                          }}
-                        >
-                          Live view
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
           {/* STATS — only show real numbers when broker session is live */}
@@ -1989,7 +2387,7 @@ export default function TradingSmartDashboard(props = {}) {
                 </span>
               </div>
               <div className="robot-grid">
-                <div className="robot-avatar">
+                {/* <div className="robot-avatar">
                   <div className="robot-ring">
                     <div className="robot-face">&#x1F916;</div>
                   </div>
@@ -2002,7 +2400,7 @@ export default function TradingSmartDashboard(props = {}) {
                       ? "Broker session active"
                       : "Connect broker for live execution"}
                   </div>
-                </div>
+                </div> */}
                 <div className="robot-metrics">
                   <>
                     <div className="metric-row">
@@ -2137,7 +2535,7 @@ export default function TradingSmartDashboard(props = {}) {
                     </div>
                   </>
                 </div>
-                <div className="robot-actions">
+                {/* <div className="robot-actions">
                   <div className="kill-switch-container">
                   <button
                     type="button"
@@ -2212,7 +2610,7 @@ export default function TradingSmartDashboard(props = {}) {
                     as ChartMate). Options and strategy deploy run only with a
                     live broker session.
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
 
