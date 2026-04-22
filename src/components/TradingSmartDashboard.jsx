@@ -11,6 +11,7 @@ import { Toaster } from "sonner";
 import { ModalShell } from "./ModalShell.jsx";
 import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
+import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";
 import YahooChartPanel from "@/components/YahooChartPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
@@ -825,6 +826,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [editAlgoTarget, setEditAlgoTarget] = useState(null); // strategy being edited
   const [showExactOptionsBuilder, setShowExactOptionsBuilder] = useState(false);
   const [editOptionsTarget, setEditOptionsTarget] = useState(null);
+  const [activateOptionsTarget, setActivateOptionsTarget] = useState(null);
   const [killActive, setKillActive] = useState(false);
   const [killBusy, setKillBusy] = useState(false);
   const [pauseAllBusy, setPauseAllBusy] = useState(false);
@@ -3352,6 +3354,13 @@ export default function TradingSmartDashboard(props = {}) {
                                     );
                                     return;
                                   }
+                                  const isOptions =
+                                    Boolean(s?.is_options) ||
+                                    strategyKindTag(s) === "options";
+                                  if (isOptions) {
+                                    setActivateOptionsTarget(s._raw ?? s);
+                                    return;
+                                  }
                                   setGoLiveTarget(s);
                                   setGoLiveForm(defaultsGoLiveFromCard(s));
                                   setGoLiveRememberSymbol(
@@ -5036,6 +5045,19 @@ export default function TradingSmartDashboard(props = {}) {
           addLog("info", "Options strategy saved via ChartMate builder");
         }}
         showButton={false}
+      />
+      <OptionsStrategyActivateDialog
+        open={Boolean(activateOptionsTarget)}
+        onOpenChange={(open) => {
+          if (!open) setActivateOptionsTarget(null);
+        }}
+        strategy={activateOptionsTarget}
+        onActivated={() => {
+          setActivateOptionsTarget(null);
+          chartmateActions?.onRefresh?.();
+          addLog("exec", "Options strategy activated with broker option symbol");
+        }}
+        mode="live"
       />
       {/* Toaster for broker-gate notifications and strategy feedback */}
       <Toaster richColors position="top-right" />

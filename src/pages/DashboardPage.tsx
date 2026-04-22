@@ -336,9 +336,7 @@ export default function DashboardPage() {
         if (uidBff) {
           const { data: optionsRows } = await supabase
             .from("options_strategies")
-            .select(
-              "id,name,underlying,is_active,exit_rules,lifecycle_state,lifecycle_reason,lifecycle_updated_at,created_at",
-            )
+            .select("*")
             .eq("user_id", uidBff)
             .order("created_at", { ascending: false })
             .limit(50);
@@ -409,9 +407,7 @@ export default function DashboardPage() {
             .limit(20),
           supabase
             .from("options_strategies")
-            .select(
-              "id,name,underlying,is_active,exit_rules,lifecycle_state,lifecycle_reason,lifecycle_updated_at,created_at",
-            )
+            .select("*")
             .eq("user_id", uid)
             .order("created_at", { ascending: false })
             .limit(50),
