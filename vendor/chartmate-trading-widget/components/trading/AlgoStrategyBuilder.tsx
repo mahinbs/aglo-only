@@ -289,8 +289,8 @@ function AlgoGuidePresetEntryPanel({
   };
 
   return (
-    <div className="space-y-4 rounded-xl border border-teal-500/30 bg-teal-500/5 p-4">
-      <p className="text-xs font-bold uppercase tracking-widest text-teal-400/90">Algo Guide preset</p>
+    <div className="space-y-4 rounded-xl border border-sky-500/30 bg-sky-500/5 p-4">
+      <p className="text-xs font-bold uppercase tracking-widest text-sky-300/95">Algo Guide preset</p>
       <p className="text-sm font-semibold text-zinc-100">{copy.title}</p>
       <ul className="list-disc space-y-2 pl-4 text-xs text-zinc-300 leading-relaxed">
         {copy.bullets.map((b, i) => (
@@ -300,7 +300,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "orb" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">
             Edit ORB parameters
           </p>
           <p className="text-[11px] text-zinc-500">
@@ -383,7 +383,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "vwap_bounce" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">
             Edit VWAP bounce parameters
           </p>
           <p className="text-[11px] text-zinc-500">
@@ -454,7 +454,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "ema_crossover" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">
             Edit EMA crossover parameters
           </p>
           <Row>
@@ -485,7 +485,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "supertrend_7_3" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">Edit Supertrend parameters</p>
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">Edit Supertrend parameters</p>
           <Row>
             <Field label="ATR period"><Input type="number" min={2} max={30} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.stPeriod ?? 7} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ stPeriod: v }); }} /></Field>
             <Field label="ATR multiplier"><Input type="number" step={0.1} min={0.5} max={10} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.stMult ?? 3} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ stMult: v }); }} /></Field>
@@ -501,7 +501,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "rsi_divergence" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">Edit RSI divergence parameters</p>
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">Edit RSI divergence parameters</p>
           <Row>
             <Field label="RSI period"><Input type="number" min={2} max={30} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.rsiDivPeriod ?? 14} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ rsiDivPeriod: v }); }} /></Field>
             <Field label="Pivot width"><Input type="number" min={2} max={12} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.rsiDivPivotWidth ?? 5} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ rsiDivPivotWidth: v }); }} /></Field>
@@ -517,7 +517,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "liquidity_sweep_bos" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">Edit liquidity sweep + BOS parameters</p>
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">Edit liquidity sweep + BOS parameters</p>
           <Row>
             <Field label="Lookback bars"><Input type="number" min={30} max={300} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.lqLookback ?? 80} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ lqLookback: v }); }} /></Field>
             <Field label="Swing width"><Input type="number" min={2} max={12} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.lqSwingWidth ?? 4} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ lqSwingWidth: v }); }} /></Field>
@@ -531,7 +531,7 @@ function AlgoGuidePresetEntryPanel({
 
       {presetId === "smc_mtf_confluence" && (
         <>
-          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-teal-500/20 pt-3">Edit SMC MTF parameters</p>
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-t border-sky-500/20 pt-3">Edit SMC MTF parameters</p>
           <label className="flex items-center gap-3 cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">
             <Switch checked={Boolean(p.smcDisableSessionGate)} onCheckedChange={(v) => patchParams({ smcDisableSessionGate: Boolean(v) })} />
             <div>
@@ -832,7 +832,7 @@ function ChoiceGroup<T extends string>({
           onClick={() => onChange(v)}
           className={`rounded-lg border px-3 py-2 text-left transition-all ${
             value === v
-              ? "border-teal-500 bg-teal-500/15 text-teal-200"
+              ? "border-sky-500 bg-sky-500/15 text-sky-200"
               : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
           } ${size === "sm" ? "text-xs" : "text-sm"}`}
         >
@@ -1140,9 +1140,9 @@ export default function AlgoStrategyBuilder({ open, onOpenChange, existing, onSa
             {STEPS.map((s, i) => (
               <button key={s.idx} type="button" onClick={() => !isLiveLocked && setStep(i)}
                 disabled={isLiveLocked}
-                className={`flex items-center gap-1 transition-colors ${i === step ? "text-teal-300 font-semibold" : "text-zinc-600 hover:text-zinc-400"} ${isLiveLocked ? "opacity-50 cursor-not-allowed" : ""}`}>
+                className={`flex items-center gap-1 transition-colors ${i === step ? "text-sky-300 font-semibold" : "text-zinc-600 hover:text-zinc-400"} ${isLiveLocked ? "opacity-50 cursor-not-allowed" : ""}`}>
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
-                  i < step ? "bg-teal-600 text-white" : i === step ? "bg-teal-500/20 border border-teal-500 text-teal-300" : "bg-zinc-800 text-zinc-500"
+                  i < step ? "bg-sky-600 text-white" : i === step ? "bg-sky-500/20 border border-sky-500 text-sky-300" : "bg-zinc-800 text-zinc-500"
                 }`}>{i + 1}</span>
                 <span className="hidden lg:inline">{s.title}</span>
                 {i < STEPS.length - 1 && <ChevronRight className="h-3 w-3 text-zinc-700" />}
@@ -1159,7 +1159,7 @@ export default function AlgoStrategyBuilder({ open, onOpenChange, existing, onSa
               <button key={s.idx} type="button" onClick={() => !isLiveLocked && setStep(i)}
                 disabled={isLiveLocked}
                 className={`w-full text-left rounded-lg px-3 py-2.5 transition-all ${
-                  i === step ? "bg-teal-500/15 border border-teal-500/40 text-teal-300" : "text-zinc-400 hover:bg-zinc-800 border border-transparent"
+                  i === step ? "bg-sky-500/15 border border-sky-500/40 text-sky-300" : "text-zinc-400 hover:bg-zinc-800 border border-transparent"
                 } ${isLiveLocked ? "opacity-50 cursor-not-allowed" : ""}`}>
                 <p className={`text-xs font-bold leading-tight ${i === step ? "" : ""}`}>{i + 1}. {s.title}</p>
                 <p className="text-[10px] text-zinc-600 leading-tight mt-0.5">{s.sub}</p>
@@ -1202,7 +1202,7 @@ export default function AlgoStrategyBuilder({ open, onOpenChange, existing, onSa
                 </Field>
 
                 {form.strategyType === "time_based" && (
-                  <p className="text-xs text-teal-300/95 rounded-lg border border-teal-500/35 bg-teal-500/10 px-3 py-2 leading-relaxed">
+                  <p className="text-xs text-sky-300/95 rounded-lg border border-sky-500/35 bg-sky-500/10 px-3 py-2 leading-relaxed">
                     <strong>Time-based mode:</strong> set your <strong>entry clock</strong> on the Entry step and{" "}
                     <strong>exit clock</strong> on the Exit step (same idea as Algorooms: e.g. enter 1:00 PM, exit 1:01 PM). Scans use IST for NSE/BSE.
                   </p>
@@ -1763,7 +1763,7 @@ export default function AlgoStrategyBuilder({ open, onOpenChange, existing, onSa
               Back
             </Button>
             {step < STEPS.length - 1 ? (
-              <Button type="button" className="h-9 px-5 bg-teal-600 hover:bg-teal-500 text-white font-semibold"
+              <Button type="button" className="h-9 px-5 bg-sky-600 hover:bg-sky-500 text-white font-semibold"
                 onClick={() => setStep(s => Math.min(STEPS.length - 1, s + 1))} disabled={isLiveLocked}>
                 Next
               </Button>

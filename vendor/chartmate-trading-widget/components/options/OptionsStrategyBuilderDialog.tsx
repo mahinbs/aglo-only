@@ -380,10 +380,11 @@ function Step1({
       <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground flex gap-2">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <span>
-          <strong>Auto</strong> option type lets the strategy pick CE or PE based on the ORB breakout direction.
-          Use it with <strong>Neutral</strong> direction for the most flexible execution.
-          The <strong>expiry date, option symbol and lot size</strong> are selected when you tap{" "}
-          <strong>Paper Trade</strong> or <strong>Activate Live</strong> — broker data loads fresh each session.
+          <strong>Auto</strong> option type picks CE or PE from the ORB breakout direction; use
+          <strong> Neutral</strong> for maximum flexibility.
+          <br />
+          <strong>Expiry date, option symbol, and lot size</strong> are loaded fresh when you tap
+          <strong> Activate Live</strong>.
         </span>
       </div>
     </div>
@@ -429,7 +430,7 @@ function Step2({ state, set }: { state: WizardState; set: (k: keyof WizardState,
       </div>
 
       {(state.strategy_style === "straddle" || state.strategy_style === "strangle" || state.strategy_style === "iron_condor") && (
-        <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-4 py-3 text-xs text-yellow-600 dark:text-yellow-400 flex gap-2">
+        <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-xs text-sky-300 flex gap-2">
           <Info className="h-4 w-4 shrink-0 mt-0.5" />
           <span>
             Multi-leg strategies require sufficient margin. Paper trading is recommended first.
@@ -734,7 +735,7 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
         )}
 
         {state.is_paper_only && (
-          <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-xs text-blue-500 dark:text-blue-400">
+          <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-xs text-sky-300">
             Paper mode uses real-time market prices to simulate entry and exit.
             Switch to live mode only after validating performance with paper trades.
           </div>
@@ -752,7 +753,7 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
           <span>SL / TP:</span><span className="text-foreground font-medium">{state.sl_pct}% / {state.tp_pct}%</span>
           <span>Time Exit:</span><span className="text-foreground font-medium">{state.time_exit_hhmm} IST</span>
           <span>Mode:</span>
-          <span className={state.is_paper_only ? "text-blue-400 font-semibold" : "text-red-400 font-semibold"}>
+          <span className={state.is_paper_only ? "text-sky-300 font-semibold" : "text-red-400 font-semibold"}>
             {state.is_paper_only ? "Paper Only" : "Live Trading"}
           </span>
         </div>

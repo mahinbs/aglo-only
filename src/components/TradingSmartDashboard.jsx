@@ -3737,6 +3737,75 @@ export default function TradingSmartDashboard(props = {}) {
                 ))}
               </div>
             </div>
+
+            <div className="card activity-log">
+              <div
+                style={{
+                  marginTop: 4,
+                  padding: "20px 24px",
+                  borderRadius: 12,
+                  background: "rgba(15,23,42,0.5)",
+                  border: "1px solid var(--border-color)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                    lineHeight: 1.8,
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--accent-yellow)",
+                      marginBottom: 6,
+                      fontSize: 11,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    ⚠️ IMPORTANT RISK DISCLOSURE
+                  </div>
+                  <p>
+                    Trading in stocks, options, futures, forex, and
+                    cryptocurrencies involves substantial risk of loss and is
+                    not suitable for every investor. The valuation of financial
+                    instruments may fluctuate, and as a result, investors may
+                    lose more than their original investment.
+                  </p>
+                  <p style={{ marginTop: 6 }}>
+                    <strong>
+                      TradingSmart.AI is a technology platform only.
+                    </strong>{" "}
+                    We provide software infrastructure to execute trading
+                    strategies. All strategies deployed on this platform are
+                    created, configured, and managed by the trader or their
+                    SEBI/SEC-registered financial advisor. TradingSmart.AI does
+                    not provide investment advice, portfolio management, or
+                    strategy recommendations.
+                  </p>
+                  <p style={{ marginTop: 6 }}>
+                    Past performance is not indicative of future results. You
+                    should consult with a qualified financial advisor before
+                    making any investment decisions. By using this platform,
+                    you acknowledge that you understand the risks involved and
+                    accept full responsibility for your trading decisions.
+                  </p>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      fontSize: 9,
+                      color: "var(--text-muted)",
+                      opacity: 0.7,
+                    }}
+                  >
+                    {"\u00A9"} 2024 TradingSmart.AI — Technology Platform | Not a
+                    Financial Advisor | Not SEBI/SEC Registered
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
