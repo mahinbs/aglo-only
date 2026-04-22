@@ -414,7 +414,6 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .dashboard { display:grid; grid-template-columns:1fr; gap:20px; }
 
 /* ROBOT PANEL */
-.robot-panel { grid-column:1/-1; }
 .robot-grid { display:grid; grid-template-columns:1fr; gap:24px; align-items:center; }
 .robot-avatar { display:flex; flex-direction:column; align-items:center; gap:16px; }
 .robot-ring { width:140px; height:140px; border-radius:50%; position:relative; display:flex; align-items:center; justify-content:center; }
