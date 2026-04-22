@@ -49,6 +49,7 @@ import {
   type NormalizedExpiryItem,
   type TradableOptionRow,
 } from "@/lib/optionsApi";
+import { bffConfigured, bffFetch } from "@/lib/api";
 
 interface Props {
   open: boolean;
@@ -61,6 +62,7 @@ interface Props {
   prefetchedExpiries?: NormalizedExpiryItem[];
 }
 type FiatCurrency = "INR" | "USD";
+const EMPTY_EXPIRIES: NormalizedExpiryItem[] = [];
 
 function convertBetweenInrUsd(
   amount: number,
@@ -78,7 +80,7 @@ export function OptionsStrategyActivateDialog({
   strategy,
   onActivated,
   mode = "paper",
-  prefetchedExpiries = [],
+  prefetchedExpiries,
 }: Props) {
   const [expiries, setExpiries] = useState<NormalizedExpiryItem[]>([]);
   const [expiryIso, setExpiryIso] = useState<string>("");
@@ -99,6 +101,9 @@ export function OptionsStrategyActivateDialog({
   const [investmentAmount, setInvestmentAmount] = useState("");
 
   const isPaper = mode === "paper";
+  const stablePrefetchedExpiries = Array.isArray(prefetchedExpiries)
+    ? prefetchedExpiries
+    : EMPTY_EXPIRIES;
 
   const lotUnits = useMemo(
     () => (strategy ? lotUnitsForUnderlying(strategy.underlying) : 75),
@@ -161,7 +166,11 @@ export function OptionsStrategyActivateDialog({
 
   // ── Load expiries (use pre-fetched if available) ────────────────────────
   useEffect(() => {
-    if (!open || !strategy) { reset(); return; }
+    if (!open || !strategy) {
+      reset();
+      setLoadingExpiries(false);
+      return;
+    }
 
     const rc = strategy.risk_config as Record<string, unknown>;
     setLots(Math.max(1, Number(rc.lot_size ?? 1)));
@@ -171,15 +180,17 @@ export function OptionsStrategyActivateDialog({
       setExpiries([]);
       setExpiryIso("");
       setError(null);
+      setLoadingExpiries(false);
       return;
     }
 
     // Use pre-fetched data immediately — no spinner needed
-    if (prefetchedExpiries.length > 0) {
-      setExpiries(prefetchedExpiries);
-      const pick = pickExpiryForStrategyType(prefetchedExpiries, strategy.expiry_type);
-      const initial = pick?.date ?? prefetchedExpiries[0]?.date ?? "";
+    if (stablePrefetchedExpiries.length > 0) {
+      setExpiries(stablePrefetchedExpiries);
+      const pick = pickExpiryForStrategyType(stablePrefetchedExpiries, strategy.expiry_type);
+      const initial = pick?.date ?? stablePrefetchedExpiries[0]?.date ?? "";
       setExpiryIso(initial);
+      setLoadingExpiries(false);
       return;
     }
 
@@ -209,7 +220,7 @@ export function OptionsStrategyActivateDialog({
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, strategy, reset, brokerConnected, brokerChecking, prefetchedExpiries]);
+  }, [open, strategy, reset, brokerConnected, brokerChecking, stablePrefetchedExpiries]);
 
   useEffect(() => {
     if (ltp == null || !Number.isFinite(ltp) || ltp <= 0) return;
@@ -282,6 +293,49 @@ export function OptionsStrategyActivateDialog({
     if (!strategy?.id || !validSymbol) return;
     setSaving(true);
     try {
+      if (!isPaper) {
+        if (!bffConfigured()) {
+          toast.error(
+            "Cannot verify balance for live options activation (BFF not configured).",
+          );
+          return;
+        }
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          toast.error("Not signed in. Please sign in again.");
+          return;
+        }
+        const qtyUnits = Math.max(1, Math.floor(Number(lots) * Number(lotUnits)));
+        const ex = String(strategy.exchange || "NFO").trim().toUpperCase() || "NFO";
+        const pf = await bffFetch<{
+          can_execute: boolean;
+          reason?: string | null;
+          available_cash?: number | null;
+          required_notional?: number | null;
+        }>(
+          `/api/account/preflight?strategy_id=${encodeURIComponent(String(strategy.id))}&symbol=${encodeURIComponent(symbol)}&exchange=${encodeURIComponent(ex)}&quantity=${encodeURIComponent(String(qtyUnits))}&product=MIS`,
+          token,
+        );
+        if (!pf.can_execute) {
+          toast.error(
+            pf.reason ?? "Preflight blocked options activation.",
+          );
+          return;
+        }
+        if (
+          Number.isFinite(Number(pf.available_cash)) &&
+          Number.isFinite(Number(pf.required_notional)) &&
+          Number(pf.available_cash) < Number(pf.required_notional)
+        ) {
+          toast.error(
+            `Insufficient funds: ₹${Number(pf.available_cash).toLocaleString("en-IN", { maximumFractionDigits: 2 })} available, but ~₹${Number(pf.required_notional).toLocaleString("en-IN", { maximumFractionDigits: 2 })} required for ${symbol}.`,
+          );
+          return;
+        }
+      }
       const sessionDate = getIstDateKey();
       const prev = (strategy.strategy_state || {}) as Record<string, unknown>;
       const rc = { ...(strategy.risk_config as Record<string, unknown>), lot_size: lots };

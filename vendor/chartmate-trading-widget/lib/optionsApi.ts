@@ -16,6 +16,7 @@ const BFF_OPTIONS_PROXY_BASE = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string
 const EXPLICIT_OPTIONS_WS_BASE = (import.meta.env.VITE_OPTIONS_WS_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const API_BASE = DIRECT_OPTIONS_API_BASE || BFF_OPTIONS_PROXY_BASE;
 const EXPIRY_CACHE_TTL_MS = 90_000;
+const EDGE_TIMEOUT_MS = 15_000;
 
 function wsServiceBase(): string {
   if (EXPLICIT_OPTIONS_WS_BASE) {
@@ -48,6 +49,24 @@ type ExpiryResponse = {
 
 const expiryCache = new Map<string, { expiresAt: number; data: ExpiryResponse }>();
 const expiryInFlight = new Map<string, Promise<ExpiryResponse>>();
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  timeoutMessage: string,
+): Promise<T> {
+  let timer: number | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer != null) window.clearTimeout(timer);
+  }
+}
 
 /** True when the app should call the hosted FastAPI service for options (full E2E). */
 export function isOptionsApiConfigured(): boolean {
@@ -441,13 +460,21 @@ export async function fetchOptionChain(params: {
     }
   }
 
-  const { data, error } = await supabase.functions.invoke<Record<string, unknown>>("fetch-option-chain", {
-    body: {
-      symbol: sym,
-      exchange: ex,
-      expiry_date: params.expiry_date,
-    },
-  });
+  const chainInvoke = await withTimeout(
+    supabase.functions.invoke<Record<string, unknown>>("fetch-option-chain", {
+      body: {
+        symbol: sym,
+        exchange: ex,
+        expiry_date: params.expiry_date,
+      },
+    }),
+    EDGE_TIMEOUT_MS,
+    "Option chain request timed out. Please retry.",
+  );
+  const { data, error } = chainInvoke as {
+    data: Record<string, unknown> | null;
+    error: { message?: string } | null;
+  };
   if (error) throw new Error(friendlyBrokerMarketDataError(error.message ?? "fetch-option-chain failed"));
   if (data && typeof data === "object" && "error" in data && data.error) {
     throw new Error(friendlyBrokerMarketDataError(String((data as { error: unknown }).error)));
@@ -517,9 +544,17 @@ export async function fetchExpiryDates(params: {
       }
     }
 
-    const { data, error } = await supabase.functions.invoke<Record<string, unknown>>("fetch-expiry-dates", {
-      body: { symbol: sym, exchange: ex, instrumenttype: instrument },
-    });
+    const expiryInvoke = await withTimeout(
+      supabase.functions.invoke<Record<string, unknown>>("fetch-expiry-dates", {
+        body: { symbol: sym, exchange: ex, instrumenttype: instrument },
+      }),
+      EDGE_TIMEOUT_MS,
+      "Expiry dates request timed out. Please retry.",
+    );
+    const { data, error } = expiryInvoke as {
+      data: Record<string, unknown> | null;
+      error: { message?: string } | null;
+    };
     if (error) {
       if (!isIstMarketOpenNow()) {
         throw new Error(marketClosedMessage());
