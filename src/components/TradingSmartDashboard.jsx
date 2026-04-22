@@ -1644,7 +1644,7 @@ export default function TradingSmartDashboard(props = {}) {
            <div className="grid grid-cols-1 gap-7 mb-[24px]">
              {/* LIVE MONITORING */}
              <div
-              className="card mb-[24px]"
+              className="card"
               style={{
                 padding: 0,
                 overflow: "hidden",
