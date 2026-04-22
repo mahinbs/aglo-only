@@ -5,7 +5,7 @@
  *  - Activate Live is gated by broker session; shows toast if not connected
  *  - UI styled to match algo-only dark theme (still uses Tailwind/Radix components)
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -112,15 +112,17 @@ function buildExecuteParams(s: OptionsStrategy): Record<string, unknown> {
 }
 
 function directionColor(dir: string): string {
-  if (dir === "bullish") return "text-green-500";
-  if (dir === "bearish") return "text-red-400";
-  return "text-yellow-400";
+  if (dir === "bullish") return "text-[var(--accent-green)]";
+  if (dir === "bearish") return "text-[var(--accent-red)]";
+  return "text-[var(--accent-orange)]";
 }
 
 function directionIcon(dir: string) {
-  if (dir === "bullish") return <TrendingUp className="h-4 w-4 text-green-500" />;
-  if (dir === "bearish") return <TrendingDown className="h-4 w-4 text-red-400" />;
-  return <BarChart2 className="h-4 w-4 text-yellow-400" />;
+  if (dir === "bullish")
+    return <TrendingUp className="h-4 w-4 text-[var(--accent-green)]" />;
+  if (dir === "bearish")
+    return <TrendingDown className="h-4 w-4 text-[var(--accent-red)]" />;
+  return <BarChart2 className="h-4 w-4 text-[var(--accent-orange)]" />;
 }
 
 /** OpenAlgo history for spot/indices uses cash exchange; quotes often use *_INDEX. */
@@ -146,6 +148,26 @@ export function AlgoOnlyOptionsWorkspace(props?: {
   positionsStreamStale?: boolean;
   optionsPositionsFrame?: OptionsPositionsFrame | null;
 }) {
+  const workspaceThemeVars: CSSProperties = {
+    ["--background" as string]: "222 45% 7%",
+    ["--foreground" as string]: "210 40% 96%",
+    ["--card" as string]: "221 39% 10%",
+    ["--card-foreground" as string]: "210 40% 96%",
+    ["--popover" as string]: "221 39% 10%",
+    ["--popover-foreground" as string]: "210 40% 96%",
+    ["--primary" as string]: "199 89% 60%",
+    ["--primary-foreground" as string]: "222 47% 11%",
+    ["--secondary" as string]: "221 28% 16%",
+    ["--secondary-foreground" as string]: "210 40% 96%",
+    ["--muted" as string]: "221 30% 15%",
+    ["--muted-foreground" as string]: "215 20% 68%",
+    ["--accent" as string]: "221 31% 17%",
+    ["--accent-foreground" as string]: "210 40% 96%",
+    ["--border" as string]: "199 45% 28%",
+    ["--input" as string]: "221 28% 16%",
+    ["--ring" as string]: "199 89% 60%",
+  };
+
   const { accountCaps, positionsStreamStale = false, optionsPositionsFrame = null } = props ?? {};
   const { user, session } = useAuth();
 
@@ -317,9 +339,12 @@ export function AlgoOnlyOptionsWorkspace(props?: {
   };
 
   return (
-    <div className="w-full overflow-x-hidden pb-2">
+    <div
+      className="w-full overflow-x-hidden pb-2"
+      style={workspaceThemeVars}
+    >
       {/* Header */}
-      <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+      <div className="sticky top-0 z-10 border-b border-border/60 bg-[rgba(6,8,13,0.94)] backdrop-blur-sm">
         <div className="flex flex-col justify-between gap-4 px-3 py-4 sm:flex-row sm:items-center sm:px-6">
           <div>
             <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -329,7 +354,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
             <p className="text-sm text-muted-foreground mt-0.5">
               Live F&amp;O execution — broker connection required.{" "}
               {!brokerConnected && (
-                <span className="text-amber-400 font-medium">⚠ Broker not connected — connect via top nav to execute.</span>
+                <span className="font-medium text-[var(--accent-orange)]">⚠ Broker not connected — connect via top nav to execute.</span>
               )}
             </p>
           </div>
@@ -370,7 +395,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
       <div className="space-y-6 p-3 sm:p-6">
         {/* Broker not connected warning */}
         {!brokerConnected && (
-          <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          <div className="flex items-center gap-3 rounded-lg border border-[rgba(251,146,60,0.35)] bg-[rgba(251,146,60,0.08)] px-4 py-3 text-sm text-[var(--accent-orange)]">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>Broker session not live. Connect broker via the top nav bar to activate or execute options strategies. Viewing and editing strategies is always available.</span>
           </div>
@@ -387,14 +412,17 @@ export function AlgoOnlyOptionsWorkspace(props?: {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : strategies.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="border-dashed border-[var(--border-color)] bg-[rgba(12,17,28,0.75)]">
               <CardContent className="py-16 text-center">
-                <Zap className="h-10 w-10 text-muted-foreground/40 mx-auto mb-4" />
+                <Zap className="mx-auto mb-4 h-10 w-10 text-[var(--text-muted)]/80" />
                 <p className="text-muted-foreground font-medium">No options strategies yet.</p>
                 <p className="text-sm text-muted-foreground/70 mt-1 mb-4">
                   Create your first strategy with ORB breakout, momentum, and options-specific exit rules.
                 </p>
-                <Button onClick={() => setShowBuilder(true)}>
+                <Button
+                  onClick={() => setShowBuilder(true)}
+                  className="bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.16))] text-[var(--accent-cyan)] border border-[rgba(56,189,248,0.35)] hover:bg-[linear-gradient(135deg,rgba(56,189,248,0.26),rgba(99,102,241,0.26))]"
+                >
                   <Plus className="h-4 w-4 mr-1" />Create First Strategy
                 </Button>
               </CardContent>
@@ -411,7 +439,10 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                     ? `${lcReason || "No reason"}${lcUpdated ? `\nUpdated: ${lcUpdated}` : ""}`
                     : undefined;
                 return (
-                <Card key={s.id} className={`transition-all ${s.is_active ? "border-primary/30" : "opacity-75"}`}>
+                <Card
+                  key={s.id}
+                  className={`transition-all bg-[rgba(12,17,28,0.75)] border-[var(--border-color)] ${s.is_active ? "border-[rgba(56,189,248,0.35)]" : "opacity-75"}`}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
@@ -459,11 +490,11 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                       </div>
                       <div className="rounded bg-muted/40 px-2 py-1.5">
                         <p className="text-muted-foreground/70">SL %</p>
-                        <p className="font-semibold text-red-400">{(s.exit_rules as any)?.sl_pct ?? 30}%</p>
+                        <p className="font-semibold text-[var(--accent-red)]">{(s.exit_rules as any)?.sl_pct ?? 30}%</p>
                       </div>
                       <div className="rounded bg-muted/40 px-2 py-1.5">
                         <p className="text-muted-foreground/70">TP %</p>
-                        <p className="font-semibold text-green-400">{(s.exit_rules as any)?.tp_pct ?? 50}%</p>
+                        <p className="font-semibold text-[var(--accent-green)]">{(s.exit_rules as any)?.tp_pct ?? 50}%</p>
                       </div>
                     </div>
 
@@ -514,7 +545,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                       {/* Execute Now — live only, broker gated */}
                       <Button
                         variant="outline" size="sm"
-                        className="text-xs h-7 px-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+                        className="h-7 px-2 text-xs border-[rgba(52,211,153,0.4)] text-[var(--accent-green)] hover:bg-[rgba(52,211,153,0.12)]"
                         onClick={() => void handleExecuteNow(s)}
                         disabled={
                           !brokerConnected ||
@@ -529,13 +560,18 @@ export function AlgoOnlyOptionsWorkspace(props?: {
 
                       {/* Active / Paused controls */}
                       {s.is_active ? (
-                        <Button variant="outline" size="sm" className="text-xs h-7 px-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10" onClick={() => handlePause(s)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs border-[rgba(251,146,60,0.4)] text-[var(--accent-orange)] hover:bg-[rgba(251,146,60,0.12)]"
+                          onClick={() => handlePause(s)}
+                        >
                           <Pause className="h-3 w-3 mr-1" />Pause
                         </Button>
                       ) : (
                         <Button
                           size="sm"
-                          className={`text-xs h-7 px-2 ${brokerConnected ? "bg-primary/90 hover:bg-primary" : "bg-muted/50 text-muted-foreground cursor-not-allowed"}`}
+                          className={`h-7 px-2 text-xs ${brokerConnected ? "bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.16))] text-[var(--accent-cyan)] border border-[rgba(56,189,248,0.35)] hover:bg-[linear-gradient(135deg,rgba(56,189,248,0.24),rgba(99,102,241,0.24))]" : "bg-muted/50 text-muted-foreground cursor-not-allowed"}`}
                           onClick={() => void openActivateLive(s)}
                           disabled={
                             !brokerConnected ||
@@ -549,7 +585,12 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                         </Button>
                       )}
 
-                      <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-destructive hover:text-destructive ml-auto" onClick={() => setDeleteTarget(s)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-auto h-7 px-2 text-xs text-[var(--accent-red)] hover:text-[var(--accent-red)]"
+                        onClick={() => setDeleteTarget(s)}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -594,7 +635,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-[rgba(56,189,248,0.22)] bg-[linear-gradient(180deg,rgba(8,12,22,0.98),rgba(5,9,18,0.98))] text-[var(--text-primary)]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Strategy</AlertDialogTitle>
             <AlertDialogDescription>

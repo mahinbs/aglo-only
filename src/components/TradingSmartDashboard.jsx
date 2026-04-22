@@ -609,6 +609,50 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .card h1, .card h2, .card p { color: var(--text-primary); }
 .card p.text-sm { color: var(--text-secondary) !important; }
 
+/* ─── Strategy Builder Modal theme overrides ─── */
+.ts-theme-modal {
+  --background: 222 45% 7%;
+  --foreground: 210 40% 96%;
+  --card: 221 39% 10%;
+  --card-foreground: 210 40% 96%;
+  --popover: 221 39% 10%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 199 89% 60%;
+  --primary-foreground: 222 47% 11%;
+  --secondary: 221 28% 16%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 221 30% 15%;
+  --muted-foreground: 215 20% 68%;
+  --accent: 221 31% 17%;
+  --accent-foreground: 210 40% 96%;
+  --border: 199 45% 28%;
+  --input: 221 28% 16%;
+  --ring: 199 89% 60%;
+  background: linear-gradient(180deg, rgba(8, 12, 22, 0.98), rgba(5, 9, 18, 0.98)) !important;
+  border-color: rgba(56, 189, 248, 0.22) !important;
+  color: var(--text-primary) !important;
+}
+.ts-theme-modal [class*="text-muted-foreground"] { color: var(--text-secondary) !important; }
+.ts-theme-modal [class*="bg-muted"] { background: rgba(15, 23, 42, 0.55) !important; }
+.ts-theme-modal [class*="border-border"] { border-color: rgba(56, 189, 248, 0.18) !important; }
+.ts-theme-modal [data-slot="input"],
+.ts-theme-modal [data-slot="textarea"],
+.ts-theme-modal [data-slot="select-trigger"] {
+  background: rgba(15, 23, 42, 0.7) !important;
+  border-color: rgba(56, 189, 248, 0.18) !important;
+  color: var(--text-primary) !important;
+}
+.ts-theme-modal [data-slot="button"][data-variant="default"] {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(99, 102, 241, 0.18)) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+  color: var(--accent-cyan) !important;
+}
+.ts-theme-modal [data-slot="button"][data-variant="outline"] {
+  background: rgba(15, 23, 42, 0.45) !important;
+  border-color: rgba(56, 189, 248, 0.2) !important;
+  color: var(--text-secondary) !important;
+}
+
 /* RESPONSIVE */
 @media(max-width:1200px){
   .hero{grid-template-columns:1fr 1fr}
@@ -3448,7 +3492,7 @@ export default function TradingSmartDashboard(props = {}) {
                     Options Strategies
                   </div>
                   <span className="card-badge badge-green">
-                    Live · chartmate-options-api
+                    Live
                   </span>
                 </div>
                 {/* AlgoOnlyOptionsWorkspace — live-only, broker-gated, no paper/backtest buttons */}

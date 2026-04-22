@@ -1119,7 +1119,7 @@ export default function AlgoStrategyBuilder({ open, onOpenChange, existing, onSa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 !w-[98vw] !max-w-[98vw] sm:!max-w-[98vw] lg:!max-w-[98vw] !h-[96vh] !max-h-[96vh] rounded-xl m-0 overflow-hidden p-0 border-zinc-800 bg-zinc-950 text-white flex flex-col">
+      <DialogContent className="ts-theme-modal left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 !w-[98vw] !max-w-[98vw] sm:!max-w-[98vw] lg:!max-w-[98vw] !h-[96vh] !max-h-[96vh] rounded-xl m-0 overflow-hidden p-0 border-zinc-800 bg-zinc-950 text-white flex flex-col">
 
         {/* ─── Header ─────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between px-5 pt-4 pb-3 border-b border-zinc-800 shrink-0">
