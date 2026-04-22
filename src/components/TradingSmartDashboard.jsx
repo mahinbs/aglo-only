@@ -1641,7 +1641,7 @@ export default function TradingSmartDashboard(props = {}) {
             and does not attribute broker tradebook rows back to strategy IDs.
           </div>
 
-           <div className="grid grid-cols-1 gap-7 lg:grid-cols-2">
+           <div className="grid grid-cols-1 gap-7 mb-[24px]">
              {/* LIVE MONITORING */}
              <div
               className="card mb-[24px]"
