@@ -13,7 +13,6 @@ import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import YahooChartPanel from "@/components/YahooChartPanel";
 import { supabase } from "@/integrations/supabase/client";
-import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
 
@@ -825,6 +824,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [showExactAlgoBuilder, setShowExactAlgoBuilder] = useState(false);
   const [editAlgoTarget, setEditAlgoTarget] = useState(null); // strategy being edited
   const [showExactOptionsBuilder, setShowExactOptionsBuilder] = useState(false);
+  const [editOptionsTarget, setEditOptionsTarget] = useState(null);
   const [killActive, setKillActive] = useState(false);
   const [killBusy, setKillBusy] = useState(false);
   const [pauseAllBusy, setPauseAllBusy] = useState(false);
@@ -2240,8 +2240,10 @@ export default function TradingSmartDashboard(props = {}) {
                               className="strat-action-btn strat-btn-edit"
                               title="Pause strategy scan"
                               onClick={async () => {
-                                if (!chartmateActions?.onToggleDeploy) return;
-                                const err = await chartmateActions.onToggleDeploy(s.id, false);
+                                const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                const err = isOptions
+                                  ? await chartmateActions?.onPauseOptionsStrategy?.(s.id)
+                                  : await chartmateActions?.onToggleDeploy?.(s.id, false);
                                 if (err) {
                                   toast.error("Could not pause strategy", { description: String(err) });
                                   return;
@@ -2257,13 +2259,15 @@ export default function TradingSmartDashboard(props = {}) {
                               className="strat-action-btn strat-btn-delete"
                               title="Stop strategy and cancel queued entries"
                               onClick={async () => {
-                                if (!chartmateActions?.onToggleDeploy) return;
-                                const err = await chartmateActions.onToggleDeploy(s.id, false);
+                                const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                const err = isOptions
+                                  ? await chartmateActions?.onPauseOptionsStrategy?.(s.id)
+                                  : await chartmateActions?.onToggleDeploy?.(s.id, false);
                                 if (err) {
                                   toast.error("Could not stop strategy", { description: String(err) });
                                   return;
                                 }
-                                if (typeof onCancelPendingForStrategy === "function") {
+                                if (!isOptions && typeof onCancelPendingForStrategy === "function") {
                                   await onCancelPendingForStrategy(s.id);
                                 }
                                 addLog("warn", `Strategy "${s.name}" stopped`);
@@ -3295,15 +3299,23 @@ export default function TradingSmartDashboard(props = {}) {
                                 type="button"
                                 className="strat-action-btn strat-btn-delete"
                                 onClick={async () => {
+                                  const isOptions =
+                                    Boolean(s?.is_options) ||
+                                    strategyKindTag(s) === "options";
                                   if (
                                     useChartmate &&
-                                    chartmateActions?.onDeleteStrategy
+                                    (isOptions
+                                      ? chartmateActions?.onDeleteOptionsStrategy
+                                      : chartmateActions?.onDeleteStrategy)
                                   ) {
-                                    const err =
-                                      await chartmateActions.onDeleteStrategy(
-                                        s.id,
-                                        s.name,
-                                      );
+                                    const err = isOptions
+                                      ? await chartmateActions.onDeleteOptionsStrategy(
+                                          s.id,
+                                        )
+                                      : await chartmateActions.onDeleteStrategy(
+                                          s.id,
+                                          s.name,
+                                        );
                                     if (err) {
                                       addLog("error", err);
                                       setPendingDelete(null);
@@ -3363,6 +3375,22 @@ export default function TradingSmartDashboard(props = {}) {
                                     );
                                     return;
                                   }
+                                  const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                  if (isOptions) {
+                                    void (async () => {
+                                      const err = await chartmateActions?.onActivateOptionsStrategy?.(s.id);
+                                      if (err) {
+                                        toast.error("Could not activate options strategy", {
+                                          description: String(err),
+                                        });
+                                        addLog("error", String(err));
+                                        return;
+                                      }
+                                      addLog("info", `Options strategy "${s.name}" activated`);
+                                      chartmateActions?.onRefresh?.();
+                                    })();
+                                    return;
+                                  }
                                   setGoLiveTarget(s);
                                   setGoLiveForm(defaultsGoLiveFromCard(s));
                                   setGoLiveRememberSymbol(
@@ -3384,7 +3412,12 @@ export default function TradingSmartDashboard(props = {}) {
                                 title="Edit this strategy"
                                 style={{ borderRadius: 999, padding: "4px 10px" }}
                                 onClick={() => {
-                                  // Pass the full raw DB row so AlgoStrategyBuilder can pre-populate all fields
+                                  const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                  if (isOptions) {
+                                    setEditOptionsTarget(s._raw ?? s);
+                                    setShowExactOptionsBuilder(true);
+                                    return;
+                                  }
                                   setEditAlgoTarget(s._raw ?? s);
                                   setShowExactAlgoBuilder(true);
                                 }}
@@ -3541,45 +3574,6 @@ export default function TradingSmartDashboard(props = {}) {
                 </div>
               </div>
 
-              <div
-                style={{
-                  marginTop: 18,
-                  paddingTop: 16,
-                  borderTop: "1px solid var(--border-color)",
-                }}
-              >
-                <div className="card-header" style={{ marginBottom: 0 }}>
-                  <div className="card-title">
-                    <span
-                      className="card-title-icon"
-                      style={{
-                        background: "rgba(52,211,153,0.1)",
-                        color: "var(--accent-green)",
-                      }}
-                    >
-                      &#x1F4CA;
-                    </span>
-                    Options Strategies
-                  </div>
-                  <span className="card-badge badge-green">
-                    Live
-                  </span>
-                </div>
-                {/* AlgoOnlyOptionsWorkspace — live-only, broker-gated, no paper/backtest buttons */}
-                <AlgoOnlyOptionsWorkspace
-                  accountCaps={{
-                    activeOrders: activeOrdersCap,
-                    activeStrategies: activeStrategiesCap,
-                    limits: {
-                      orders: capOrdersLimit,
-                      strategies: capStrategiesLimit,
-                    },
-                    cash: brokerSnap?.cash_available,
-                  }}
-                  positionsStreamStale={positionsStreamStale}
-                  optionsPositionsFrame={optionsPositionsFrame}
-                />
-              </div>
             </div>
 
             {/* ═══ REQUEST DEVELOPER TO CODE STRATEGY ═══ */}
@@ -5060,9 +5054,13 @@ export default function TradingSmartDashboard(props = {}) {
       />
       <OptionsStrategyBuilderDialog
         open={showExactOptionsBuilder}
-        onOpenChange={setShowExactOptionsBuilder}
-        editStrategy={null}
+        onOpenChange={(open) => {
+          setShowExactOptionsBuilder(open);
+          if (!open) setEditOptionsTarget(null);
+        }}
+        editStrategy={editOptionsTarget}
         onSaved={() => {
+          setEditOptionsTarget(null);
           chartmateActions?.onRefresh?.();
           addLog("info", "Options strategy saved via ChartMate builder");
         }}

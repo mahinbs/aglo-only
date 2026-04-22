@@ -67,6 +67,9 @@ type Summary = {
     lifecycle_state?: string | null;
     lifecycle_reason?: string | null;
     lifecycle_updated_at?: string | null;
+    market_type?: string | null;
+    is_options?: boolean;
+    _raw?: Record<string, unknown>;
   }>;
   active_strategies_table?: Array<{
     name: string;
@@ -263,6 +266,38 @@ function symbolsFromPairs(pairs: string) {
     });
 }
 
+function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
+  return rows.map((s) => {
+    const exitRules =
+      s.exit_rules && typeof s.exit_rules === "object"
+        ? (s.exit_rules as Record<string, unknown>)
+        : {};
+    const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
+    return {
+      id: String(s.id ?? ""),
+      name: String(s.name ?? "Options Strategy"),
+      type: "OPTIONS",
+      pairs: String(s.underlying ?? "NIFTY").toUpperCase(),
+      timeframe: "5m",
+      riskPerTrade: "1%",
+      stopLoss: `${Number(exitRules.sl_pct ?? 30)}%`,
+      takeProfit: `${Number(exitRules.tp_pct ?? 50)}%`,
+      maxPositions: "1",
+      deployed: Boolean(s.is_active),
+      is_intraday: true,
+      position_config: {},
+      lifecycle_state: lcState,
+      lifecycle_reason:
+        typeof s.lifecycle_reason === "string" ? s.lifecycle_reason : null,
+      lifecycle_updated_at:
+        typeof s.lifecycle_updated_at === "string" ? s.lifecycle_updated_at : null,
+      market_type: "options",
+      is_options: true,
+      _raw: s,
+    };
+  });
+}
+
 export default function DashboardPage() {
   const { user, session, loading, signOut } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -296,8 +331,32 @@ export default function DashboardPage() {
             s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
           }
         }
-        setSummary(s);
         const uidBff = user?.id;
+        let mergedSummary = s;
+        if (uidBff) {
+          const { data: optionsRows } = await supabase
+            .from("options_strategies")
+            .select(
+              "id,name,underlying,is_active,exit_rules,lifecycle_state,lifecycle_reason,lifecycle_updated_at,created_at",
+            )
+            .eq("user_id", uidBff)
+            .order("created_at", { ascending: false })
+            .limit(50);
+          const optionCards = mapOptionsStrategyCards(
+            (optionsRows ?? []) as Record<string, unknown>[],
+          );
+          const equityCards = Array.isArray(s.user_strategies)
+            ? s.user_strategies
+            : [];
+          mergedSummary = {
+            ...s,
+            user_strategies: [...optionCards, ...equityCards],
+            active_strategies_deployed:
+              Number(s.active_strategies_deployed ?? 0) +
+              optionCards.filter((x) => x.deployed).length,
+          };
+        }
+        setSummary(mergedSummary);
         if (uidBff) {
           const { data: devRows, error: devErr } = await supabase
             .from("strategy_development_requests")
@@ -321,7 +380,7 @@ export default function DashboardPage() {
       }
         const uid = user?.id;
         if (!uid) return;
-        const [{ data: integ }, { data: trades }, { data: strats }, { data: pendingRows }] = await Promise.all([
+        const [{ data: integ }, { data: trades }, { data: strats }, { data: pendingRows }, { data: optionsStrats }] = await Promise.all([
           supabase
             .from("user_trading_integration")
             .select("openalgo_api_key,openalgo_username,token_expires_at,broker")
@@ -348,6 +407,14 @@ export default function DashboardPage() {
             .eq("user_id", uid)
             .order("created_at", { ascending: false })
             .limit(20),
+          supabase
+            .from("options_strategies")
+            .select(
+              "id,name,underlying,is_active,exit_rules,lifecycle_state,lifecycle_reason,lifecycle_updated_at,created_at",
+            )
+            .eq("user_id", uid)
+            .order("created_at", { ascending: false })
+            .limit(50),
         ]);
         const gate = brokerSessionLiveFromIntegration(
           integ as {
@@ -397,7 +464,7 @@ export default function DashboardPage() {
             })
           : [];
         const feed_paused = !gate.live;
-        const user_strategies = stratsData.map((s: Record<string, unknown>) => {
+        const equityCards = stratsData.map((s: Record<string, unknown>) => {
           const syms = (s.symbols as unknown[]) || [];
           const pairs = syms
             .map((x) => (typeof x === "string" ? x : (x as { symbol?: string })?.symbol || ""))
@@ -426,6 +493,10 @@ export default function DashboardPage() {
             _raw: s,
           };
         });
+        const optionCards = mapOptionsStrategyCards(
+          (optionsStrats ?? []) as Record<string, unknown>[],
+        );
+        const user_strategies = [...optionCards, ...equityCards];
         const openRows = liveTrades.filter((t: Record<string, unknown>) =>
           ["active", "monitoring", "exit_zone", "open"].includes(String(t.status || "").toLowerCase()),
         );
@@ -447,7 +518,9 @@ export default function DashboardPage() {
             : null;
         const pct_mtm =
           portfolio_value > 0 ? Math.round((100 * open_mtm) / portfolio_value) : null;
-        const deployed = stratsData.filter((s: Record<string, unknown>) => s.is_active).length;
+        const deployed =
+          stratsData.filter((s: Record<string, unknown>) => s.is_active).length +
+          optionCards.filter((s) => s.deployed).length;
         const pending_executions = (pendingRows ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id ?? ""),
           strategy_id: String(r.strategy_id ?? ""),
@@ -751,6 +824,54 @@ export default function DashboardPage() {
     [session?.access_token],
   );
 
+  const onActivateOptionsStrategy = useCallback(
+    async (strategyId: string): Promise<string | null> => {
+      const uid = session?.user?.id;
+      if (!uid) return "Not signed in";
+      const { error } = await supabase
+        .from("options_strategies")
+        .update({ is_active: true })
+        .eq("id", strategyId)
+        .eq("user_id", uid);
+      if (error) return error.message;
+      await refresh();
+      return null;
+    },
+    [session?.user?.id, refresh],
+  );
+
+  const onPauseOptionsStrategy = useCallback(
+    async (strategyId: string): Promise<string | null> => {
+      const uid = session?.user?.id;
+      if (!uid) return "Not signed in";
+      const { error } = await supabase
+        .from("options_strategies")
+        .update({ is_active: false })
+        .eq("id", strategyId)
+        .eq("user_id", uid);
+      if (error) return error.message;
+      await refresh();
+      return null;
+    },
+    [session?.user?.id, refresh],
+  );
+
+  const onDeleteOptionsStrategy = useCallback(
+    async (strategyId: string): Promise<string | null> => {
+      const uid = session?.user?.id;
+      if (!uid) return "Not signed in";
+      const { error } = await supabase
+        .from("options_strategies")
+        .delete()
+        .eq("id", strategyId)
+        .eq("user_id", uid);
+      if (error) return error.message;
+      await refresh();
+      return null;
+    },
+    [session?.user?.id, refresh],
+  );
+
   const onCancelPendingForStrategy = useCallback(
     async (strategyId: string): Promise<string | null> => {
       const uid = session?.user?.id;
@@ -780,9 +901,17 @@ export default function DashboardPage() {
     const msg = (res.data as { error?: string } | null)?.error;
     if (res.error) return res.error.message;
     if (msg) return msg;
+    const uid = session?.user?.id;
+    if (uid) {
+      await supabase
+        .from("options_strategies")
+        .update({ is_active: false })
+        .eq("user_id", uid)
+        .eq("is_active", true);
+    }
     await refresh();
     return null;
-  }, [session?.access_token, refresh]);
+  }, [session?.access_token, session?.user?.id, refresh]);
 
   const onEmergencyKill = useCallback(async (): Promise<string | null> => {
     if (!session?.access_token) return "Not signed in";
@@ -793,13 +922,21 @@ export default function DashboardPage() {
     const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
     if (pauseRes.error) return pauseRes.error.message;
     if (pauseErr) return pauseErr;
+    const uid = session?.user?.id;
+    if (uid) {
+      await supabase
+        .from("options_strategies")
+        .update({ is_active: false })
+        .eq("user_id", uid)
+        .eq("is_active", true);
+    }
     await supabase.functions.invoke("broker-order-action", {
       body: { action: "cancel_all" },
       headers: { Authorization: `Bearer ${session.access_token}` },
     });
     await refresh();
     return null;
-  }, [session?.access_token, refresh]);
+  }, [session?.access_token, session?.user?.id, refresh]);
 
   const onSubmitStrategyDevRequest = useCallback(
     async (payload: {
@@ -927,8 +1064,23 @@ export default function DashboardPage() {
       onConfirmGoLive,
       onClearActivationDefaults,
       onDeleteStrategy,
+      onActivateOptionsStrategy,
+      onPauseOptionsStrategy,
+      onDeleteOptionsStrategy,
     }),
-    [onConnectBroker, connectBusy, refresh, onCreateStrategy, onToggleDeploy, onConfirmGoLive, onClearActivationDefaults, onDeleteStrategy],
+    [
+      onConnectBroker,
+      connectBusy,
+      refresh,
+      onCreateStrategy,
+      onToggleDeploy,
+      onConfirmGoLive,
+      onClearActivationDefaults,
+      onDeleteStrategy,
+      onActivateOptionsStrategy,
+      onPauseOptionsStrategy,
+      onDeleteOptionsStrategy,
+    ],
   );
 
   const optionsPanel = useMemo(
