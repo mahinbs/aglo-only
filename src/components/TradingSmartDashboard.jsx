@@ -5078,6 +5078,7 @@ export default function TradingSmartDashboard(props = {}) {
           chartmateActions?.onRefresh?.();
           addLog("info", "Options strategy saved via ChartMate builder");
         }}
+        showButton={false}
       />
       {/* Toaster for broker-gate notifications and strategy feedback */}
       <Toaster richColors position="top-right" />

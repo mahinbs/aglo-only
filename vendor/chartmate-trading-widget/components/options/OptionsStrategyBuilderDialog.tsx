@@ -33,13 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  Loader2,
-  Info,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Loader2, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { OptionsStrategy } from "@/pages/OptionsStrategyPage";
 import { instrumentTypeForUnderlying } from "@/lib/optionsApi";
@@ -221,12 +215,22 @@ function dbToState(s: OptionsStrategy): WizardState {
 
 // ── Sub-components ────────────────────────────────────────────────────────
 
-function FieldRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function FieldRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
         <Label className="text-sm">{label}</Label>
-        {hint && <span className="text-xs text-muted-foreground">({hint})</span>}
+        {hint && (
+          <span className="text-xs text-muted-foreground">({hint})</span>
+        )}
       </div>
       {children}
     </div>
@@ -234,10 +238,23 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
 }
 
 function SliderField({
-  label, hint, value, min, max, step, onChange, format,
+  label,
+  hint,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  format,
 }: {
-  label: string; hint?: string; value: number; min: number; max: number; step: number;
-  onChange: (v: number) => void; format?: (v: number) => string;
+  label: string;
+  hint?: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  format?: (v: number) => string;
 }) {
   return (
     <div className="space-y-2">
@@ -261,7 +278,6 @@ function SliderField({
 }
 
 // ── Steps ─────────────────────────────────────────────────────────────────
-
 
 function Step1({
   state,
@@ -301,10 +317,14 @@ function Step1({
               set("explicit_options_symbol", "");
             }}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {UNDERLYINGS.map((u) => (
-                <SelectItem key={u} value={u}>{u}</SelectItem>
+                <SelectItem key={u} value={u}>
+                  {u}
+                </SelectItem>
               ))}
               <SelectItem value="SENSEX">SENSEX</SelectItem>
               <SelectItem value="CUSTOM">Custom Stock</SelectItem>
@@ -321,7 +341,9 @@ function Step1({
               set("explicit_options_symbol", "");
             }}
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="NFO">NFO (NSE F&amp;O)</SelectItem>
               <SelectItem value="BFO">BFO (BSE F&amp;O)</SelectItem>
@@ -330,8 +352,13 @@ function Step1({
         </FieldRow>
 
         <FieldRow label="Expiry">
-          <Select value={state.expiry_type} onValueChange={(v) => set("expiry_type", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={state.expiry_type}
+            onValueChange={(v) => set("expiry_type", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="weekly">Weekly (Nearest)</SelectItem>
               <SelectItem value="next_weekly">Next Weekly</SelectItem>
@@ -341,8 +368,13 @@ function Step1({
         </FieldRow>
 
         <FieldRow label="Strike Offset">
-          <Select value={state.strike_selection} onValueChange={(v) => set("strike_selection", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={state.strike_selection}
+            onValueChange={(v) => set("strike_selection", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="ITM2">ITM 2</SelectItem>
               <SelectItem value="ITM1">ITM 1</SelectItem>
@@ -355,8 +387,13 @@ function Step1({
         </FieldRow>
 
         <FieldRow label="Option Type">
-          <Select value={state.option_type} onValueChange={(v) => set("option_type", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={state.option_type}
+            onValueChange={(v) => set("option_type", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="auto">Auto (direction-based)</SelectItem>
               <SelectItem value="CE">CE — Call (Bullish)</SelectItem>
@@ -366,8 +403,13 @@ function Step1({
         </FieldRow>
 
         <FieldRow label="Trade Direction">
-          <Select value={state.trade_direction} onValueChange={(v) => set("trade_direction", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={state.trade_direction}
+            onValueChange={(v) => set("trade_direction", v)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="bullish">Bullish (Buy CE)</SelectItem>
               <SelectItem value="bearish">Bearish (Buy PE)</SelectItem>
@@ -380,30 +422,63 @@ function Step1({
       <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground flex gap-2">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <span>
-          <strong>Auto</strong> option type lets the strategy pick CE or PE based on the ORB breakout direction.
-          Use it with <strong>Neutral</strong> direction for the most flexible execution.
-          The <strong>expiry date, option symbol and lot size</strong> are selected when you tap{" "}
-          <strong>Paper Trade</strong> or <strong>Activate Live</strong> — broker data loads fresh each session.
+          <strong>Auto</strong> option type lets the strategy pick CE or PE
+          based on the ORB breakout direction. Use it with{" "}
+          <strong>Neutral</strong> direction for the most flexible execution.
+          The <strong>expiry date, option symbol and lot size</strong> are
+          selected when you tap <strong>Paper Trade</strong> or{" "}
+          <strong>Activate Live</strong> — broker data loads fresh each session.
         </span>
       </div>
     </div>
   );
 }
 
-function Step2({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: unknown) => void }) {
+function Step2({
+  state,
+  set,
+}: {
+  state: WizardState;
+  set: (k: keyof WizardState, v: unknown) => void;
+}) {
   const styles = [
-    { value: "buying", label: "Simple Buying", desc: "Buy CE or PE at entry. Max loss = premium paid." },
-    { value: "selling", label: "Option Selling", desc: "Sell CE or PE. Profit from time decay. Higher margin." },
-    { value: "spread", label: "Bull/Bear Spread", desc: "Buy one strike, sell another. Defined risk." },
-    { value: "straddle", label: "Straddle", desc: "Buy both ATM CE + PE. Profit from large moves." },
-    { value: "strangle", label: "Strangle", desc: "Buy OTM CE + PE. Cheaper than straddle, needs bigger move." },
-    { value: "iron_condor", label: "Iron Condor", desc: "Sell OTM CE + PE, buy farther strikes. Low-volatility play." },
+    {
+      value: "buying",
+      label: "Simple Buying",
+      desc: "Buy CE or PE at entry. Max loss = premium paid.",
+    },
+    {
+      value: "selling",
+      label: "Option Selling",
+      desc: "Sell CE or PE. Profit from time decay. Higher margin.",
+    },
+    {
+      value: "spread",
+      label: "Bull/Bear Spread",
+      desc: "Buy one strike, sell another. Defined risk.",
+    },
+    {
+      value: "straddle",
+      label: "Straddle",
+      desc: "Buy both ATM CE + PE. Profit from large moves.",
+    },
+    {
+      value: "strangle",
+      label: "Strangle",
+      desc: "Buy OTM CE + PE. Cheaper than straddle, needs bigger move.",
+    },
+    {
+      value: "iron_condor",
+      label: "Iron Condor",
+      desc: "Sell OTM CE + PE, buy farther strikes. Low-volatility play.",
+    },
   ];
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Choose the structure of your options strategy. This determines how many legs are placed and your risk profile.
+        Choose the structure of your options strategy. This determines how many
+        legs are placed and your risk profile.
       </p>
       <div className="grid grid-cols-1 gap-2.5">
         {styles.map((s) => (
@@ -428,12 +503,15 @@ function Step2({ state, set }: { state: WizardState; set: (k: keyof WizardState,
         ))}
       </div>
 
-      {(state.strategy_style === "straddle" || state.strategy_style === "strangle" || state.strategy_style === "iron_condor") && (
+      {(state.strategy_style === "straddle" ||
+        state.strategy_style === "strangle" ||
+        state.strategy_style === "iron_condor") && (
         <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-4 py-3 text-xs text-yellow-600 dark:text-yellow-400 flex gap-2">
           <Info className="h-4 w-4 shrink-0 mt-0.5" />
           <span>
-            Multi-leg strategies require sufficient margin. Paper trading is recommended first.
-            The entry scan will place separate legs using the OpenAlgo multi-order API.
+            Multi-leg strategies require sufficient margin. Paper trading is
+            recommended first. The entry scan will place separate legs using the
+            OpenAlgo multi-order API.
           </span>
         </div>
       )}
@@ -441,7 +519,13 @@ function Step2({ state, set }: { state: WizardState; set: (k: keyof WizardState,
   );
 }
 
-function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: unknown) => void }) {
+function Step3({
+  state,
+  set,
+}: {
+  state: WizardState;
+  set: (k: keyof WizardState, v: unknown) => void;
+}) {
   return (
     <div className="space-y-5">
       {/* ORB Breakout */}
@@ -453,7 +537,10 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               Trade breakout of the Opening Range (first N minutes)
             </p>
           </div>
-          <Switch checked={state.orb_breakout} onCheckedChange={(v) => set("orb_breakout", v)} />
+          <Switch
+            checked={state.orb_breakout}
+            onCheckedChange={(v) => set("orb_breakout", v)}
+          />
         </div>
 
         {state.orb_breakout && (
@@ -462,7 +549,9 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               label="ORB Duration"
               hint="first N minutes form the range"
               value={state.orb_duration_mins}
-              min={5} max={30} step={5}
+              min={5}
+              max={30}
+              step={5}
               onChange={(v) => set("orb_duration_mins", v)}
               format={(v) => `${v} min`}
             />
@@ -470,7 +559,9 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               label="Momentum Confirmation Bars"
               hint="consecutive higher/lower closes required"
               value={state.momentum_bars}
-              min={1} max={5} step={1}
+              min={1}
+              max={5}
+              step={1}
               onChange={(v) => set("momentum_bars", v)}
               format={(v) => `${v} bars`}
             />
@@ -479,7 +570,9 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
                 label="Min Range %"
                 hint="skip if too narrow"
                 value={state.min_range_pct}
-                min={0.1} max={1.0} step={0.05}
+                min={0.1}
+                max={1.0}
+                step={0.05}
                 onChange={(v) => set("min_range_pct", v)}
                 format={(v) => `${v.toFixed(2)}%`}
               />
@@ -487,7 +580,9 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
                 label="Max Range %"
                 hint="skip if too wide"
                 value={state.max_range_pct}
-                min={0.5} max={3.0} step={0.1}
+                min={0.5}
+                max={3.0}
+                step={0.1}
                 onChange={(v) => set("max_range_pct", v)}
                 format={(v) => `${v.toFixed(1)}%`}
               />
@@ -502,14 +597,24 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <Label className="text-sm font-semibold">VWAP Cross Confirmation</Label>
-            <Badge variant="outline" className="text-[10px] py-0 h-4 text-muted-foreground">Optional</Badge>
+            <Label className="text-sm font-semibold">
+              VWAP Cross Confirmation
+            </Label>
+            <Badge
+              variant="outline"
+              className="text-[10px] py-0 h-4 text-muted-foreground"
+            >
+              Optional
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Require price above VWAP (CE) or below VWAP (PE) at entry
           </p>
         </div>
-        <Switch checked={state.vwap_cross} onCheckedChange={(v) => set("vwap_cross", v)} />
+        <Switch
+          checked={state.vwap_cross}
+          onCheckedChange={(v) => set("vwap_cross", v)}
+        />
       </div>
 
       <Separator />
@@ -520,13 +625,21 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
           <div>
             <div className="flex items-center gap-2">
               <Label className="text-sm font-semibold">VIX Filter</Label>
-              <Badge variant="outline" className="text-[10px] py-0 h-4 text-muted-foreground">Optional</Badge>
+              <Badge
+                variant="outline"
+                className="text-[10px] py-0 h-4 text-muted-foreground"
+              >
+                Optional
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Skip trading if India VIX is too high (unsafe premium levels)
             </p>
           </div>
-          <Switch checked={state.vix_filter_enabled} onCheckedChange={(v) => set("vix_filter_enabled", v)} />
+          <Switch
+            checked={state.vix_filter_enabled}
+            onCheckedChange={(v) => set("vix_filter_enabled", v)}
+          />
         </div>
         {state.vix_filter_enabled && (
           <div className="pl-4 border-l-2 border-primary/30">
@@ -534,7 +647,9 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               label="Max VIX Threshold"
               hint="skip trade if VIX is above this"
               value={state.vix_max}
-              min={10} max={40} step={1}
+              min={10}
+              max={40}
+              step={1}
               onChange={(v) => set("vix_max", v)}
               format={(v) => `${v}`}
             />
@@ -549,26 +664,41 @@ function Step3({ state, set }: { state: WizardState; set: (k: keyof WizardState,
         <div>
           <div className="flex items-center gap-2">
             <Label className="text-sm font-semibold">Expiry Day Guard</Label>
-            <Badge variant="outline" className="text-[10px] py-0 h-4 text-muted-foreground">Optional</Badge>
+            <Badge
+              variant="outline"
+              className="text-[10px] py-0 h-4 text-muted-foreground"
+            >
+              Optional
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             Skip new entries on the contract's expiry day (avoid gamma risk)
           </p>
         </div>
-        <Switch checked={state.expiry_day_guard} onCheckedChange={(v) => set("expiry_day_guard", v)} />
+        <Switch
+          checked={state.expiry_day_guard}
+          onCheckedChange={(v) => set("expiry_day_guard", v)}
+        />
       </div>
     </div>
   );
 }
 
-function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: unknown) => void }) {
+function Step4({
+  state,
+  set,
+}: {
+  state: WizardState;
+  set: (k: keyof WizardState, v: unknown) => void;
+}) {
   return (
     <div className="space-y-5">
       <div className="rounded-lg bg-muted/30 px-4 py-3 text-xs text-muted-foreground flex gap-2">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
         <span>
-          All SL/TP percentages are based on the <strong>premium paid/received</strong>, not the
-          underlying price. E.g. 30% SL = exit when premium falls 30% from entry.
+          All SL/TP percentages are based on the{" "}
+          <strong>premium paid/received</strong>, not the underlying price. E.g.
+          30% SL = exit when premium falls 30% from entry.
         </span>
       </div>
 
@@ -576,7 +706,9 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
         label="Stop Loss on Premium"
         hint="exit if premium drops by this %"
         value={state.sl_pct}
-        min={5} max={80} step={5}
+        min={5}
+        max={80}
+        step={5}
         onChange={(v) => set("sl_pct", v)}
         format={(v) => `${v}%`}
       />
@@ -585,7 +717,9 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
         label="Take Profit on Premium"
         hint="exit if premium rises by this %"
         value={state.tp_pct}
-        min={10} max={200} step={5}
+        min={10}
+        max={200}
+        step={5}
         onChange={(v) => set("tp_pct", v)}
         format={(v) => `${v}%`}
       />
@@ -601,7 +735,10 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               Once premium rises enough, trail the SL from the peak
             </p>
           </div>
-          <Switch checked={state.trailing_enabled} onCheckedChange={(v) => set("trailing_enabled", v)} />
+          <Switch
+            checked={state.trailing_enabled}
+            onCheckedChange={(v) => set("trailing_enabled", v)}
+          />
         </div>
 
         {state.trailing_enabled && (
@@ -610,7 +747,9 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               label="Activate Trailing After"
               hint="% premium gain before trailing kicks in"
               value={state.trail_after_pct}
-              min={10} max={100} step={5}
+              min={10}
+              max={100}
+              step={5}
               onChange={(v) => set("trail_after_pct", v)}
               format={(v) => `${v}%`}
             />
@@ -618,14 +757,18 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
               label="Trail From Peak By"
               hint="% below peak premium triggers exit"
               value={state.trail_pct}
-              min={5} max={50} step={5}
+              min={5}
+              max={50}
+              step={5}
               onChange={(v) => set("trail_pct", v)}
               format={(v) => `${v}%`}
             />
             <div className="rounded bg-muted/40 p-2 text-xs text-muted-foreground">
-              Example: If entry premium = ₹100, activate at ₹{100 + state.trail_after_pct},
-              trail SL = peak × {((100 - state.trail_pct) / 100).toFixed(2)}.
-              If peak hits ₹150, trailing SL = ₹{Math.round(150 * (100 - state.trail_pct) / 100)}.
+              Example: If entry premium = ₹100, activate at ₹
+              {100 + state.trail_after_pct}, trail SL = peak ×{" "}
+              {((100 - state.trail_pct) / 100).toFixed(2)}. If peak hits ₹150,
+              trailing SL = ₹{Math.round((150 * (100 - state.trail_pct)) / 100)}
+              .
             </div>
           </div>
         )}
@@ -634,7 +777,10 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
       <Separator />
 
       {/* Time exit */}
-      <FieldRow label="Hard Time Exit" hint="IST — force close at this time regardless of P&L">
+      <FieldRow
+        label="Hard Time Exit"
+        hint="IST — force close at this time regardless of P&L"
+      >
         <Input
           type="time"
           value={state.time_exit_hhmm}
@@ -644,12 +790,17 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
       </FieldRow>
 
       {/* Re-entries */}
-      <FieldRow label="Max Re-entries Per Day" hint="0 = disabled — optional re-entry after stop-out">
+      <FieldRow
+        label="Max Re-entries Per Day"
+        hint="0 = disabled — optional re-entry after stop-out"
+      >
         <Select
           value={String(state.max_reentry_count)}
           onValueChange={(v) => set("max_reentry_count", Number(v))}
         >
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="0">0 — Disabled</SelectItem>
             <SelectItem value="1">1 — One re-entry</SelectItem>
@@ -662,17 +813,30 @@ function Step4({ state, set }: { state: WizardState; set: (k: keyof WizardState,
   );
 }
 
-function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState, v: unknown) => void }) {
+function Step5({
+  state,
+  set,
+}: {
+  state: WizardState;
+  set: (k: keyof WizardState, v: unknown) => void;
+}) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4">
-        <FieldRow label="Max Premium Per Lot" hint="₹ — skip entry if premium > this">
+        <FieldRow
+          label="Max Premium Per Lot"
+          hint="₹ — skip entry if premium > this"
+        >
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              ₹
+            </span>
             <Input
               type="number"
               value={state.max_premium_per_lot}
-              onChange={(e) => set("max_premium_per_lot", Number(e.target.value))}
+              onChange={(e) =>
+                set("max_premium_per_lot", Number(e.target.value))
+              }
               className="pl-7"
               min={10}
               step={50}
@@ -682,11 +846,15 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
 
         <FieldRow label="Max Daily Loss" hint="₹ — pause after this loss">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+              ₹
+            </span>
             <Input
               type="number"
               value={state.max_daily_loss_inr}
-              onChange={(e) => set("max_daily_loss_inr", Number(e.target.value))}
+              onChange={(e) =>
+                set("max_daily_loss_inr", Number(e.target.value))
+              }
               className="pl-7"
               min={100}
               step={500}
@@ -698,7 +866,9 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
           <Input
             type="number"
             value={state.lot_size}
-            onChange={(e) => set("lot_size", Math.max(1, Number(e.target.value)))}
+            onChange={(e) =>
+              set("lot_size", Math.max(1, Number(e.target.value)))
+            }
             min={1}
             max={10}
             step={1}
@@ -727,8 +897,9 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-500 dark:text-red-400 space-y-1">
             <p className="font-semibold">Live Trading Enabled</p>
             <p>
-              Real orders will be placed via your broker (through OpenAlgo). Ensure your API key
-              is configured and you have sufficient margin before activating this strategy.
+              Real orders will be placed via your broker (through OpenAlgo).
+              Ensure your API key is configured and you have sufficient margin
+              before activating this strategy.
             </p>
           </div>
         )}
@@ -736,7 +907,8 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
         {state.is_paper_only && (
           <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-xs text-blue-500 dark:text-blue-400">
             Paper mode uses real-time market prices to simulate entry and exit.
-            Switch to live mode only after validating performance with paper trades.
+            Switch to live mode only after validating performance with paper
+            trades.
           </div>
         )}
       </div>
@@ -745,14 +917,39 @@ function Step5({ state, set }: { state: WizardState; set: (k: keyof WizardState,
       <div className="rounded-lg bg-muted/30 px-4 py-3 space-y-1.5 text-xs">
         <p className="font-semibold text-sm mb-2">Strategy Summary</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-muted-foreground">
-          <span>Underlying:</span><span className="text-foreground font-medium">{state.underlying} {state.exchange}</span>
-          <span>Strike:</span><span className="text-foreground font-medium">{state.strike_selection} {state.option_type === "auto" ? "(auto)" : state.option_type}</span>
-          <span>Style:</span><span className="text-foreground font-medium capitalize">{state.strategy_style}</span>
-          <span>ORB:</span><span className="text-foreground font-medium">{state.orb_duration_mins} min, {state.momentum_bars} bars</span>
-          <span>SL / TP:</span><span className="text-foreground font-medium">{state.sl_pct}% / {state.tp_pct}%</span>
-          <span>Time Exit:</span><span className="text-foreground font-medium">{state.time_exit_hhmm} IST</span>
+          <span>Underlying:</span>
+          <span className="text-foreground font-medium">
+            {state.underlying} {state.exchange}
+          </span>
+          <span>Strike:</span>
+          <span className="text-foreground font-medium">
+            {state.strike_selection}{" "}
+            {state.option_type === "auto" ? "(auto)" : state.option_type}
+          </span>
+          <span>Style:</span>
+          <span className="text-foreground font-medium capitalize">
+            {state.strategy_style}
+          </span>
+          <span>ORB:</span>
+          <span className="text-foreground font-medium">
+            {state.orb_duration_mins} min, {state.momentum_bars} bars
+          </span>
+          <span>SL / TP:</span>
+          <span className="text-foreground font-medium">
+            {state.sl_pct}% / {state.tp_pct}%
+          </span>
+          <span>Time Exit:</span>
+          <span className="text-foreground font-medium">
+            {state.time_exit_hhmm} IST
+          </span>
           <span>Mode:</span>
-          <span className={state.is_paper_only ? "text-blue-400 font-semibold" : "text-red-400 font-semibold"}>
+          <span
+            className={
+              state.is_paper_only
+                ? "text-blue-400 font-semibold"
+                : "text-red-400 font-semibold"
+            }
+          >
             {state.is_paper_only ? "Paper Only" : "Live Trading"}
           </span>
         </div>
@@ -768,9 +965,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   editStrategy?: OptionsStrategy | null;
   onSaved: () => void;
+  showButton?: boolean;
 }
 
-function stateToDbPayload(state: WizardState, userId: string, editStrategy: OptionsStrategy | null | undefined) {
+function stateToDbPayload(
+  state: WizardState,
+  userId: string,
+  editStrategy: OptionsStrategy | null | undefined,
+) {
   const base = stateToDb(state, userId);
   return {
     ...base,
@@ -778,7 +980,13 @@ function stateToDbPayload(state: WizardState, userId: string, editStrategy: Opti
   };
 }
 
-export function OptionsStrategyBuilderDialog({ open, onOpenChange, editStrategy, onSaved }: Props) {
+export function OptionsStrategyBuilderDialog({
+  open,
+  onOpenChange,
+  editStrategy,
+  onSaved,
+  showButton = true,
+}: Props) {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -839,7 +1047,8 @@ export function OptionsStrategyBuilderDialog({ open, onOpenChange, editStrategy,
       <DialogContent className="ts-theme-modal max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base">
-            {editStrategy ? "Edit" : "New"} Options Strategy — {STEP_TITLES[step]}
+            {editStrategy ? "Edit" : "New"} Options Strategy —{" "}
+            {STEP_TITLES[step]}
           </DialogTitle>
 
           {/* Step progress */}
@@ -861,21 +1070,35 @@ export function OptionsStrategyBuilderDialog({ open, onOpenChange, editStrategy,
           <Button
             variant="outline"
             size="sm"
-            onClick={() => step > 0 ? setStep(step - 1) : onOpenChange(false)}
+            onClick={() => (step > 0 ? setStep(step - 1) : onOpenChange(false))}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             {step === 0 ? "Cancel" : "Back"}
           </Button>
 
           {step < steps.length - 1 ? (
-            <Button size="sm" onClick={() => setStep(step + 1)} disabled={!canNext()}>
+            <Button
+              size="sm"
+              onClick={() => setStep(step + 1)}
+              disabled={!canNext()}
+            >
               Next <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button size="sm" onClick={handleSave} disabled={saving || !canNext()}>
-              {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
-              {editStrategy ? "Save Changes" : "Create Strategy"}
-            </Button>
+            showButton && (
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saving || !canNext()}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-1" />
+                )}
+                {editStrategy ? "Save Changes" : "Create Strategy"}
+              </Button>
+            )
           )}
         </DialogFooter>
       </DialogContent>
