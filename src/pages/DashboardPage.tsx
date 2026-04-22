@@ -671,6 +671,11 @@ export default function DashboardPage() {
         product: string;
         remember_symbol?: boolean;
       },
+      strategyMeta?: {
+        deployed?: boolean;
+        is_options?: boolean;
+        raw?: Record<string, unknown> | null;
+      },
     ) => {
       if (!session?.access_token) return "Not signed in";
       if (!summary?.broker_session_live) {
@@ -736,6 +741,80 @@ export default function DashboardPage() {
         if (typeof row.message === "string" && row.message.trim()) return row.message.trim();
         return null;
       };
+
+      const isOptions = Boolean(strategyMeta?.is_options);
+      const isAlreadyLive = Boolean(strategyMeta?.deployed);
+
+      if (isOptions) {
+        const uid = session?.user?.id;
+        if (!uid) return "Not signed in";
+        const baseRaw = strategyMeta?.raw;
+        let source: Record<string, unknown> | null =
+          baseRaw && typeof baseRaw === "object" ? { ...baseRaw } : null;
+        if (!source) {
+          const { data: row, error } = await supabase
+            .from("options_strategies")
+            .select("*")
+            .eq("id", strategyId)
+            .eq("user_id", uid)
+            .maybeSingle();
+          if (error) return error.message;
+          source = row ? ({ ...row } as Record<string, unknown>) : null;
+        }
+        if (!source) return "Options strategy not found.";
+        const clone: Record<string, unknown> = { ...source };
+        delete clone.id;
+        delete clone.created_at;
+        delete clone.updated_at;
+        delete clone.lifecycle_state;
+        delete clone.lifecycle_reason;
+        delete clone.lifecycle_updated_at;
+        clone.user_id = uid;
+        clone.is_active = true;
+        clone.underlying = sym;
+        clone.exchange = ex;
+        const { error: insErr } = await supabase
+          .from("options_strategies")
+          .insert(clone);
+        if (insErr) return insErr.message;
+        return null;
+      }
+
+      if (isAlreadyLive) {
+        const uid = session?.user?.id;
+        if (!uid) return "Not signed in";
+        const baseRaw = strategyMeta?.raw;
+        let source: Record<string, unknown> | null =
+          baseRaw && typeof baseRaw === "object" ? { ...baseRaw } : null;
+        if (!source) {
+          const { data: row, error } = await supabase
+            .from("user_strategies")
+            .select("*")
+            .eq("id", strategyId)
+            .eq("user_id", uid)
+            .maybeSingle();
+          if (error) return error.message;
+          source = row ? ({ ...row } as Record<string, unknown>) : null;
+        }
+        if (!source) return "Strategy not found.";
+        const clone: Record<string, unknown> = { ...source };
+        delete clone.id;
+        delete clone.created_at;
+        delete clone.updated_at;
+        delete clone.lifecycle_state;
+        delete clone.lifecycle_reason;
+        delete clone.lifecycle_updated_at;
+        clone.user_id = uid;
+        clone.is_active = true;
+        clone.symbols = symbolsPayload;
+        clone.position_config = position_config;
+        const { error: insErr } = await supabase
+          .from("user_strategies")
+          .insert(clone);
+        if (insErr) return insErr.message;
+        return null;
+      }
+
       try {
         const up = await supabase.functions.invoke("manage-strategy", {
           body: {
@@ -747,8 +826,33 @@ export default function DashboardPage() {
           headers: { Authorization: `Bearer ${session.access_token}` },
         });
         const upMsg = fnBodyError(up.data);
-        if (up.error) return upMsg ?? up.error.message ?? "manage-strategy update failed.";
-        if (upMsg) return upMsg;
+        const updateErr = upMsg ?? up.error?.message ?? null;
+        if (updateErr && /strategy_live_locked/i.test(updateErr)) {
+          const uid = session?.user?.id;
+          if (!uid) return "Not signed in";
+          const source =
+            strategyMeta?.raw && typeof strategyMeta.raw === "object"
+              ? ({ ...strategyMeta.raw } as Record<string, unknown>)
+              : null;
+          if (!source) return updateErr;
+          const clone: Record<string, unknown> = { ...source };
+          delete clone.id;
+          delete clone.created_at;
+          delete clone.updated_at;
+          delete clone.lifecycle_state;
+          delete clone.lifecycle_reason;
+          delete clone.lifecycle_updated_at;
+          clone.user_id = uid;
+          clone.is_active = true;
+          clone.symbols = symbolsPayload;
+          clone.position_config = position_config;
+          const { error: insErr } = await supabase
+            .from("user_strategies")
+            .insert(clone);
+          if (insErr) return insErr.message;
+          return null;
+        }
+        if (updateErr) return updateErr ?? "manage-strategy update failed.";
         const tog = await supabase.functions.invoke("manage-strategy", {
           body: { action: "toggle", strategy_id: strategyId },
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -761,7 +865,7 @@ export default function DashboardPage() {
         return e instanceof Error ? e.message : "Network or server error while activating.";
       }
     },
-    [session?.access_token, summary?.broker_session_live],
+    [session?.access_token, session?.user?.id, summary?.broker_session_live],
   );
 
   const onClearActivationDefaults = useCallback(

@@ -3215,30 +3215,7 @@ export default function TradingSmartDashboard(props = {}) {
                               {strategyKindTag(s)}
                             </span>
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                            }}
-                          >
-                            <span
-                              className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
-                              title={badgeTitle}
-                              style={{ fontSize: 9 }}
-                            >
-                              {lifecycleLabel(lcState)}
-                            </span>
-                            {s.deployed && (
-                              <span className="strat-deployed-badge">
-                                <span
-                                  className="status-dot live"
-                                  style={{ width: 6, height: 6 }}
-                                />{" "}
-                                LIVE
-                              </span>
-                            )}
-                          </div>
+                          <div />
                         </div>
                         <div
                           style={{
@@ -3373,22 +3350,6 @@ export default function TradingSmartDashboard(props = {}) {
                                       "warn",
                                       "Connect broker (live session) before activating a strategy.",
                                     );
-                                    return;
-                                  }
-                                  const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
-                                  if (isOptions) {
-                                    void (async () => {
-                                      const err = await chartmateActions?.onActivateOptionsStrategy?.(s.id);
-                                      if (err) {
-                                        toast.error("Could not activate options strategy", {
-                                          description: String(err),
-                                        });
-                                        addLog("error", String(err));
-                                        return;
-                                      }
-                                      addLog("info", `Options strategy "${s.name}" activated`);
-                                      chartmateActions?.onRefresh?.();
-                                    })();
                                     return;
                                   }
                                   setGoLiveTarget(s);
@@ -4441,6 +4402,16 @@ export default function TradingSmartDashboard(props = {}) {
                         quantity: qty,
                         product: goLiveForm.product,
                         remember_symbol: goLiveRememberSymbol,
+                      },
+                      {
+                        deployed: Boolean(goLiveTarget.deployed),
+                        is_options:
+                          Boolean(goLiveTarget?.is_options) ||
+                          strategyKindTag(goLiveTarget) === "options",
+                        raw:
+                          goLiveTarget && typeof goLiveTarget._raw === "object"
+                            ? goLiveTarget._raw
+                            : null,
                       },
                     );
                     if (err) {
