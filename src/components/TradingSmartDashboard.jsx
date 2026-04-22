@@ -411,7 +411,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .badge-warn { background:rgba(251,191,36,0.1); color:var(--accent-orange); border:1px solid rgba(251,191,36,0.25); }
 
 /* DASHBOARD GRID */
-.dashboard { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.dashboard { display:grid; grid-template-columns:1fr; gap:20px; }
 
 /* ROBOT PANEL */
 .robot-panel { grid-column:1/-1; }
@@ -2697,20 +2697,6 @@ export default function TradingSmartDashboard(props = {}) {
                   </span>
                 </div>
                 <div className="robot-grid">
-                  {/* <div className="robot-avatar">
-                  <div className="robot-ring">
-                    <div className="robot-face">&#x1F916;</div>
-                  </div>
-                  <div className="robot-name">TSA-7</div>
-                  <div className="robot-status-text">
-                    <div
-                      className={`status-dot ${sessLive ? "live" : "warn"}`}
-                    />
-                    {sessLive
-                      ? "Broker session active"
-                      : "Connect broker for live execution"}
-                  </div>
-                </div> */}
                   <div className="robot-metrics">
                     <>
                       <div className="metric-row">
@@ -2847,82 +2833,6 @@ export default function TradingSmartDashboard(props = {}) {
                       </div>
                     </>
                   </div>
-                  {/* <div className="robot-actions">
-                  <div className="kill-switch-container">
-                  <button
-                    type="button"
-                    className={`kill-switch ${killActive ? "active" : ""}`}
-                    disabled={killBusy || pauseAllBusy}
-                    onClick={handleKillSwitch}
-                  >
-                      <span className="kill-icon">
-                        {killActive ? "\u26D4" : "\u26A0"}
-                      </span>
-                      <span className="kill-text">
-                        {killBusy ? "WORKING…" : killActive ? "ACTIVATED" : "KILL SWITCH"}
-                      </span>
-                    </button>
-                    <div className="kill-label">
-                      <span>Emergency Stop</span>
-                      <br />
-                      Halts all strategies & cancels orders
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="action-btn btn-warning"
-                    disabled={pauseAllBusy || killBusy || !useChartmate || !onPauseAllStrategies}
-                    onClick={() => {
-                      void (async () => {
-                        if (!onPauseAllStrategies) return;
-                        setPauseAllBusy(true);
-                        try {
-                          const err = await onPauseAllStrategies();
-                          if (err) {
-                            toast.error("Could not pause strategies", { description: err });
-                            addLog("error", err);
-                            return;
-                          }
-                          addLog("warn", "All strategies paused (deploy off + pending rows cleared).");
-                          toast.success("All strategies paused");
-                        } catch (e) {
-                          const msg = e instanceof Error ? e.message : "Unexpected error";
-                          toast.error("Pause all failed", { description: msg });
-                          addLog("error", msg);
-                        } finally {
-                          setPauseAllBusy(false);
-                        }
-                      })();
-                    }}
-                  >
-                    {pauseAllBusy ? "Pausing…" : "\u23F8 Pause All Strategies"}
-                  </button>
-                  {chartmateActions?.onRefresh && (
-                    <button
-                      type="button"
-                      className="action-btn btn-primary"
-                      onClick={() => {
-                        chartmateActions.onRefresh();
-                        addLog("info", "Dashboard refreshed from ChartMate");
-                      }}
-                    >
-                      &#x21BB; Refresh data
-                    </button>
-                  )}
-
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "var(--text-muted)",
-                      marginBottom: 6,
-                      textAlign: "left",
-                    }}
-                  >
-                    Use <strong>Connect broker</strong> for Zerodha (same flow
-                    as ChartMate). Options and strategy deploy run only with a
-                    live broker session.
-                  </div>
-                </div> */}
                 </div>
               </div>
 
