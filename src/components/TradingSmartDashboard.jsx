@@ -1641,8 +1641,9 @@ export default function TradingSmartDashboard(props = {}) {
             and does not attribute broker tradebook rows back to strategy IDs.
           </div>
 
-            {/* LIVE MONITORING */}
-            <div
+           <div className="grid grid-cols-1 gap-24 lg:grid-cols-2">
+             {/* LIVE MONITORING */}
+             <div
               className="card mb-[24px]"
               style={{
                 padding: 0,
@@ -2178,6 +2179,51 @@ export default function TradingSmartDashboard(props = {}) {
                 )}
               </div>
             </div>
+
+             {/* Equity curve */}
+             <div className="card" style={{ gridColumn: "1 / -1" }}>
+              <div className="card-header">
+                <div className="card-title">
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(99,102,241,0.1)",
+                      color: "var(--accent-blue)",
+                    }}
+                  >
+                    &#x1F4C8;
+                  </span>
+                  Equity Curve
+                </div>
+                <div className="timeline-switch">
+                  {["1D", "1W", "1M", "ALL"].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`timeline-btn${equityTimeline === r ? " active" : ""}`}
+                      onClick={() => setEquityTimeline(r)}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  padding: "0 4px 12px",
+                }}
+              >
+                Cumulative live P&L (closed trades in scope; aligns with hero totals when connected).
+                Range filters the same series; data comes from your ChartMate trade
+                history when the broker session is live.
+              </div>
+              <div className="chart-area">
+                <canvas ref={canvasRef} className="chart-canvas" />
+              </div>
+            </div>
+           </div>
 
           {/* STATS — only show real numbers when broker session is live */}
           <div className="stats-row">
@@ -3544,50 +3590,6 @@ export default function TradingSmartDashboard(props = {}) {
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-
-            {/* Equity curve */}
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="card-header">
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(99,102,241,0.1)",
-                      color: "var(--accent-blue)",
-                    }}
-                  >
-                    &#x1F4C8;
-                  </span>
-                  Equity Curve
-                </div>
-                <div className="timeline-switch">
-                  {["1D", "1W", "1M", "ALL"].map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      className={`timeline-btn${equityTimeline === r ? " active" : ""}`}
-                      onClick={() => setEquityTimeline(r)}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  padding: "0 4px 12px",
-                }}
-              >
-                Cumulative live P&L (closed trades in scope; aligns with hero totals when connected).
-                Range filters the same series; data comes from your ChartMate trade
-                history when the broker session is live.
-              </div>
-              <div className="chart-area">
-                <canvas ref={canvasRef} className="chart-canvas" />
               </div>
             </div>
 
