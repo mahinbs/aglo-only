@@ -1552,6 +1552,32 @@ export default function TradingSmartDashboard(props = {}) {
               </button>
             </div>
           </div>
+          <div
+            style={{
+              padding: "8px 16px",
+              borderRadius: 10,
+              background: "rgba(251,191,36,0.04)",
+              border: "1px solid rgba(251,191,36,0.1)",
+              marginBottom: 16,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontSize: 10,
+              color: "var(--text-muted)",
+              lineHeight: 1.5,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>&#x2696;&#xFE0F;</span>
+            <span>
+              <strong style={{ color: "var(--accent-yellow)" }}>
+                Platform Disclosure:
+              </strong>{" "}
+              TradingSmart.AI is a technology platform that executes strategies
+              created by traders and registered financial advisors. We are not
+              a financial advisor, broker, or dealer. All strategies carry risk
+              — trade responsibly.
+            </span>
+          </div>
           {/* HERO */}
           <div className="hero">
             <div className="hero-card">
@@ -1614,6 +1640,146 @@ export default function TradingSmartDashboard(props = {}) {
             live broker snapshot data. Strategy table remains strategy metadata
             and does not attribute broker tradebook rows back to strategy IDs.
           </div>
+
+            {/* LIVE MONITORING */}
+            <div className="card">
+              <div className="card-header">
+                <div className="card-title">
+                  <span
+                    className="card-title-icon"
+                    style={{
+                      background: "rgba(52,211,153,0.1)",
+                      color: "var(--accent-green)",
+                    }}
+                  >
+                    &#x1F4F6;
+                  </span>
+                  Live Monitoring
+                </div>
+                <span className="card-badge badge-green">
+                  {liveMonitorStrategies.length} running
+                </span>
+              </div>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "var(--text-muted)",
+                  margin: "0 0 12px",
+                  lineHeight: 1.5,
+                }}
+              >
+                Summary of strategies that are scanning or waiting on the
+                engine. Open{" "}
+                <strong style={{ color: "var(--accent-cyan)" }}>
+                  Live view
+                </strong>{" "}
+                on a card (or below) for candles, LTP, and the full condition
+                matrix.
+              </p>
+              {liveMonitorStrategies.length === 0 ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  No active strategy monitors yet. Activate a strategy to list
+                  it here, then use Live view for charts and conditions.
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {liveMonitorStrategies.map((s) => {
+                    const lcState = normalizeLifecycleState(
+                      s.lifecycle_state,
+                      Boolean(s.deployed),
+                    );
+                    const { symbol: symHint } = chartRoutingFromStrategyCard(s);
+                    return (
+                      <div
+                        key={`live-${s.id}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          flexWrap: "wrap",
+                          border: "1px solid var(--border-color)",
+                          borderRadius: 10,
+                          padding: "10px 12px",
+                          background: "rgba(10,14,23,0.45)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={{ fontSize: 12, fontWeight: 700 }}>
+                              {s.name}
+                            </span>
+                            <span className="my-strat-card-type type-momentum">
+                              {s.type}
+                            </span>
+                            <span
+                              className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
+                            >
+                              {lifecycleLabel(lcState)}
+                            </span>
+                          </div>
+                          <span
+                            style={{ fontSize: 10, color: "var(--text-muted)" }}
+                          >
+                            Chart symbol:{" "}
+                            <span style={{ color: "var(--text-secondary)" }}>
+                              {symHint || "—"}
+                            </span>
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="action-btn btn-primary"
+                          style={{
+                            padding: "6px 12px",
+                            fontSize: 11,
+                            borderRadius: 8,
+                            whiteSpace: "nowrap",
+                          }}
+                          disabled={!sessLive}
+                          title={
+                            !sessLive
+                              ? "Connect broker for live chart quotes"
+                              : "Open chart + conditions"
+                          }
+                          onClick={() => {
+                            if (!sessLive) {
+                              toast.error(
+                                "Connect broker (live session) to open Live view.",
+                              );
+                              return;
+                            }
+                            setLiveViewTarget(s);
+                          }}
+                        >
+                          Live view
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
           {/* STATS — only show real numbers when broker session is live */}
           <div className="stats-row">
@@ -2871,145 +3037,7 @@ export default function TradingSmartDashboard(props = {}) {
               )}
             </div>
 
-            {/* LIVE MONITORING */}
-            <div className="card">
-              <div className="card-header">
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(52,211,153,0.1)",
-                      color: "var(--accent-green)",
-                    }}
-                  >
-                    &#x1F4F6;
-                  </span>
-                  Live Monitoring
-                </div>
-                <span className="card-badge badge-green">
-                  {liveMonitorStrategies.length} running
-                </span>
-              </div>
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  margin: "0 0 12px",
-                  lineHeight: 1.5,
-                }}
-              >
-                Summary of strategies that are scanning or waiting on the
-                engine. Open{" "}
-                <strong style={{ color: "var(--accent-cyan)" }}>
-                  Live view
-                </strong>{" "}
-                on a card (or below) for candles, LTP, and the full condition
-                matrix.
-              </p>
-              {liveMonitorStrategies.length === 0 ? (
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  No active strategy monitors yet. Activate a strategy to list
-                  it here, then use Live view for charts and conditions.
-                </div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  {liveMonitorStrategies.map((s) => {
-                    const lcState = normalizeLifecycleState(
-                      s.lifecycle_state,
-                      Boolean(s.deployed),
-                    );
-                    const { symbol: symHint } = chartRoutingFromStrategyCard(s);
-                    return (
-                      <div
-                        key={`live-${s.id}`}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          flexWrap: "wrap",
-                          border: "1px solid var(--border-color)",
-                          borderRadius: 10,
-                          padding: "10px 12px",
-                          background: "rgba(10,14,23,0.45)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 4,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <span style={{ fontSize: 12, fontWeight: 700 }}>
-                              {s.name}
-                            </span>
-                            <span className="my-strat-card-type type-momentum">
-                              {s.type}
-                            </span>
-                            <span
-                              className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
-                            >
-                              {lifecycleLabel(lcState)}
-                            </span>
-                          </div>
-                          <span
-                            style={{ fontSize: 10, color: "var(--text-muted)" }}
-                          >
-                            Chart symbol:{" "}
-                            <span style={{ color: "var(--text-secondary)" }}>
-                              {symHint || "—"}
-                            </span>
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          className="action-btn btn-primary"
-                          style={{
-                            padding: "6px 12px",
-                            fontSize: 11,
-                            borderRadius: 8,
-                            whiteSpace: "nowrap",
-                          }}
-                          disabled={!sessLive}
-                          title={
-                            !sessLive
-                              ? "Connect broker for live chart quotes"
-                              : "Open chart + conditions"
-                          }
-                          onClick={() => {
-                            if (!sessLive) {
-                              toast.error(
-                                "Connect broker (live session) to open Live view.",
-                              );
-                              return;
-                            }
-                            setLiveViewTarget(s);
-                          }}
-                        >
-                          Live view
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          
 
             {/* ═══ REQUEST DEVELOPER TO CODE STRATEGY ═══ */}
             <div className="card" style={{ gridColumn: "1 / -1" }}>
