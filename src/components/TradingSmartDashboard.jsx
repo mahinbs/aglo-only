@@ -102,13 +102,20 @@ function defaultsGoLiveFromCard(s) {
     if (op) product = op.toUpperCase();
     const ad = pc.activation_defaults;
     if (ad && typeof ad === "object") {
-      const savedSymbol = String(ad.symbol ?? "").trim().toUpperCase();
-      const savedExchange = String(ad.exchange ?? "").trim().toUpperCase();
+      const savedSymbol = String(ad.symbol ?? "")
+        .trim()
+        .toUpperCase();
+      const savedExchange = String(ad.exchange ?? "")
+        .trim()
+        .toUpperCase();
       const savedQty = Number(ad.quantity ?? 0);
-      const savedProduct = String(ad.product ?? "").trim().toUpperCase();
+      const savedProduct = String(ad.product ?? "")
+        .trim()
+        .toUpperCase();
       if (savedSymbol) symbol = savedSymbol;
       if (savedExchange) exchange = savedExchange;
-      if (Number.isFinite(savedQty) && savedQty >= 1) quantity = String(Math.floor(savedQty));
+      if (Number.isFinite(savedQty) && savedQty >= 1)
+        quantity = String(Math.floor(savedQty));
       if (savedProduct) product = savedProduct;
     }
   }
@@ -129,22 +136,33 @@ function chartRoutingFromStrategyCard(s) {
 
 function yahooSymbolFromStrategyCard(s) {
   const { symbol, exchange } = chartRoutingFromStrategyCard(s);
-  const clean = String(symbol || "").trim().toUpperCase();
+  const clean = String(symbol || "")
+    .trim()
+    .toUpperCase();
   if (!clean) return "RELIANCE.NS";
-  if (clean.includes(".") || clean.includes("^") || clean.includes("=") || clean.includes("-")) {
+  if (
+    clean.includes(".") ||
+    clean.includes("^") ||
+    clean.includes("=") ||
+    clean.includes("-")
+  ) {
     return clean;
   }
   if (clean === "NIFTY") return "^NSEI";
   if (clean === "BANKNIFTY") return "^NSEBANK";
   if (clean === "FINNIFTY") return "NIFTY_FIN_SERVICE.NS";
   if (clean === "SENSEX") return "^BSESN";
-  const ex = String(exchange || "").trim().toUpperCase();
+  const ex = String(exchange || "")
+    .trim()
+    .toUpperCase();
   if (ex === "BSE" || ex === "BFO") return `${clean}.BO`;
   return `${clean}.NS`;
 }
 
 function brokerAllowedExchanges(brokerRaw) {
-  const broker = String(brokerRaw || "").trim().toLowerCase();
+  const broker = String(brokerRaw || "")
+    .trim()
+    .toLowerCase();
   const india = ["NSE", "BSE", "NFO", "BFO", "CDS", "MCX", "NCDEX"];
   const map = {
     zerodha: india,
@@ -887,7 +905,9 @@ export default function TradingSmartDashboard(props = {}) {
       const end = Number(summary?.cumulative_pnl);
       const endV = Number.isFinite(end) ? end : 0;
       const startT =
-        windowsMs === Number.MAX_SAFE_INTEGER ? now - 90 * 86400000 : now - windowsMs;
+        windowsMs === Number.MAX_SAFE_INTEGER
+          ? now - 90 * 86400000
+          : now - windowsMs;
       pts = [
         { t: startT, v: 0 },
         { t: now, v: endV },
@@ -974,7 +994,10 @@ export default function TradingSmartDashboard(props = {}) {
 
   useEffect(() => {
     try {
-      localStorage.setItem("algo-only-system-logs-v1", JSON.stringify(logs.slice(-500)));
+      localStorage.setItem(
+        "algo-only-system-logs-v1",
+        JSON.stringify(logs.slice(-500)),
+      );
     } catch {
       // ignore storage write issues
     }
@@ -1155,7 +1178,9 @@ export default function TradingSmartDashboard(props = {}) {
       setGoLiveSearchBusy(true);
       setGoLiveSearchError("");
       try {
-        const res = await supabase.functions.invoke("search-symbols", { body: { q } });
+        const res = await supabase.functions.invoke("search-symbols", {
+          body: { q },
+        });
         const rows = Array.isArray(res.data) ? res.data : [];
         const filtered = rows
           .map((item) => ({
@@ -1224,20 +1249,22 @@ export default function TradingSmartDashboard(props = {}) {
     Array.isArray(orders) && orders.length
       ? orders.reduce((acc, o) => acc + Number(o?.pnl || 0), 0)
       : 0;
-  const displayPortfolio =
-    sessLive
-      ? (liveCashAvailable != null
-          ? liveCashAvailable
-          : (typeof summary?.portfolio_value === "number" ? summary.portfolio_value : 0))
-      : 0;
+  const displayPortfolio = sessLive
+    ? liveCashAvailable != null
+      ? liveCashAvailable
+      : typeof summary?.portfolio_value === "number"
+        ? summary.portfolio_value
+        : 0
+    : 0;
   const displayCumulative =
     sessLive && typeof summary?.cumulative_pnl === "number"
       ? summary.cumulative_pnl
       : 0;
-  const displayToday =
-    sessLive
-      ? (typeof summary?.today_pnl === "number" ? summary.today_pnl : fallbackTodayPnl)
-      : 0;
+  const displayToday = sessLive
+    ? typeof summary?.today_pnl === "number"
+      ? summary.today_pnl
+      : fallbackTodayPnl
+    : 0;
   const pctMtm =
     sessLive && typeof summary?.open_positions_pct_mtm === "number"
       ? summary.open_positions_pct_mtm
@@ -1337,7 +1364,9 @@ export default function TradingSmartDashboard(props = {}) {
   }).length;
   const activeStrategiesRows = strategiesData.filter((s) => {
     const st = normalizeLifecycleState(s.status, Boolean(s.deployed));
-    return st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED";
+    return (
+      st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
+    );
   });
   const strategyTagClass = (rawLifecycle, deployed) => {
     const st = normalizeLifecycleState(rawLifecycle, Boolean(deployed));
@@ -1355,8 +1384,14 @@ export default function TradingSmartDashboard(props = {}) {
       st === "ACTIVE" || st === "WAITING_MARKET_OPEN" || st === "TRIGGERED"
     );
   });
-  const liveMonitorPages = Math.max(1, Math.ceil(liveMonitorStrategies.length / 10));
-  const liveMonitorPageSafe = Math.min(liveMonitorPages, Math.max(1, liveMonitorPage));
+  const liveMonitorPages = Math.max(
+    1,
+    Math.ceil(liveMonitorStrategies.length / 10),
+  );
+  const liveMonitorPageSafe = Math.min(
+    liveMonitorPages,
+    Math.max(1, liveMonitorPage),
+  );
   const liveMonitorSlice = liveMonitorStrategies.slice(
     (liveMonitorPageSafe - 1) * 10,
     liveMonitorPageSafe * 10,
@@ -1370,10 +1405,7 @@ export default function TradingSmartDashboard(props = {}) {
 
   const strategyKindTag = (strategy) => {
     const mt = String(
-      strategy?.market_type ??
-        strategy?.marketType ??
-        strategy?.type ??
-        "",
+      strategy?.market_type ?? strategy?.marketType ?? strategy?.type ?? "",
     )
       .trim()
       .toLowerCase();
@@ -1691,9 +1723,9 @@ export default function TradingSmartDashboard(props = {}) {
                 Platform Disclosure:
               </strong>{" "}
               TradingSmart.AI is a technology platform that executes strategies
-              created by traders and registered financial advisors. We are not
-              a financial advisor, broker, or dealer. All strategies carry risk
-              — trade responsibly.
+              created by traders and registered financial advisors. We are not a
+              financial advisor, broker, or dealer. All strategies carry risk —
+              trade responsibly.
             </span>
           </div>
           {/* HERO */}
@@ -1759,9 +1791,9 @@ export default function TradingSmartDashboard(props = {}) {
             and does not attribute broker tradebook rows back to strategy IDs.
           </div>
 
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-[24px]">
-             {/* LIVE MONITORING */}
-             <div
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-[24px]">
+            {/* LIVE MONITORING */}
+            <div
               className="card"
               style={{
                 padding: 0,
@@ -1832,12 +1864,13 @@ export default function TradingSmartDashboard(props = {}) {
                           fontFamily: "'JetBrains Mono',monospace",
                         }}
                       >
-                        {String(summary?.broker || "ZERODHA")} (INDIA -
-                        NSE/BSE)
+                        {String(summary?.broker || "ZERODHA")} (INDIA - NSE/BSE)
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
                     <span
                       style={{
                         fontSize: 11,
@@ -1866,7 +1899,11 @@ export default function TradingSmartDashboard(props = {}) {
                       onClick={handleKillSwitch}
                       disabled={killBusy || pauseAllBusy}
                     >
-                      {killBusy ? "Working..." : killActive ? "Kill Active" : "Disconnect"}
+                      {killBusy
+                        ? "Working..."
+                        : killActive
+                          ? "Kill Active"
+                          : "Disconnect"}
                     </button>
                   </div>
                 </div>
@@ -1895,7 +1932,9 @@ export default function TradingSmartDashboard(props = {}) {
                   </span>
                   <span
                     style={{
-                      color: sessLive ? "var(--accent-green)" : "var(--accent-orange)",
+                      color: sessLive
+                        ? "var(--accent-green)"
+                        : "var(--accent-orange)",
                       justifySelf: "center",
                       fontWeight: 700,
                       letterSpacing: 0.6,
@@ -2077,10 +2116,15 @@ export default function TradingSmartDashboard(props = {}) {
                             : "var(--accent-yellow)";
                       const monitorPerf = strategiesData.find(
                         (row) =>
-                          String(row?.name || "").trim().toLowerCase() ===
-                          String(s?.name || "").trim().toLowerCase(),
+                          String(row?.name || "")
+                            .trim()
+                            .toLowerCase() ===
+                          String(s?.name || "")
+                            .trim()
+                            .toLowerCase(),
                       );
-                      const { symbol: symHint } = chartRoutingFromStrategyCard(s);
+                      const { symbol: symHint } =
+                        chartRoutingFromStrategyCard(s);
                       return (
                         <div
                           key={`live-${s.id}`}
@@ -2139,7 +2183,9 @@ export default function TradingSmartDashboard(props = {}) {
                                   background: "rgba(15,23,42,0.55)",
                                 }}
                               >
-                                {String(s.pairs || symHint || "—").toUpperCase()}
+                                {String(
+                                  s.pairs || symHint || "—",
+                                ).toUpperCase()}
                               </span>
                               <span
                                 style={{
@@ -2158,7 +2204,10 @@ export default function TradingSmartDashboard(props = {}) {
                               >
                                 {sessLive
                                   ? monitorPerf?.pnl ||
-                                    formatSignedDisplay(displayToday, currencyMode)
+                                    formatSignedDisplay(
+                                      displayToday,
+                                      currencyMode,
+                                    )
                                   : "--"}
                               </span>
                               <span
@@ -2183,7 +2232,8 @@ export default function TradingSmartDashboard(props = {}) {
                                   borderRadius: 6,
                                   background: "rgba(56,189,248,0.1)",
                                   color: sessLive
-                                    ? monitorPerf?.winColor || "var(--accent-cyan)"
+                                    ? monitorPerf?.winColor ||
+                                      "var(--accent-cyan)"
                                     : "var(--text-muted)",
                                 }}
                               >
@@ -2223,7 +2273,11 @@ export default function TradingSmartDashboard(props = {}) {
                             <button
                               type="button"
                               className="strat-action-btn strat-btn-deploy"
-                              title={!sessLive ? "Connect broker for live chart quotes" : "Open chart + conditions"}
+                              title={
+                                !sessLive
+                                  ? "Connect broker for live chart quotes"
+                                  : "Open chart + conditions"
+                              }
                               disabled={!sessLive}
                               onClick={() => {
                                 if (!sessLive) {
@@ -2242,12 +2296,21 @@ export default function TradingSmartDashboard(props = {}) {
                               className="strat-action-btn strat-btn-edit"
                               title="Pause strategy scan"
                               onClick={async () => {
-                                const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                const isOptions =
+                                  Boolean(s?.is_options) ||
+                                  strategyKindTag(s) === "options";
                                 const err = isOptions
-                                  ? await chartmateActions?.onPauseOptionsStrategy?.(s.id)
-                                  : await chartmateActions?.onToggleDeploy?.(s.id, false);
+                                  ? await chartmateActions?.onPauseOptionsStrategy?.(
+                                      s.id,
+                                    )
+                                  : await chartmateActions?.onToggleDeploy?.(
+                                      s.id,
+                                      false,
+                                    );
                                 if (err) {
-                                  toast.error("Could not pause strategy", { description: String(err) });
+                                  toast.error("Could not pause strategy", {
+                                    description: String(err),
+                                  });
                                   return;
                                 }
                                 addLog("warn", `Strategy "${s.name}" paused`);
@@ -2261,15 +2324,28 @@ export default function TradingSmartDashboard(props = {}) {
                               className="strat-action-btn strat-btn-delete"
                               title="Stop strategy and cancel queued entries"
                               onClick={async () => {
-                                const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                const isOptions =
+                                  Boolean(s?.is_options) ||
+                                  strategyKindTag(s) === "options";
                                 const err = isOptions
-                                  ? await chartmateActions?.onPauseOptionsStrategy?.(s.id)
-                                  : await chartmateActions?.onToggleDeploy?.(s.id, false);
+                                  ? await chartmateActions?.onPauseOptionsStrategy?.(
+                                      s.id,
+                                    )
+                                  : await chartmateActions?.onToggleDeploy?.(
+                                      s.id,
+                                      false,
+                                    );
                                 if (err) {
-                                  toast.error("Could not stop strategy", { description: String(err) });
+                                  toast.error("Could not stop strategy", {
+                                    description: String(err),
+                                  });
                                   return;
                                 }
-                                if (!isOptions && typeof onCancelPendingForStrategy === "function") {
+                                if (
+                                  !isOptions &&
+                                  typeof onCancelPendingForStrategy ===
+                                    "function"
+                                ) {
                                   await onCancelPendingForStrategy(s.id);
                                 }
                                 addLog("warn", `Strategy "${s.name}" stopped`);
@@ -2283,17 +2359,32 @@ export default function TradingSmartDashboard(props = {}) {
                       );
                     })}
                     {liveMonitorPages > 1 ? (
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 8,
+                          marginTop: 4,
+                        }}
+                      >
                         <button
                           type="button"
                           className="action-btn btn-primary"
                           style={{ padding: "4px 10px", fontSize: 11 }}
                           disabled={liveMonitorPageSafe <= 1}
-                          onClick={() => setLiveMonitorPage((p) => Math.max(1, p - 1))}
+                          onClick={() =>
+                            setLiveMonitorPage((p) => Math.max(1, p - 1))
+                          }
                         >
                           Prev
                         </button>
-                        <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center" }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-muted)",
+                            alignSelf: "center",
+                          }}
+                        >
                           Page {liveMonitorPageSafe} / {liveMonitorPages}
                         </span>
                         <button
@@ -2301,7 +2392,11 @@ export default function TradingSmartDashboard(props = {}) {
                           className="action-btn btn-primary"
                           style={{ padding: "4px 10px", fontSize: 11 }}
                           disabled={liveMonitorPageSafe >= liveMonitorPages}
-                          onClick={() => setLiveMonitorPage((p) => Math.min(liveMonitorPages, p + 1))}
+                          onClick={() =>
+                            setLiveMonitorPage((p) =>
+                              Math.min(liveMonitorPages, p + 1),
+                            )
+                          }
                         >
                           Next
                         </button>
@@ -2312,50 +2407,86 @@ export default function TradingSmartDashboard(props = {}) {
               </div>
             </div>
 
-             {/* Equity curve */}
-             <div className="card">
+            <div className="card">
               <div className="card-header">
                 <div className="card-title">
                   <span
                     className="card-title-icon"
                     style={{
-                      background: "rgba(99,102,241,0.1)",
-                      color: "var(--accent-blue)",
+                      background: "rgba(167,139,250,0.1)",
+                      color: "var(--accent-purple)",
                     }}
                   >
-                    &#x1F4C8;
+                    &#x23F3;
                   </span>
-                  Equity Curve
+                  Pending Execution Queue
                 </div>
-                <div className="timeline-switch">
-                  {["1D", "1W", "1M", "ALL"].map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      className={`timeline-btn${equityTimeline === r ? " active" : ""}`}
-                      onClick={() => setEquityTimeline(r)}
-                    >
-                      {r}
-                    </button>
+                <span className="card-badge badge-blue">
+                  {(summary?.pending_executions ?? []).length} rows
+                </span>
+              </div>
+              {!summary?.pending_executions?.length ? (
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  No pending execution rows right now. Once a strategy is active
+                  and scanning, this queue shows live checks and pending/failed
+                  execution states from{" "}
+                  <code style={{ fontSize: 11 }}>
+                    pending_conditional_orders
+                  </code>
+                  .
+                </div>
+              ) : (
+                <div className="order-feed">
+                  {summary.pending_executions.map((p) => (
+                    <div className="order-item" key={p.id}>
+                      <div
+                        className={`order-icon ${String(p.action || "").toLowerCase() === "buy" ? "buy" : "sell"}`}
+                      >
+                        {String(p.action || "").toUpperCase() === "BUY"
+                          ? "\u25B2"
+                          : "\u25BC"}
+                      </div>
+                      <div>
+                        <div className="order-pair">
+                          {p.symbol || "—"}{" "}
+                          <span
+                            style={{
+                              color: "var(--accent-cyan)",
+                              fontSize: 11,
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {p.status}
+                          </span>
+                        </div>
+                        <div className="order-meta">
+                          strategy_id: {p.strategy_id || "—"}{" "}
+                          {p.last_checked_at
+                            ? `• checked ${p.last_checked_at}`
+                            : ""}
+                        </div>
+                        {p.error_message ? (
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: "var(--accent-orange)",
+                              marginTop: 2,
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {p.error_message}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div>
+                        <div className="order-time">{p.created_at || "—"}</div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                  padding: "0 4px 12px",
-                }}
-              >
-                Cumulative live P&L (closed trades in scope; aligns with hero totals when connected).
-                Range filters the same series; data comes from your ChartMate trade
-                history when the broker session is live.
-              </div>
-              <div className="chart-area">
-                <canvas ref={canvasRef} className="chart-canvas" />
-              </div>
+              )}
             </div>
-           </div>
+          </div>
 
           {/* STATS — only show real numbers when broker session is live */}
           <div className="stats-row">
@@ -2543,29 +2674,30 @@ export default function TradingSmartDashboard(props = {}) {
 
           {/* DASHBOARD */}
           <div className="dashboard">
-            {/* ROBOT COMMAND CENTER */}
-            <div className="card robot-panel">
-              <div className="card-header">
-                <div className="card-title">
+            <div className="grid lg:grid-cols-2 gap-7">
+              {/* ROBOT COMMAND CENTER */}
+              <div className="card robot-panel">
+                <div className="card-header">
+                  <div className="card-title">
+                    <span
+                      className="card-title-icon"
+                      style={{
+                        background: "rgba(56,189,248,0.1)",
+                        color: "var(--accent-cyan)",
+                      }}
+                    >
+                      &#x1F916;
+                    </span>
+                    Robot Command Center
+                  </div>
                   <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(56,189,248,0.1)",
-                      color: "var(--accent-cyan)",
-                    }}
+                    className={`card-badge ${sessLive ? "badge-green" : "badge-warn"}`}
                   >
-                    &#x1F916;
+                    {sessLive ? "● BROKER LIVE" : "○ RECONNECT"}
                   </span>
-                  Robot Command Center
                 </div>
-                <span
-                  className={`card-badge ${sessLive ? "badge-green" : "badge-warn"}`}
-                >
-                  {sessLive ? "● BROKER LIVE" : "○ RECONNECT"}
-                </span>
-              </div>
-              <div className="robot-grid">
-                {/* <div className="robot-avatar">
+                <div className="robot-grid">
+                  {/* <div className="robot-avatar">
                   <div className="robot-ring">
                     <div className="robot-face">&#x1F916;</div>
                   </div>
@@ -2579,141 +2711,143 @@ export default function TradingSmartDashboard(props = {}) {
                       : "Connect broker for live execution"}
                   </div>
                 </div> */}
-                <div className="robot-metrics">
-                  <>
-                    <div className="metric-row">
-                      <span className="metric-label">
-                        Open positions (broker)
-                      </span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--accent-cyan)" }}
-                      >
-                        {sessLive ? (liveOpenPositionsCount ?? 0) : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">
-                        Order history (tradebook)
-                      </span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--accent-purple)" }}
-                      >
-                        {sessLive ? (liveTradesCount ?? 0) : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Open broker orders</span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--accent-cyan)" }}
-                      >
-                        {sessLive ? (liveOpenOrdersCount ?? "—") : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Available cash</span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--accent-green)" }}
-                      >
-                        {sessLive && liveCashAvailable != null
-                          ? formatUnsignedDisplay(
-                              liveCashAvailable,
-                              currencyMode,
-                            )
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Live orders (cap)</span>
-                      <span
-                        className="metric-value"
-                        style={{
-                          color: atOrderCap
-                            ? "var(--accent-orange)"
-                            : "var(--text-primary)",
-                        }}
-                      >
-                        {sessLive && typeof activeOrdersCap === "number"
-                          ? `${activeOrdersCap} / ${capOrdersLimit}`
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">
-                        Active strategies (cap)
-                      </span>
-                      <span
-                        className="metric-value"
-                        style={{
-                          color: atStrategyCap
-                            ? "var(--accent-orange)"
-                            : "var(--text-primary)",
-                        }}
-                      >
-                        {sessLive && typeof activeStrategiesCap === "number"
-                          ? `${activeStrategiesCap} / ${capStrategiesLimit}`
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Feed preview rows</span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--accent-cyan)" }}
-                      >
-                        {sessLive ? orders.length : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Strategies deployed</span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--accent-yellow)" }}
-                      >
-                        {sessLive
-                          ? (summary?.active_strategies_deployed ?? 0)
-                          : "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Broker session</span>
-                      <span
-                        className="metric-value"
-                        style={{
-                          color: sessLive
-                            ? "var(--accent-green)"
-                            : "var(--accent-orange)",
-                        }}
-                      >
-                        {sessLive ? "Live" : "Reconnect (IST day token)"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">
-                        Token valid until (IST)
-                      </span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--text-primary)" }}
-                      >
-                        {fmtExpiry || "—"}
-                      </span>
-                    </div>
-                    <div className="metric-row">
-                      <span className="metric-label">Uptime</span>
-                      <span
-                        className="metric-value"
-                        style={{ color: "var(--text-primary)" }}
-                      >
-                        {formatUptime(uptimeSec)}
-                      </span>
-                    </div>
-                  </>
-                </div>
-                {/* <div className="robot-actions">
+                  <div className="robot-metrics">
+                    <>
+                      <div className="metric-row">
+                        <span className="metric-label">
+                          Open positions (broker)
+                        </span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--accent-cyan)" }}
+                        >
+                          {sessLive ? (liveOpenPositionsCount ?? 0) : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">
+                          Order history (tradebook)
+                        </span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--accent-purple)" }}
+                        >
+                          {sessLive ? (liveTradesCount ?? 0) : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Open broker orders</span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--accent-cyan)" }}
+                        >
+                          {sessLive ? (liveOpenOrdersCount ?? "—") : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Available cash</span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--accent-green)" }}
+                        >
+                          {sessLive && liveCashAvailable != null
+                            ? formatUnsignedDisplay(
+                                liveCashAvailable,
+                                currencyMode,
+                              )
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Live orders (cap)</span>
+                        <span
+                          className="metric-value"
+                          style={{
+                            color: atOrderCap
+                              ? "var(--accent-orange)"
+                              : "var(--text-primary)",
+                          }}
+                        >
+                          {sessLive && typeof activeOrdersCap === "number"
+                            ? `${activeOrdersCap} / ${capOrdersLimit}`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">
+                          Active strategies (cap)
+                        </span>
+                        <span
+                          className="metric-value"
+                          style={{
+                            color: atStrategyCap
+                              ? "var(--accent-orange)"
+                              : "var(--text-primary)",
+                          }}
+                        >
+                          {sessLive && typeof activeStrategiesCap === "number"
+                            ? `${activeStrategiesCap} / ${capStrategiesLimit}`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Feed preview rows</span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--accent-cyan)" }}
+                        >
+                          {sessLive ? orders.length : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">
+                          Strategies deployed
+                        </span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--accent-yellow)" }}
+                        >
+                          {sessLive
+                            ? (summary?.active_strategies_deployed ?? 0)
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Broker session</span>
+                        <span
+                          className="metric-value"
+                          style={{
+                            color: sessLive
+                              ? "var(--accent-green)"
+                              : "var(--accent-orange)",
+                          }}
+                        >
+                          {sessLive ? "Live" : "Reconnect (IST day token)"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">
+                          Token valid until (IST)
+                        </span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {fmtExpiry || "—"}
+                        </span>
+                      </div>
+                      <div className="metric-row">
+                        <span className="metric-label">Uptime</span>
+                        <span
+                          className="metric-value"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {formatUptime(uptimeSec)}
+                        </span>
+                      </div>
+                    </>
+                  </div>
+                  {/* <div className="robot-actions">
                   <div className="kill-switch-container">
                   <button
                     type="button"
@@ -2789,120 +2923,174 @@ export default function TradingSmartDashboard(props = {}) {
                     live broker session.
                   </div>
                 </div> */}
+                </div>
+              </div>
+
+              {/* Equity curve */}
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-title">
+                    <span
+                      className="card-title-icon"
+                      style={{
+                        background: "rgba(99,102,241,0.1)",
+                        color: "var(--accent-blue)",
+                      }}
+                    >
+                      &#x1F4C8;
+                    </span>
+                    Equity Curve
+                  </div>
+                  <div className="timeline-switch">
+                    {["1D", "1W", "1M", "ALL"].map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        className={`timeline-btn${equityTimeline === r ? " active" : ""}`}
+                        onClick={() => setEquityTimeline(r)}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--text-muted)",
+                    padding: "0 4px 12px",
+                  }}
+                >
+                  Cumulative live P&L (closed trades in scope; aligns with hero
+                  totals when connected). Range filters the same series; data
+                  comes from your ChartMate trade history when the broker
+                  session is live.
+                </div>
+                <div className="chart-area">
+                  <canvas ref={canvasRef} className="chart-canvas" />
+                </div>
               </div>
             </div>
 
             {/* STRATEGIES */}
             {false ? (
-            <div className="card">
-              <div className="card-header">
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(167,139,250,0.1)",
-                      color: "var(--accent-purple)",
-                    }}
-                  >
-                    &#x1F9E0;
+              <div className="card">
+                <div className="card-header">
+                  <div className="card-title">
+                    <span
+                      className="card-title-icon"
+                      style={{
+                        background: "rgba(167,139,250,0.1)",
+                        color: "var(--accent-purple)",
+                      }}
+                    >
+                      &#x1F9E0;
+                    </span>
+                    Active Strategies
+                  </div>
+                  <span className="card-badge badge-blue">
+                    {activeStrategiesCount} active
                   </span>
-                  Active Strategies
                 </div>
-                <span className="card-badge badge-blue">
-                  {activeStrategiesCount} active
-                </span>
-              </div>
-              <table className="strategy-table">
-                <thead>
-                  <tr>
-                    <th>Strategy</th>
-                    <th>Status</th>
-                    <th>Trades</th>
-                    <th>P&L</th>
-                    <th>Win %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeStrategiesRows.length === 0 ? (
+                <table className="strategy-table">
+                  <thead>
                     <tr>
-                      <td colSpan={5} style={{ color: "var(--text-muted)" }}>
-                        No active strategies right now.
-                      </td>
+                      <th>Strategy</th>
+                      <th>Status</th>
+                      <th>Trades</th>
+                      <th>P&L</th>
+                      <th>Win %</th>
                     </tr>
-                  ) : activeStrategiesRows.map((s, idx) => (
-                    <tr key={`${s.name}-${idx}`}>
-                      <td>
-                        <span className="strategy-name">{s.name}</span>{" "}
-                        <span className="my-strat-card-type type-momentum">
-                          {strategyKindTag(s).toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`strategy-tag ${strategyTagClass(s.status, s.deployed)}`}
-                          title={
-                            s.lifecycle_reason || s.lifecycle_updated_at
-                              ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
-                              : undefined
-                          }
-                        >
-                          {lifecycleLabel(
-                            normalizeLifecycleState(
-                              s.status,
-                              Boolean(s.deployed),
-                            ),
-                          )}
-                        </span>
-                      </td>
-                      <td>{sessLive ? s.trades.toLocaleString() : "—"}</td>
-                      <td
-                        style={{
-                          color: sessLive ? s.pnlColor : "var(--text-muted)",
-                        }}
-                      >
-                        {sessLive ? s.pnl : "—"}
-                      </td>
-                      <td
-                        style={{
-                          color: sessLive ? s.winColor : "var(--text-muted)",
-                        }}
-                      >
-                        {sessLive ? s.win : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "var(--text-muted)",
-                  marginTop: 8,
-                  lineHeight: 1.4,
-                }}
-              >
-                P&amp;L and win % use only trades in the{" "}
-                <strong>60-day window</strong> where{" "}
-                <code style={{ fontSize: 10 }}>active_trades.strategy_id</code>{" "}
-                equals this row’s strategy id. ChartMate “Algo Guide” presets
-                often have <strong>no</strong>{" "}
-                <code style={{ fontSize: 10 }}>strategy_id</code> on historical
-                rows — those stay 0 here until live runs attach the id (same as
-                attributing orders in the main app).
-              </div>
-              <div className="risk-gauge">
+                  </thead>
+                  <tbody>
+                    {activeStrategiesRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ color: "var(--text-muted)" }}>
+                          No active strategies right now.
+                        </td>
+                      </tr>
+                    ) : (
+                      activeStrategiesRows.map((s, idx) => (
+                        <tr key={`${s.name}-${idx}`}>
+                          <td>
+                            <span className="strategy-name">{s.name}</span>{" "}
+                            <span className="my-strat-card-type type-momentum">
+                              {strategyKindTag(s).toUpperCase()}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={`strategy-tag ${strategyTagClass(s.status, s.deployed)}`}
+                              title={
+                                s.lifecycle_reason || s.lifecycle_updated_at
+                                  ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
+                                  : undefined
+                              }
+                            >
+                              {lifecycleLabel(
+                                normalizeLifecycleState(
+                                  s.status,
+                                  Boolean(s.deployed),
+                                ),
+                              )}
+                            </span>
+                          </td>
+                          <td>{sessLive ? s.trades.toLocaleString() : "—"}</td>
+                          <td
+                            style={{
+                              color: sessLive
+                                ? s.pnlColor
+                                : "var(--text-muted)",
+                            }}
+                          >
+                            {sessLive ? s.pnl : "—"}
+                          </td>
+                          <td
+                            style={{
+                              color: sessLive
+                                ? s.winColor
+                                : "var(--text-muted)",
+                            }}
+                          >
+                            {sessLive ? s.win : "—"}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-muted)",
+                    marginTop: 8,
+                    lineHeight: 1.4,
+                  }}
                 >
-                  <div className="gauge-score" style={{ color: riskColor }}>
-                    {riskScore == null ? "—" : riskScore}
-                  </div>
-                  <div className="gauge-label-text">
-                    Risk Score — {riskLabel}
+                  P&amp;L and win % use only trades in the{" "}
+                  <strong>60-day window</strong> where{" "}
+                  <code style={{ fontSize: 10 }}>
+                    active_trades.strategy_id
+                  </code>{" "}
+                  equals this row’s strategy id. ChartMate “Algo Guide” presets
+                  often have <strong>no</strong>{" "}
+                  <code style={{ fontSize: 10 }}>strategy_id</code> on
+                  historical rows — those stay 0 here until live runs attach the
+                  id (same as attributing orders in the main app).
+                </div>
+                <div className="risk-gauge">
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                  >
+                    <div className="gauge-score" style={{ color: riskColor }}>
+                      {riskScore == null ? "—" : riskScore}
+                    </div>
+                    <div className="gauge-label-text">
+                      Risk Score — {riskLabel}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
             ) : null}
 
             {/* LIVE ORDERS */}
@@ -2997,86 +3185,6 @@ export default function TradingSmartDashboard(props = {}) {
               </div>
             </div>
 
-            <div className="card" style={{ gridColumn: "1 / -1" }}>
-              <div className="card-header">
-                <div className="card-title">
-                  <span
-                    className="card-title-icon"
-                    style={{
-                      background: "rgba(167,139,250,0.1)",
-                      color: "var(--accent-purple)",
-                    }}
-                  >
-                    &#x23F3;
-                  </span>
-                  Pending Execution Queue
-                </div>
-                <span className="card-badge badge-blue">
-                  {(summary?.pending_executions ?? []).length} rows
-                </span>
-              </div>
-              {!summary?.pending_executions?.length ? (
-                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  No pending execution rows right now. Once a strategy is active
-                  and scanning, this queue shows live checks and pending/failed
-                  execution states from{" "}
-                  <code style={{ fontSize: 11 }}>
-                    pending_conditional_orders
-                  </code>
-                  .
-                </div>
-              ) : (
-                <div className="order-feed">
-                  {summary.pending_executions.map((p) => (
-                    <div className="order-item" key={p.id}>
-                      <div
-                        className={`order-icon ${String(p.action || "").toLowerCase() === "buy" ? "buy" : "sell"}`}
-                      >
-                        {String(p.action || "").toUpperCase() === "BUY"
-                          ? "\u25B2"
-                          : "\u25BC"}
-                      </div>
-                      <div>
-                        <div className="order-pair">
-                          {p.symbol || "—"}{" "}
-                          <span
-                            style={{
-                              color: "var(--accent-cyan)",
-                              fontSize: 11,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            {p.status}
-                          </span>
-                        </div>
-                        <div className="order-meta">
-                          strategy_id: {p.strategy_id || "—"}{" "}
-                          {p.last_checked_at
-                            ? `• checked ${p.last_checked_at}`
-                            : ""}
-                        </div>
-                        {p.error_message ? (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: "var(--accent-orange)",
-                              marginTop: 2,
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            {p.error_message}
-                          </div>
-                        ) : null}
-                      </div>
-                      <div>
-                        <div className="order-time">{p.created_at || "—"}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* ═══ MY STRATEGY PANEL ═══ */}
             <div className="card my-strategy-panel">
               <div className="card-header">
@@ -3107,9 +3215,7 @@ export default function TradingSmartDashboard(props = {}) {
                     type="button"
                     className="action-btn btn-primary"
                     style={{ padding: "6px 14px", fontSize: 11 }}
-                    onClick={() =>
-                      setStrategyCreateMenuOpen((prev) => !prev)
-                    }
+                    onClick={() => setStrategyCreateMenuOpen((prev) => !prev)}
                   >
                     + Create Strategy
                   </button>
@@ -3332,7 +3438,9 @@ export default function TradingSmartDashboard(props = {}) {
                                 style={{
                                   borderRadius: 999,
                                   padding: "4px 10px",
-                                  ...(!sessLive ? { opacity: 0.6, cursor: "pointer" } : {}),
+                                  ...(!sessLive
+                                    ? { opacity: 0.6, cursor: "pointer" }
+                                    : {}),
                                 }}
                                 title={
                                   !sessLive
@@ -3366,10 +3474,14 @@ export default function TradingSmartDashboard(props = {}) {
                                   setGoLiveRememberSymbol(
                                     Boolean(
                                       s?.position_config &&
-                                        typeof s.position_config === "object" &&
-                                        s.position_config.activation_defaults &&
-                                        typeof s.position_config.activation_defaults === "object" &&
-                                        String(s.position_config.activation_defaults.symbol || "").trim(),
+                                      typeof s.position_config === "object" &&
+                                      s.position_config.activation_defaults &&
+                                      typeof s.position_config
+                                        .activation_defaults === "object" &&
+                                      String(
+                                        s.position_config.activation_defaults
+                                          .symbol || "",
+                                      ).trim(),
                                     ),
                                   );
                                 }}
@@ -3380,9 +3492,14 @@ export default function TradingSmartDashboard(props = {}) {
                                 type="button"
                                 className="strat-action-btn strat-btn-edit"
                                 title="Edit this strategy"
-                                style={{ borderRadius: 999, padding: "4px 10px" }}
+                                style={{
+                                  borderRadius: 999,
+                                  padding: "4px 10px",
+                                }}
                                 onClick={() => {
-                                  const isOptions = Boolean(s?.is_options) || strategyKindTag(s) === "options";
+                                  const isOptions =
+                                    Boolean(s?.is_options) ||
+                                    strategyKindTag(s) === "options";
                                   if (isOptions) {
                                     setEditOptionsTarget(s._raw ?? s);
                                     setShowExactOptionsBuilder(true);
@@ -3397,7 +3514,10 @@ export default function TradingSmartDashboard(props = {}) {
                               <button
                                 type="button"
                                 className="strat-action-btn strat-btn-delete"
-                                style={{ borderRadius: 999, padding: "4px 10px" }}
+                                style={{
+                                  borderRadius: 999,
+                                  padding: "4px 10px",
+                                }}
                                 onClick={() =>
                                   setPendingDelete({ id: s.id, name: s.name })
                                 }
@@ -3465,7 +3585,9 @@ export default function TradingSmartDashboard(props = {}) {
                             background: "rgba(15,23,42,0.45)",
                           }}
                         >
-                          <span style={{ color: "var(--text-muted)" }}>Total</span>
+                          <span style={{ color: "var(--text-muted)" }}>
+                            Total
+                          </span>
                           <span style={{ color: "var(--accent-cyan)" }}>
                             {myStrategies.length}
                           </span>
@@ -3479,7 +3601,9 @@ export default function TradingSmartDashboard(props = {}) {
                             background: "rgba(15,23,42,0.45)",
                           }}
                         >
-                          <span style={{ color: "var(--text-muted)" }}>Live</span>
+                          <span style={{ color: "var(--text-muted)" }}>
+                            Live
+                          </span>
                           <span style={{ color: "var(--accent-green)" }}>
                             {
                               myStrategies.filter((s) => {
@@ -3536,14 +3660,15 @@ export default function TradingSmartDashboard(props = {}) {
                           <span style={{ color: "var(--text-muted)" }}>
                             Brokers
                           </span>
-                          <span style={{ color: "var(--accent-purple)" }}>1</span>
+                          <span style={{ color: "var(--accent-purple)" }}>
+                            1
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
             </div>
 
             {/* ═══ REQUEST DEVELOPER TO CODE STRATEGY ═══ */}
@@ -4191,17 +4316,32 @@ export default function TradingSmartDashboard(props = {}) {
               }
               disabled={goLiveBusy}
             />
-            <p style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)" }}>
-              Showing symbols supported for your broker ({String(summary?.broker || "connected broker").toUpperCase()}):{" "}
+            <p
+              style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)" }}
+            >
+              Showing symbols supported for your broker (
+              {String(summary?.broker || "connected broker").toUpperCase()}):{" "}
               {allowedBrokerExchanges.join(", ")}
             </p>
             {goLiveSearchBusy ? (
-              <p style={{ marginTop: 6, fontSize: 11, color: "var(--text-secondary)" }}>
+              <p
+                style={{
+                  marginTop: 6,
+                  fontSize: 11,
+                  color: "var(--text-secondary)",
+                }}
+              >
                 Searching symbols…
               </p>
             ) : null}
             {goLiveSearchError ? (
-              <p style={{ marginTop: 6, fontSize: 11, color: "var(--accent-orange)" }}>
+              <p
+                style={{
+                  marginTop: 6,
+                  fontSize: 11,
+                  color: "var(--accent-orange)",
+                }}
+              >
                 {goLiveSearchError}
               </p>
             ) : null}
@@ -4235,13 +4375,28 @@ export default function TradingSmartDashboard(props = {}) {
                       setGoLiveForm((prev) => ({
                         ...prev,
                         symbol: String(item.symbol || "").toUpperCase(),
-                        exchange: String(item._exchange || prev.exchange || "NSE").toUpperCase(),
+                        exchange: String(
+                          item._exchange || prev.exchange || "NSE",
+                        ).toUpperCase(),
                       }));
                       setGoLiveSearchOpen(false);
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                      <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, fontWeight: 700 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "JetBrains Mono, monospace",
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
+                      >
                         {String(item.symbol || "").toUpperCase()}
                       </span>
                       <span
@@ -4256,8 +4411,19 @@ export default function TradingSmartDashboard(props = {}) {
                         {String(item._exchange || "").toUpperCase()}
                       </span>
                     </div>
-                    <div style={{ marginTop: 3, fontSize: 10, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {String(item.description || item.full_symbol || "").trim()}
+                    <div
+                      style={{
+                        marginTop: 3,
+                        fontSize: 10,
+                        color: "var(--text-secondary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {String(
+                        item.description || item.full_symbol || "",
+                      ).trim()}
                     </div>
                   </button>
                 ))}
@@ -4326,7 +4492,15 @@ export default function TradingSmartDashboard(props = {}) {
               flexWrap: "wrap",
             }}
           >
-            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 12,
+                color: "var(--text-secondary)",
+              }}
+            >
               <input
                 type="checkbox"
                 checked={goLiveRememberSymbol}
@@ -4337,25 +4511,37 @@ export default function TradingSmartDashboard(props = {}) {
             </label>
             {Boolean(
               goLiveTarget?.position_config &&
-                typeof goLiveTarget.position_config === "object" &&
-                goLiveTarget.position_config.activation_defaults &&
-                typeof goLiveTarget.position_config.activation_defaults === "object" &&
-                String(goLiveTarget.position_config.activation_defaults.symbol || "").trim(),
+              typeof goLiveTarget.position_config === "object" &&
+              goLiveTarget.position_config.activation_defaults &&
+              typeof goLiveTarget.position_config.activation_defaults ===
+                "object" &&
+              String(
+                goLiveTarget.position_config.activation_defaults.symbol || "",
+              ).trim(),
             ) ? (
               <button
                 type="button"
                 className="action-btn btn-warning"
                 style={{ padding: "7px 10px", fontSize: 11 }}
-                disabled={goLiveBusy || !chartmateActions?.onClearActivationDefaults || !goLiveTarget}
+                disabled={
+                  goLiveBusy ||
+                  !chartmateActions?.onClearActivationDefaults ||
+                  !goLiveTarget
+                }
                 onClick={() => {
                   void (async () => {
-                    if (!goLiveTarget || !chartmateActions?.onClearActivationDefaults) return;
+                    if (
+                      !goLiveTarget ||
+                      !chartmateActions?.onClearActivationDefaults
+                    )
+                      return;
                     setGoLiveBusy(true);
                     try {
-                      const err = await chartmateActions.onClearActivationDefaults(
-                        goLiveTarget.id,
-                        goLiveTarget.position_config,
-                      );
+                      const err =
+                        await chartmateActions.onClearActivationDefaults(
+                          goLiveTarget.id,
+                          goLiveTarget.position_config,
+                        );
                       if (err) {
                         toast.error("Could not remove saved defaults", {
                           description: String(err),
@@ -4488,9 +4674,11 @@ export default function TradingSmartDashboard(props = {}) {
                 lineHeight: 1.55,
               }}
             >
-              Intraday candles refresh from the BFF; condition rows mirror the strategy engine snapshots (updates can be
-              spaced out — that is normal during scanning). Condition rows are not every quote tick. Intraday algos auto-pause
-              after the cash session unless you still have an open live position — then use{" "}
+              Intraday candles refresh from the BFF; condition rows mirror the
+              strategy engine snapshots (updates can be spaced out — that is
+              normal during scanning). Condition rows are not every quote tick.
+              Intraday algos auto-pause after the cash session unless you still
+              have an open live position — then use{" "}
               <strong>Stop strategy</strong> when you are done.
             </p>
             {(() => {
@@ -4508,8 +4696,17 @@ export default function TradingSmartDashboard(props = {}) {
                         displayName={ch.symbol}
                       />
                     </div>
-                    <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.45 }}>
-                      Yahoo Finance chart streams live ticks; Condition &quot;Live&quot; column is last engine pass for this strategy symbol.
+                    <p
+                      style={{
+                        fontSize: 10,
+                        color: "var(--text-muted)",
+                        marginTop: 6,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Yahoo Finance chart streams live ticks; Condition
+                      &quot;Live&quot; column is last engine pass for this
+                      strategy symbol.
                     </p>
                   </div>
                   <StrategyConditionPanel
@@ -4533,31 +4730,51 @@ export default function TradingSmartDashboard(props = {}) {
                 flexWrap: "wrap",
               }}
             >
-              {useChartmate && liveViewTarget.deployed && chartmateActions?.onToggleDeploy ? (
+              {useChartmate &&
+              liveViewTarget.deployed &&
+              chartmateActions?.onToggleDeploy ? (
                 <button
                   type="button"
                   className="action-btn btn-warning"
-                  style={{ minWidth: 130, borderColor: "rgba(248,113,113,0.45)", color: "var(--accent-red)" }}
+                  style={{
+                    minWidth: 130,
+                    borderColor: "rgba(248,113,113,0.45)",
+                    color: "var(--accent-red)",
+                  }}
                   disabled={liveModalStopBusy}
                   title="Turn off scanning for this strategy (same as Stop on the card)"
                   onClick={() => {
                     void (async () => {
-                      if (!liveViewTarget || !chartmateActions?.onToggleDeploy) return;
+                      if (!liveViewTarget || !chartmateActions?.onToggleDeploy)
+                        return;
                       setLiveModalStopBusy(true);
                       try {
-                        const err = await chartmateActions.onToggleDeploy(liveViewTarget.id, false);
+                        const err = await chartmateActions.onToggleDeploy(
+                          liveViewTarget.id,
+                          false,
+                        );
                         if (err) {
-                          const msg = typeof err === "string" ? err : String(err);
-                          toast.error("Could not stop strategy", { description: msg, duration: 10_000 });
+                          const msg =
+                            typeof err === "string" ? err : String(err);
+                          toast.error("Could not stop strategy", {
+                            description: msg,
+                            duration: 10_000,
+                          });
                           addLog("error", msg);
                           return;
                         }
-                        toast.success("Strategy stopped", { description: liveViewTarget.name });
-                        addLog("warn", `Strategy "${liveViewTarget.name}" stopped from Live view`);
+                        toast.success("Strategy stopped", {
+                          description: liveViewTarget.name,
+                        });
+                        addLog(
+                          "warn",
+                          `Strategy "${liveViewTarget.name}" stopped from Live view`,
+                        );
                         chartmateActions.onRefresh?.();
                         setLiveViewTarget(null);
                       } catch (e) {
-                        const msg = e instanceof Error ? e.message : "Unexpected error.";
+                        const msg =
+                          e instanceof Error ? e.message : "Unexpected error.";
                         toast.error("Stop failed", { description: msg });
                         addLog("error", msg);
                       } finally {
@@ -4584,10 +4801,13 @@ export default function TradingSmartDashboard(props = {}) {
                     setGoLiveRememberSymbol(
                       Boolean(
                         t?.position_config &&
-                          typeof t.position_config === "object" &&
-                          t.position_config.activation_defaults &&
-                          typeof t.position_config.activation_defaults === "object" &&
-                          String(t.position_config.activation_defaults.symbol || "").trim(),
+                        typeof t.position_config === "object" &&
+                        t.position_config.activation_defaults &&
+                        typeof t.position_config.activation_defaults ===
+                          "object" &&
+                        String(
+                          t.position_config.activation_defaults.symbol || "",
+                        ).trim(),
                       ),
                     );
                   }}
@@ -5055,7 +5275,10 @@ export default function TradingSmartDashboard(props = {}) {
         onActivated={() => {
           setActivateOptionsTarget(null);
           chartmateActions?.onRefresh?.();
-          addLog("exec", "Options strategy activated with broker option symbol");
+          addLog(
+            "exec",
+            "Options strategy activated with broker option symbol",
+          );
         }}
         mode="live"
       />
@@ -5198,7 +5421,8 @@ export default function TradingSmartDashboard(props = {}) {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         devPdfFileRef.current = file ?? null;
-                        if (file) setDevForm({ ...devForm, pdfName: file.name });
+                        if (file)
+                          setDevForm({ ...devForm, pdfName: file.name });
                         else setDevForm({ ...devForm, pdfName: "" });
                       }}
                     />
@@ -5274,7 +5498,8 @@ export default function TradingSmartDashboard(props = {}) {
                           `Strategy development request submitted: "${devForm.strategyName}"`,
                         );
                         toast.success("Request saved", {
-                          description: "Our team has been notified when email is configured.",
+                          description:
+                            "Our team has been notified when email is configured.",
                         });
                         setDevForm({
                           strategyName: "",
@@ -5285,10 +5510,12 @@ export default function TradingSmartDashboard(props = {}) {
                           pdfName: "",
                         });
                         devPdfFileRef.current = null;
-                        if (fileInputRef.current) fileInputRef.current.value = "";
+                        if (fileInputRef.current)
+                          fileInputRef.current.value = "";
                         setShowDevRequest(false);
                       } catch (e) {
-                        const msg = e instanceof Error ? e.message : "Unexpected error";
+                        const msg =
+                          e instanceof Error ? e.message : "Unexpected error";
                         toast.error("Submit failed", { description: msg });
                       } finally {
                         setDevSubmitBusy(false);
@@ -5296,7 +5523,9 @@ export default function TradingSmartDashboard(props = {}) {
                     })();
                   }}
                 >
-                  {devSubmitBusy ? "Submitting…" : "🚀 Submit Development Request"}
+                  {devSubmitBusy
+                    ? "Submitting…"
+                    : "🚀 Submit Development Request"}
                 </button>
               </div>
 
