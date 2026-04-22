@@ -249,7 +249,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
     if (bffConfigured() && session?.access_token) {
       try {
         const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
-          "/api/account/preflight",
+          `/api/account/preflight?strategy_id=${encodeURIComponent(strategy.id)}`,
           session.access_token,
         );
         if (!pf.can_execute) {
@@ -292,7 +292,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
     if (bffConfigured() && session?.access_token) {
       try {
         const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
-          "/api/account/preflight",
+          `/api/account/preflight?strategy_id=${encodeURIComponent(strategy.id)}`,
           session.access_token,
         );
         if (!pf.can_execute) {

@@ -11,9 +11,10 @@ import { Toaster } from "sonner";
 import { ModalShell } from "./ModalShell.jsx";
 import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
+import YahooChartPanel from "@/components/YahooChartPanel";
+import { supabase } from "@/integrations/supabase/client";
 import { AlgoOnlyOptionsWorkspace } from "./AlgoOnlyOptionsWorkspace";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
-import { StrategyLiveChart } from "./StrategyLiveChart";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
@@ -114,6 +115,52 @@ function chartRoutingFromStrategyCard(s) {
     .trim()
     .toUpperCase();
   return { symbol, exchange };
+}
+
+function yahooSymbolFromStrategyCard(s) {
+  const { symbol, exchange } = chartRoutingFromStrategyCard(s);
+  const clean = String(symbol || "").trim().toUpperCase();
+  if (!clean) return "RELIANCE.NS";
+  if (clean.includes(".") || clean.includes("^") || clean.includes("=") || clean.includes("-")) {
+    return clean;
+  }
+  if (clean === "NIFTY") return "^NSEI";
+  if (clean === "BANKNIFTY") return "^NSEBANK";
+  if (clean === "FINNIFTY") return "NIFTY_FIN_SERVICE.NS";
+  if (clean === "SENSEX") return "^BSESN";
+  const ex = String(exchange || "").trim().toUpperCase();
+  if (ex === "BSE" || ex === "BFO") return `${clean}.BO`;
+  return `${clean}.NS`;
+}
+
+function brokerAllowedExchanges(brokerRaw) {
+  const broker = String(brokerRaw || "").trim().toLowerCase();
+  const india = ["NSE", "BSE", "NFO", "BFO", "CDS", "MCX", "NCDEX"];
+  const map = {
+    zerodha: india,
+    upstox: india,
+    fyers: india,
+    dhan: india,
+    angelone: india,
+    angel: india,
+    shoonya: india,
+    kotak: india,
+    iifl: india,
+    groww: ["NSE", "BSE"],
+  };
+  return map[broker] ?? india;
+}
+
+function inferExchangeFromSearchRow(item) {
+  const full = String(item?.full_symbol || "").toUpperCase();
+  const hint = String(item?.exchange || "").toUpperCase();
+  if (full.endsWith(".BO") || hint.includes("BSE")) return "BSE";
+  if (full.endsWith(".NS") || hint.includes("NSE")) return "NSE";
+  if (full.startsWith("^BSE")) return "BSE";
+  if (full.startsWith("^")) return "NSE";
+  if (hint.includes("MCX")) return "MCX";
+  if (hint.includes("NCDEX")) return "NCDEX";
+  return "NSE";
 }
 
 // ─── SVG Logo Component (matches your TradingSmart.ai brain+chart logo) ───
@@ -702,6 +749,10 @@ export default function TradingSmartDashboard(props = {}) {
     product: "MIS",
   });
   const [goLiveBusy, setGoLiveBusy] = useState(false);
+  const [goLiveSearchResults, setGoLiveSearchResults] = useState([]);
+  const [goLiveSearchOpen, setGoLiveSearchOpen] = useState(false);
+  const [goLiveSearchBusy, setGoLiveSearchBusy] = useState(false);
+  const [goLiveSearchError, setGoLiveSearchError] = useState("");
   const [liveViewTarget, setLiveViewTarget] = useState(null);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
   const [liveModalStopBusy, setLiveModalStopBusy] = useState(false);
@@ -728,6 +779,13 @@ export default function TradingSmartDashboard(props = {}) {
   const devList = Array.isArray(strategyDevRequests) ? strategyDevRequests : [];
   const fileInputRef = useRef(null);
   const devPdfFileRef = useRef(null);
+  const goLiveSearchTimerRef = useRef(null);
+  const goLiveSearchBoxRef = useRef(null);
+
+  const allowedBrokerExchanges = useMemo(
+    () => brokerAllowedExchanges(summary?.broker),
+    [summary?.broker],
+  );
 
   const sparkData = useMemo(
     () => ({
@@ -999,6 +1057,82 @@ export default function TradingSmartDashboard(props = {}) {
   const atStrategyCap =
     typeof activeStrategiesCap === "number" &&
     activeStrategiesCap >= capStrategiesLimit;
+
+  const runGoLiveSymbolSearch = useCallback(
+    async (rawQuery) => {
+      const q = String(rawQuery || "").trim();
+      if (!q || q.length < 1) {
+        setGoLiveSearchResults([]);
+        setGoLiveSearchOpen(false);
+        setGoLiveSearchError("");
+        return;
+      }
+      setGoLiveSearchBusy(true);
+      setGoLiveSearchError("");
+      try {
+        const res = await supabase.functions.invoke("search-symbols", { body: { q } });
+        const rows = Array.isArray(res.data) ? res.data : [];
+        const filtered = rows
+          .map((item) => ({
+            ...item,
+            _exchange: inferExchangeFromSearchRow(item),
+          }))
+          .filter((item) => allowedBrokerExchanges.includes(item._exchange))
+          .slice(0, 16);
+        setGoLiveSearchResults(filtered);
+        setGoLiveSearchOpen(filtered.length > 0);
+      } catch {
+        setGoLiveSearchError("Symbol search unavailable right now.");
+        setGoLiveSearchResults([]);
+        setGoLiveSearchOpen(false);
+      } finally {
+        setGoLiveSearchBusy(false);
+      }
+    },
+    [allowedBrokerExchanges],
+  );
+
+  useEffect(() => {
+    if (!goLiveTarget) return;
+    const q = String(goLiveForm.symbol || "").trim();
+    if (goLiveSearchTimerRef.current) {
+      window.clearTimeout(goLiveSearchTimerRef.current);
+    }
+    if (q.length < 1) {
+      setGoLiveSearchResults([]);
+      setGoLiveSearchOpen(false);
+      setGoLiveSearchError("");
+      return;
+    }
+    goLiveSearchTimerRef.current = window.setTimeout(() => {
+      void runGoLiveSymbolSearch(q);
+    }, 300);
+    return () => {
+      if (goLiveSearchTimerRef.current) {
+        window.clearTimeout(goLiveSearchTimerRef.current);
+      }
+    };
+  }, [goLiveForm.symbol, goLiveTarget, runGoLiveSymbolSearch]);
+
+  useEffect(() => {
+    if (!goLiveTarget) return undefined;
+    const onDown = (ev) => {
+      if (!goLiveSearchBoxRef.current) return;
+      if (!goLiveSearchBoxRef.current.contains(ev.target)) {
+        setGoLiveSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [goLiveTarget]);
+
+  useEffect(() => {
+    if (goLiveTarget) return;
+    setGoLiveSearchResults([]);
+    setGoLiveSearchOpen(false);
+    setGoLiveSearchBusy(false);
+    setGoLiveSearchError("");
+  }, [goLiveTarget]);
   // Only show real numbers when broker session is live — avoid showing paper/stale data as real values.
   const displayPortfolio =
     sessLive && typeof summary?.portfolio_value === "number"
@@ -3423,11 +3557,15 @@ export default function TradingSmartDashboard(props = {}) {
               Strategy: <strong>{goLiveTarget.name}</strong>
             </p>
           ) : null}
-          <div className="form-group">
+          <div className="form-group" ref={goLiveSearchBoxRef}>
             <label className="form-label">Symbol *</label>
             <input
               className="form-input"
               value={goLiveForm.symbol}
+              placeholder="Search broker symbols (e.g. RELIANCE, TCS)"
+              onFocus={() => {
+                if (goLiveSearchResults.length > 0) setGoLiveSearchOpen(true);
+              }}
               onChange={(e) =>
                 setGoLiveForm({
                   ...goLiveForm,
@@ -3436,6 +3574,78 @@ export default function TradingSmartDashboard(props = {}) {
               }
               disabled={goLiveBusy}
             />
+            <p style={{ marginTop: 6, fontSize: 10, color: "var(--text-muted)" }}>
+              Showing symbols supported for your broker ({String(summary?.broker || "connected broker").toUpperCase()}):{" "}
+              {allowedBrokerExchanges.join(", ")}
+            </p>
+            {goLiveSearchBusy ? (
+              <p style={{ marginTop: 6, fontSize: 11, color: "var(--text-secondary)" }}>
+                Searching symbols…
+              </p>
+            ) : null}
+            {goLiveSearchError ? (
+              <p style={{ marginTop: 6, fontSize: 11, color: "var(--accent-orange)" }}>
+                {goLiveSearchError}
+              </p>
+            ) : null}
+            {goLiveSearchOpen && goLiveSearchResults.length > 0 ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  border: "1px solid var(--border-color)",
+                  borderRadius: 10,
+                  background: "rgba(10,14,23,0.98)",
+                  maxHeight: 220,
+                  overflowY: "auto",
+                }}
+              >
+                {goLiveSearchResults.map((item) => (
+                  <button
+                    key={String(item.full_symbol || item.symbol)}
+                    type="button"
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      border: "none",
+                      borderBottom: "1px solid rgba(56,189,248,0.06)",
+                      background: "transparent",
+                      color: "var(--text-primary)",
+                      padding: "9px 10px",
+                      cursor: "pointer",
+                    }}
+                    onMouseDown={(ev) => {
+                      ev.preventDefault();
+                      setGoLiveForm((prev) => ({
+                        ...prev,
+                        symbol: String(item.symbol || "").toUpperCase(),
+                        exchange: String(item._exchange || prev.exchange || "NSE").toUpperCase(),
+                      }));
+                      setGoLiveSearchOpen(false);
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                      <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12, fontWeight: 700 }}>
+                        {String(item.symbol || "").toUpperCase()}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "var(--accent-cyan)",
+                          border: "1px solid rgba(56,189,248,0.22)",
+                          borderRadius: 5,
+                          padding: "2px 6px",
+                        }}
+                      >
+                        {String(item._exchange || "").toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 3, fontSize: 10, color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {String(item.description || item.full_symbol || "").trim()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -3448,7 +3658,9 @@ export default function TradingSmartDashboard(props = {}) {
                 }
                 disabled={goLiveBusy}
               >
-                {GO_LIVE_EXCHANGES.map((e) => (
+                {GO_LIVE_EXCHANGES.filter((e) =>
+                  allowedBrokerExchanges.includes(e),
+                ).map((e) => (
                   <option key={e} value={e}>
                     {e}
                   </option>
@@ -3600,33 +3812,17 @@ export default function TradingSmartDashboard(props = {}) {
               );
               return (
                 <>
-                  {sessionAccessToken ? (
-                    <div style={{ marginBottom: 12 }}>
-                      <StrategyLiveChart
-                        accessToken={sessionAccessToken}
-                        symbol={ch.symbol}
-                        historyExchange={ch.exchange}
-                        quoteExchange={ch.exchange}
-                        height={260}
-                        interval="5m"
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ height: 320 }}>
+                      <YahooChartPanel
+                        symbol={yahooSymbolFromStrategyCard(liveViewTarget)}
+                        displayName={ch.symbol}
                       />
-                      <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.45 }}>
-                        Chart LTP = quote stream. Condition &quot;Live&quot; column = last engine pass for that symbol — small
-                        gaps are normal.
-                      </p>
                     </div>
-                  ) : (
-                    <p
-                      style={{
-                        fontSize: 12,
-                        color: "var(--accent-orange)",
-                        marginBottom: 12,
-                      }}
-                    >
-                      Chart needs a signed-in session. Refresh the page or
-                      reconnect broker, then open Live view again.
+                    <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 6, lineHeight: 1.45 }}>
+                      Yahoo Finance chart streams live ticks; Condition &quot;Live&quot; column is last engine pass for this strategy symbol.
                     </p>
-                  )}
+                  </div>
                   <StrategyConditionPanel
                     strategyId={liveViewTarget.id}
                     strategyName={liveViewTarget.name}

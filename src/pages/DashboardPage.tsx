@@ -10,6 +10,7 @@ import { computeTradeAnalytics } from "../lib/tradePerformance";
 
 type Summary = {
   configured?: boolean;
+  broker?: string | null;
   broker_connected?: boolean;
   broker_credentials_configured?: boolean;
   broker_session_live?: boolean;
@@ -24,6 +25,9 @@ type Summary = {
   open_positions_count?: number;
   /** When true, order feed is cleared until broker day session is live (avoids stale DB rows looking like “live”). */
   feed_paused?: boolean;
+  broker_snapshot?: {
+    cash_available?: number | null;
+  } | null;
   limits?: { orders: number; strategies: number };
   active_live_orders_for_cap?: number;
   active_strategies_for_cap?: number;
@@ -337,7 +341,7 @@ export default function DashboardPage() {
         const [{ data: integ }, { data: trades }, { data: strats }, { data: pendingRows }] = await Promise.all([
           supabase
             .from("user_trading_integration")
-            .select("openalgo_api_key,openalgo_username,token_expires_at")
+            .select("openalgo_api_key,openalgo_username,token_expires_at,broker")
             .eq("user_id", uid)
             .eq("is_active", true)
             .maybeSingle(),
@@ -474,6 +478,7 @@ export default function DashboardPage() {
         const perf = computeTradeAnalytics(scopedLive, nowMs, LIVE_TRADE_LOOKBACK_DAYS);
         const today_pnl = open_mtm + perf.today_realized_pnl;
         setSummary({
+          broker: String((integ as { broker?: unknown } | null)?.broker ?? "").trim().toLowerCase() || null,
           broker_connected,
           broker_credentials_configured: gate.hasCreds,
           broker_session_live: gate.live,
@@ -609,26 +614,39 @@ export default function DashboardPage() {
       if (!summary?.broker_session_live) {
         return "Connect your broker (live session) before activating a strategy.";
       }
-      if (bffConfigured()) {
-        try {
-          const pf = await bffFetch<{
-            can_execute: boolean;
-            reason?: string | null;
-          }>(`/api/account/preflight?strategy_id=${encodeURIComponent(strategyId)}`, session.access_token);
-          if (!pf.can_execute) {
-            const reason = pf.reason ?? "Preflight blocked activation.";
-            if (!isMarketClosedReason(reason)) return reason;
-          }
-        } catch (e: unknown) {
-          return e instanceof Error ? e.message : "Preflight request failed";
-        }
-      }
       const sym = payload.symbol.trim().toUpperCase();
       const qty = Math.floor(Number(payload.quantity));
       const ex = payload.exchange.trim().toUpperCase() || "NSE";
       const product = payload.product.trim().toUpperCase() || "MIS";
       if (!sym) return "Enter a trading symbol";
       if (!Number.isFinite(qty) || qty < 1) return "Quantity must be at least 1";
+      if (bffConfigured()) {
+        try {
+          const pf = await bffFetch<{
+            can_execute: boolean;
+            reason?: string | null;
+            available_cash?: number | null;
+            required_notional?: number | null;
+            quote_ltp?: number | null;
+          }>(
+            `/api/account/preflight?strategy_id=${encodeURIComponent(strategyId)}&symbol=${encodeURIComponent(sym)}&exchange=${encodeURIComponent(ex)}&quantity=${encodeURIComponent(String(qty))}&product=${encodeURIComponent(product)}`,
+            session.access_token,
+          );
+          if (!pf.can_execute) {
+            const reason = pf.reason ?? "Preflight blocked activation.";
+            if (!isMarketClosedReason(reason)) return reason;
+          }
+          if (
+            Number.isFinite(Number(pf.available_cash)) &&
+            Number.isFinite(Number(pf.required_notional)) &&
+            Number(pf.available_cash) < Number(pf.required_notional)
+          ) {
+            return `Insufficient funds: ₹${Number(pf.available_cash).toLocaleString("en-IN", { maximumFractionDigits: 2 })} available, but ~₹${Number(pf.required_notional).toLocaleString("en-IN", { maximumFractionDigits: 2 })} required for ${sym} × ${qty}.`;
+          }
+        } catch (e: unknown) {
+          return e instanceof Error ? e.message : "Preflight request failed";
+        }
+      }
       let symbolsPayload = [{ symbol: sym, exchange: ex, quantity: qty, product_type: product }];
       try {
         const { data: existing } = await supabase
