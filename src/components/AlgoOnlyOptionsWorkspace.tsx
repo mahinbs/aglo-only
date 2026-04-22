@@ -570,7 +570,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                       ) : (
                         <Button
                           size="sm"
-                          className={`h-7 px-2 text-xs ${brokerConnected ? "bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.16))] text-[var(--accent-cyan)] border border-[rgba(56,189,248,0.35)] hover:bg-[linear-gradient(135deg,rgba(56,189,248,0.24),rgba(99,102,241,0.24))]" : "bg-muted/50 text-muted-foreground cursor-not-allowed"}`}
+                          className={`h-7 px-2 text-xs ${brokerConnected ? "bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.16))] text-slate-900 border border-[rgba(56,189,248,0.35)] hover:bg-[linear-gradient(135deg,rgba(56,189,248,0.24),rgba(99,102,241,0.24))]" : "bg-muted/50 text-muted-foreground cursor-not-allowed"}`}
                           onClick={() => void openActivateLive(s)}
                           disabled={
                             !brokerConnected ||
