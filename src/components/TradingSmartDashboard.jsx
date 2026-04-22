@@ -2419,7 +2419,7 @@ export default function TradingSmartDashboard(props = {}) {
                   >
                     &#x23F3;
                   </span>
-                  Pending Execution Queue
+                  Live Order Feed
                 </div>
                 <span className="card-badge badge-blue">
                   {(summary?.pending_executions ?? []).length} rows
@@ -3016,7 +3016,7 @@ export default function TradingSmartDashboard(props = {}) {
                   >
                     &#x26A1;
                   </span>
-                  Live Order Feed
+                  Active Strategies
                 </div>
                 <span className="card-badge badge-green">Real-time</span>
               </div>
