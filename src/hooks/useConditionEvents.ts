@@ -28,7 +28,7 @@ let _condEventsChannelSeq = 0;
 
 export function useConditionEvents(
   strategyId: string | null | undefined,
-  opts?: { staleAfterMs?: number },
+  opts?: { staleAfterMs?: number; symbol?: string | null },
 ) {
   const staleAfterMs =
     typeof opts?.staleAfterMs === "number" && Number.isFinite(opts.staleAfterMs) && opts.staleAfterMs >= 3000
@@ -38,6 +38,7 @@ export function useConditionEvents(
   const [nowTick, setNowTick] = useState(() => Date.now());
 
   const sid = (strategyId || "").trim();
+  const symbolFilter = String(opts?.symbol || "").trim().toUpperCase();
 
   useEffect(() => {
     const t = window.setInterval(() => setNowTick(Date.now()), 1000);
@@ -53,15 +54,16 @@ export function useConditionEvents(
     let cancelled = false;
 
     void (async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("strategy_condition_events")
         .select(
           "id,strategy_id,symbol,matched,all_matched,ready_count,total_count,conditions,reasons,at,created_at",
         )
-        .eq("strategy_id", sid)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq("strategy_id", sid);
+      if (symbolFilter) {
+        q = q.eq("symbol", symbolFilter);
+      }
+      const { data, error } = await q.order("created_at", { ascending: false }).limit(1).maybeSingle();
 
       if (!cancelled && !error && data) {
         setEvent(data as StrategyConditionEventRow);
@@ -82,7 +84,9 @@ export function useConditionEvents(
           event: "INSERT",
           schema: "public",
           table: "strategy_condition_events",
-          filter: `strategy_id=eq.${sid}`,
+          filter: symbolFilter
+            ? `strategy_id=eq.${sid},symbol=eq.${symbolFilter}`
+            : `strategy_id=eq.${sid}`,
         },
         (payload) => {
           const row = payload.new as StrategyConditionEventRow;
@@ -95,7 +99,7 @@ export function useConditionEvents(
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [sid]);
+  }, [sid, symbolFilter]);
 
   const stale = useMemo(() => {
     if (!sid) return true;

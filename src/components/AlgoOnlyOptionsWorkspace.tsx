@@ -426,6 +426,7 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                             <StrategyConditionPanel
                               strategyId={s.id}
                               strategyName={s.name}
+                              symbol={String(s.underlying || "").trim().toUpperCase()}
                               brokerLive={brokerConnected}
                               streamStale={positionsStreamStale}
                               lifecycleState={lcState}

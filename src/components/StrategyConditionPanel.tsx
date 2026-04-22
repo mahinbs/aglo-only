@@ -69,6 +69,7 @@ function readinessFromEvent(event: {
 export function StrategyConditionPanel(props: {
   strategyId: string;
   strategyName: string;
+  symbol?: string | null;
   brokerLive: boolean;
   streamStale?: boolean;
   lifecycleState?: LifecycleState;
@@ -80,6 +81,7 @@ export function StrategyConditionPanel(props: {
   const {
     strategyId,
     strategyName,
+    symbol,
     brokerLive,
     streamStale,
     lifecycleState,
@@ -98,6 +100,7 @@ export function StrategyConditionPanel(props: {
     lifecycleState === "CANCELLED";
   const { event, stale, staleAfterMs: effectiveStaleMs } = useConditionEvents(strategyId, {
     staleAfterMs,
+    symbol,
   });
   const staleLabelSec = Math.max(3, Math.round(effectiveStaleMs / 1000));
 
@@ -244,15 +247,23 @@ export function StrategyConditionPanel(props: {
             </thead>
             <tbody>
               {rows.map((r, i) => (
+                (() => {
+                  const isOrbPending = String(r.name || "").toLowerCase().includes("building opening range");
+                  const liveVal = isOrbPending ? "pending" : formatVal(r.lhs);
+                  const threshVal = isOrbPending ? "—" : formatVal(r.rhs);
+                  const opVal = isOrbPending ? "—" : r.op;
+                  return (
                 <tr key={`${r.name}-${i}`} className="border-t border-white/5">
                   <td className="px-1.5 py-1 text-foreground/85 max-w-[140px] truncate" title={r.name}>
                     {r.name}
                   </td>
-                  <td className="px-1.5 py-1 tabular-nums text-foreground/90">{formatVal(r.lhs)}</td>
-                  <td className="px-1.5 py-1 text-center text-muted-foreground/80">{r.op}</td>
-                  <td className="px-1.5 py-1 tabular-nums">{formatVal(r.rhs)}</td>
+                  <td className="px-1.5 py-1 tabular-nums text-foreground/90">{liveVal}</td>
+                  <td className="px-1.5 py-1 text-center text-muted-foreground/80">{opVal}</td>
+                  <td className="px-1.5 py-1 tabular-nums">{threshVal}</td>
                   <td className="px-1.5 py-1 text-center">{r.matched ? "✅" : "❌"}</td>
                 </tr>
+                  );
+                })()
               ))}
             </tbody>
           </table>

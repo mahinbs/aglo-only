@@ -3909,6 +3909,7 @@ export default function TradingSmartDashboard(props = {}) {
                   <StrategyConditionPanel
                     strategyId={liveViewTarget.id}
                     strategyName={liveViewTarget.name}
+                    symbol={ch.symbol}
                     brokerLive={sessLive}
                     streamStale={positionsStreamStale}
                     lifecycleState={lvLc}
