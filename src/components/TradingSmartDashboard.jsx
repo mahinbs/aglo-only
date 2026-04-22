@@ -393,7 +393,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .badge-warn { background:rgba(251,191,36,0.1); color:var(--accent-orange); border:1px solid rgba(251,191,36,0.25); }
 
 /* DASHBOARD GRID */
-.dashboard { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.dashboard { display:grid; grid-template-columns:1fr; gap:20px; }
 
 /* ROBOT PANEL */
 .robot-panel { grid-column:1/-1; }
@@ -1642,7 +1642,7 @@ export default function TradingSmartDashboard(props = {}) {
           </div>
 
             {/* LIVE MONITORING */}
-            <div className="card">
+            <div className="card mb-[24px]">
               <div className="card-header">
                 <div className="card-title">
                   <span
@@ -1968,7 +1968,7 @@ export default function TradingSmartDashboard(props = {}) {
           {/* DASHBOARD */}
           <div className="dashboard">
             {/* ROBOT COMMAND CENTER */}
-            <div className="card robot-panel">
+            {/* <div className="card robot-panel">
               <div className="card-header">
                 <div className="card-title">
                   <span
@@ -2214,7 +2214,7 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* STRATEGIES */}
             <div className="card">
@@ -2319,7 +2319,7 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
 
             {/* LIVE ORDERS */}
-            <div className="card">
+            {/* <div className="card">
               <div className="card-header">
                 <div className="card-title">
                   <span
@@ -2408,7 +2408,7 @@ export default function TradingSmartDashboard(props = {}) {
                   </div>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* ═══ MY STRATEGY PANEL ═══ */}
             <div className="card my-strategy-panel">
