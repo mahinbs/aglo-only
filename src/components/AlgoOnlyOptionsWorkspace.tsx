@@ -377,16 +377,15 @@ export function AlgoOnlyOptionsWorkspace(props?: {
               </div>
             )}
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-            <Button variant="ghost" size="sm" onClick={fetchStrategies}>
+            <button className="action-btn btn-primary" onClick={fetchStrategies}>
               <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              className="w-full sm:w-auto"
+            </button>
+            <button
+              className="w-full sm:w-auto action-btn btn-primary"
               onClick={() => { setEditStrategy(null); setShowBuilder(true); }}
             >
               <Plus className="h-4 w-4 mr-1" />New Strategy
-            </Button>
+            </button>
             </div>
           </div>
         </div>
@@ -419,12 +418,12 @@ export function AlgoOnlyOptionsWorkspace(props?: {
                 <p className="text-sm text-muted-foreground/70 mt-1 mb-4">
                   Create your first strategy with ORB breakout, momentum, and options-specific exit rules.
                 </p>
-                <Button
+                <button
                   onClick={() => setShowBuilder(true)}
-                  className="bg-[linear-gradient(135deg,rgba(56,189,248,0.16),rgba(99,102,241,0.16))] text-[var(--accent-cyan)] border border-[rgba(56,189,248,0.35)] hover:bg-[linear-gradient(135deg,rgba(56,189,248,0.26),rgba(99,102,241,0.26))]"
+                  className="action-btn btn-primary"
                 >
                   <Plus className="h-4 w-4 mr-1" />Create First Strategy
-                </Button>
+                </button>
               </CardContent>
             </Card>
           ) : (
