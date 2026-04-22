@@ -263,23 +263,6 @@ function symbolsFromPairs(pairs: string) {
     });
 }
 
-function normalizeSymbolRow(row: unknown): { symbol: string; exchange: string; quantity: number; product_type: string } | null {
-  if (!row) return null;
-  if (typeof row === "string") {
-    const sym = row.trim().toUpperCase();
-    if (!sym) return null;
-    return { symbol: sym, exchange: "NSE", quantity: 1, product_type: "MIS" };
-  }
-  if (typeof row !== "object") return null;
-  const r = row as Record<string, unknown>;
-  const symbol = String(r.symbol ?? "").trim().toUpperCase();
-  if (!symbol) return null;
-  const exchange = String(r.exchange ?? "NSE").trim().toUpperCase() || "NSE";
-  const q = Math.max(1, Math.floor(Number(r.quantity ?? 1) || 1));
-  const product = String(r.product_type ?? "MIS").trim().toUpperCase() || "MIS";
-  return { symbol, exchange, quantity: q, product_type: product };
-}
-
 export default function DashboardPage() {
   const { user, session, loading, signOut } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -608,7 +591,13 @@ export default function DashboardPage() {
     async (
       strategyId: string,
       positionConfigBase: Record<string, unknown> | undefined,
-      payload: { symbol: string; exchange: string; quantity: number; product: string },
+      payload: {
+        symbol: string;
+        exchange: string;
+        quantity: number;
+        product: string;
+        remember_symbol?: boolean;
+      },
     ) => {
       if (!session?.access_token) return "Not signed in";
       if (!summary?.broker_session_live) {
@@ -618,6 +607,7 @@ export default function DashboardPage() {
       const qty = Math.floor(Number(payload.quantity));
       const ex = payload.exchange.trim().toUpperCase() || "NSE";
       const product = payload.product.trim().toUpperCase() || "MIS";
+      const rememberSymbol = Boolean(payload.remember_symbol);
       if (!sym) return "Enter a trading symbol";
       if (!Number.isFinite(qty) || qty < 1) return "Quantity must be at least 1";
       if (bffConfigured()) {
@@ -647,33 +637,24 @@ export default function DashboardPage() {
           return e instanceof Error ? e.message : "Preflight request failed";
         }
       }
-      let symbolsPayload = [{ symbol: sym, exchange: ex, quantity: qty, product_type: product }];
-      try {
-        const { data: existing } = await supabase
-          .from("user_strategies")
-          .select("symbols")
-          .eq("id", strategyId)
-          .maybeSingle();
-        const existingRows = Array.isArray((existing as { symbols?: unknown[] } | null)?.symbols)
-          ? ((existing as { symbols?: unknown[] }).symbols ?? [])
-              .map((x) => normalizeSymbolRow(x))
-              .filter((x): x is { symbol: string; exchange: string; quantity: number; product_type: string } => Boolean(x))
-          : [];
-        const merged = new Map<string, { symbol: string; exchange: string; quantity: number; product_type: string }>();
-        for (const r of existingRows) {
-          merged.set(`${r.symbol}:${r.exchange}`, r);
-        }
-        merged.set(`${sym}:${ex}`, { symbol: sym, exchange: ex, quantity: qty, product_type: product });
-        symbolsPayload = Array.from(merged.values());
-      } catch {
-        // Keep single-row payload fallback if read fails.
-      }
-      const prevPc = positionConfigBase && typeof positionConfigBase === "object" ? positionConfigBase : {};
+      const symbolsPayload = [{ symbol: sym, exchange: ex, quantity: qty, product_type: product }];
+      const prevPc = positionConfigBase && typeof positionConfigBase === "object" ? { ...positionConfigBase } : {};
+      delete (prevPc as Record<string, unknown>).activation_defaults;
       const position_config = {
         ...prevPc,
         quantity: qty,
         exchange: ex,
         orderProduct: product,
+        ...(rememberSymbol
+          ? {
+              activation_defaults: {
+                symbol: sym,
+                exchange: ex,
+                quantity: qty,
+                product,
+              },
+            }
+          : {}),
       };
       const fnBodyError = (data: unknown): string | null => {
         if (!data || typeof data !== "object") return null;
@@ -708,6 +689,33 @@ export default function DashboardPage() {
       }
     },
     [session?.access_token, summary?.broker_session_live],
+  );
+
+  const onClearActivationDefaults = useCallback(
+    async (
+      strategyId: string,
+      positionConfigBase: Record<string, unknown> | undefined,
+    ): Promise<string | null> => {
+      if (!session?.access_token) return "Not signed in";
+      const prevPc = positionConfigBase && typeof positionConfigBase === "object" ? { ...positionConfigBase } : {};
+      delete (prevPc as Record<string, unknown>).activation_defaults;
+      const up = await supabase.functions.invoke("manage-strategy", {
+        body: {
+          action: "update",
+          strategy_id: strategyId,
+          position_config: prevPc,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const upMsg = (up.data as { error?: string; message?: string } | null)?.error
+        ?? (up.data as { error?: string; message?: string } | null)?.message
+        ?? null;
+      if (up.error) return upMsg ?? up.error.message ?? "Could not clear saved activation defaults.";
+      if (upMsg) return upMsg;
+      await refresh();
+      return null;
+    },
+    [session?.access_token, refresh],
   );
 
   const onToggleDeploy = useCallback(
@@ -917,9 +925,10 @@ export default function DashboardPage() {
       onCreateStrategy,
       onToggleDeploy,
       onConfirmGoLive,
+      onClearActivationDefaults,
       onDeleteStrategy,
     }),
-    [onConnectBroker, connectBusy, refresh, onCreateStrategy, onToggleDeploy, onConfirmGoLive, onDeleteStrategy],
+    [onConnectBroker, connectBusy, refresh, onCreateStrategy, onToggleDeploy, onConfirmGoLive, onClearActivationDefaults, onDeleteStrategy],
   );
 
   const optionsPanel = useMemo(

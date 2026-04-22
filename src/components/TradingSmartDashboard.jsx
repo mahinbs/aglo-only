@@ -88,19 +88,29 @@ function firstSymbolFromPairs(pairs) {
 }
 
 function defaultsGoLiveFromCard(s) {
-  let symbol = firstSymbolFromPairs(s.pairs);
+  let symbol = "";
   let exchange = "NSE";
   let quantity = "1";
   let product = s.is_intraday !== false ? "MIS" : "CNC";
   const pc = s.position_config;
   if (pc && typeof pc === "object") {
-    if (!symbol) symbol = firstSymbolFromPairs(s.pairs);
     const pq = Number(pc.quantity ?? 0);
     if (Number.isFinite(pq) && pq >= 1) quantity = String(Math.floor(pq));
     const ex = String(pc.exchange ?? "").trim();
     if (ex) exchange = ex.toUpperCase();
     const op = String(pc.orderProduct ?? "").trim();
     if (op) product = op.toUpperCase();
+    const ad = pc.activation_defaults;
+    if (ad && typeof ad === "object") {
+      const savedSymbol = String(ad.symbol ?? "").trim().toUpperCase();
+      const savedExchange = String(ad.exchange ?? "").trim().toUpperCase();
+      const savedQty = Number(ad.quantity ?? 0);
+      const savedProduct = String(ad.product ?? "").trim().toUpperCase();
+      if (savedSymbol) symbol = savedSymbol;
+      if (savedExchange) exchange = savedExchange;
+      if (Number.isFinite(savedQty) && savedQty >= 1) quantity = String(Math.floor(savedQty));
+      if (savedProduct) product = savedProduct;
+    }
   }
   return { symbol, exchange, quantity, product: product || "MIS" };
 }
@@ -748,6 +758,7 @@ export default function TradingSmartDashboard(props = {}) {
     quantity: "1",
     product: "MIS",
   });
+  const [goLiveRememberSymbol, setGoLiveRememberSymbol] = useState(false);
   const [goLiveBusy, setGoLiveBusy] = useState(false);
   const [goLiveSearchResults, setGoLiveSearchResults] = useState([]);
   const [goLiveSearchOpen, setGoLiveSearchOpen] = useState(false);
@@ -1132,6 +1143,7 @@ export default function TradingSmartDashboard(props = {}) {
     setGoLiveSearchOpen(false);
     setGoLiveSearchBusy(false);
     setGoLiveSearchError("");
+    setGoLiveRememberSymbol(false);
   }, [goLiveTarget]);
   // Only show real numbers when broker session is live — avoid showing paper/stale data as real values.
   const displayPortfolio =
@@ -2359,6 +2371,15 @@ export default function TradingSmartDashboard(props = {}) {
                                     }
                                     setGoLiveTarget(s);
                                     setGoLiveForm(defaultsGoLiveFromCard(s));
+                                    setGoLiveRememberSymbol(
+                                      Boolean(
+                                        s?.position_config &&
+                                          typeof s.position_config === "object" &&
+                                          s.position_config.activation_defaults &&
+                                          typeof s.position_config.activation_defaults === "object" &&
+                                          String(s.position_config.activation_defaults.symbol || "").trim(),
+                                      ),
+                                    );
                                   }}
                                 >
                                   &#x25B6; Activate…
@@ -3700,6 +3721,67 @@ export default function TradingSmartDashboard(props = {}) {
           </div>
           <div
             style={{
+              marginTop: 10,
+              marginBottom: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-secondary)" }}>
+              <input
+                type="checkbox"
+                checked={goLiveRememberSymbol}
+                disabled={goLiveBusy}
+                onChange={(e) => setGoLiveRememberSymbol(e.target.checked)}
+              />
+              Remember this symbol for next activation
+            </label>
+            {Boolean(
+              goLiveTarget?.position_config &&
+                typeof goLiveTarget.position_config === "object" &&
+                goLiveTarget.position_config.activation_defaults &&
+                typeof goLiveTarget.position_config.activation_defaults === "object" &&
+                String(goLiveTarget.position_config.activation_defaults.symbol || "").trim(),
+            ) ? (
+              <button
+                type="button"
+                className="action-btn btn-warning"
+                style={{ padding: "7px 10px", fontSize: 11 }}
+                disabled={goLiveBusy || !chartmateActions?.onClearActivationDefaults || !goLiveTarget}
+                onClick={() => {
+                  void (async () => {
+                    if (!goLiveTarget || !chartmateActions?.onClearActivationDefaults) return;
+                    setGoLiveBusy(true);
+                    try {
+                      const err = await chartmateActions.onClearActivationDefaults(
+                        goLiveTarget.id,
+                        goLiveTarget.position_config,
+                      );
+                      if (err) {
+                        toast.error("Could not remove saved defaults", {
+                          description: String(err),
+                        });
+                        return;
+                      }
+                      setGoLiveRememberSymbol(false);
+                      setGoLiveForm((prev) => ({ ...prev, symbol: "" }));
+                      toast.success("Saved activation defaults removed");
+                      chartmateActions.onRefresh?.();
+                    } finally {
+                      setGoLiveBusy(false);
+                    }
+                  })();
+                }}
+              >
+                Remove saved default
+              </button>
+            ) : null}
+          </div>
+          <div
+            style={{
               display: "flex",
               gap: 10,
               marginTop: 12,
@@ -3732,6 +3814,7 @@ export default function TradingSmartDashboard(props = {}) {
                         exchange: goLiveForm.exchange,
                         quantity: qty,
                         product: goLiveForm.product,
+                        remember_symbol: goLiveRememberSymbol,
                       },
                     );
                     if (err) {
@@ -3891,6 +3974,15 @@ export default function TradingSmartDashboard(props = {}) {
                     setLiveViewTarget(null);
                     setGoLiveTarget(t);
                     setGoLiveForm(defaultsGoLiveFromCard(t));
+                    setGoLiveRememberSymbol(
+                      Boolean(
+                        t?.position_config &&
+                          typeof t.position_config === "object" &&
+                          t.position_config.activation_defaults &&
+                          typeof t.position_config.activation_defaults === "object" &&
+                          String(t.position_config.activation_defaults.symbol || "").trim(),
+                      ),
+                    );
                   }}
                 >
                   + Add instrument…
