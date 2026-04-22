@@ -2996,7 +2996,7 @@ export default function TradingSmartDashboard(props = {}) {
                   ) : null}
                 </div>
               </div>
-              <div className="strategy-builder">
+              <div className="strategy-builder grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
                 {/* Left: Strategy Cards */}
                 <div className="strategy-cards">
                   {myStrategies.map((s) => {
@@ -3009,18 +3009,41 @@ export default function TradingSmartDashboard(props = {}) {
                         ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
                         : undefined;
                     return (
-                      <div className="my-strat-card" key={s.id}>
+                      <div
+                        className="my-strat-card"
+                        key={s.id}
+                        style={{
+                          padding: 12,
+                          borderRadius: 10,
+                          border: "1px solid rgba(56,189,248,0.12)",
+                          background:
+                            "linear-gradient(120deg, rgba(8,14,28,0.75), rgba(6,11,24,0.7))",
+                        }}
+                      >
                         <div className="my-strat-card-header">
                           <div
                             style={{
                               display: "flex",
                               alignItems: "center",
-                              gap: 10,
+                              gap: 8,
+                              minWidth: 0,
                             }}
                           >
-                            <span className="my-strat-card-name">{s.name}</span>
-                            <span className="my-strat-card-type type-momentum">
-                              {s.type}
+                            <span
+                              className="my-strat-card-name"
+                              style={{ fontSize: 14, whiteSpace: "nowrap" }}
+                            >
+                              {s.name}
+                            </span>
+                            <span
+                              className="my-strat-card-type type-momentum"
+                              style={{
+                                fontSize: 9,
+                                letterSpacing: 1.2,
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {String(s.type || "strategy")}
                             </span>
                           </div>
                           <div
@@ -3033,6 +3056,7 @@ export default function TradingSmartDashboard(props = {}) {
                             <span
                               className={`strategy-tag ${strategyTagClass(s.lifecycle_state, s.deployed)}`}
                               title={badgeTitle}
+                              style={{ fontSize: 9 }}
                             >
                               {lifecycleLabel(lcState)}
                             </span>
@@ -3047,80 +3071,58 @@ export default function TradingSmartDashboard(props = {}) {
                             )}
                           </div>
                         </div>
-                        <div className="my-strat-params">
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">Mode</span>
-                            <span className="my-strat-param-value">
-                              {s.type} ·{" "}
-                              {s.is_intraday !== false
-                                ? "Intraday"
-                                : "Positional"}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3,minmax(0,1fr))",
+                            gap: 8,
+                            marginTop: 8,
+                            marginBottom: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "var(--text-muted)",
+                              padding: "5px 8px",
+                              borderRadius: 6,
+                              background: "rgba(15,23,42,0.45)",
+                            }}
+                          >
+                            <span style={{ opacity: 0.8 }}>Broker </span>
+                            <span style={{ color: "var(--accent-cyan)" }}>
+                              {String(summary?.broker || "Zerodha")}
                             </span>
                           </div>
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">Pairs</span>
-                            <span className="my-strat-param-value">
-                              {s.pairs}
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "var(--text-muted)",
+                              padding: "5px 8px",
+                              borderRadius: 6,
+                              background: "rgba(15,23,42,0.45)",
+                            }}
+                          >
+                            <span style={{ opacity: 0.8 }}>SL </span>
+                            <span style={{ color: "var(--accent-red)" }}>
+                              {s.stopLoss || "0.0%"}
                             </span>
                           </div>
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">
-                              Timeframe
-                            </span>
-                            <span className="my-strat-param-value">
-                              {s.timeframe}
-                            </span>
-                          </div>
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">
-                              Risk/Trade
-                            </span>
-                            <span className="my-strat-param-value">
-                              {s.riskPerTrade}
-                            </span>
-                          </div>
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">
-                              Stop Loss
-                            </span>
-                            <span className="my-strat-param-value">
-                              {s.stopLoss}
-                            </span>
-                          </div>
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">
-                              Take Profit
-                            </span>
-                            <span className="my-strat-param-value">
-                              {s.takeProfit}
-                            </span>
-                          </div>
-                          <div className="my-strat-param">
-                            <span className="my-strat-param-label">
-                              Max Pos
-                            </span>
-                            <span className="my-strat-param-value">
-                              {s.maxPositions}
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: "var(--text-muted)",
+                              padding: "5px 8px",
+                              borderRadius: 6,
+                              background: "rgba(15,23,42,0.45)",
+                            }}
+                          >
+                            <span style={{ opacity: 0.8 }}>TP </span>
+                            <span style={{ color: "var(--accent-green)" }}>
+                              {s.takeProfit || "2.4%"}
                             </span>
                           </div>
                         </div>
-                        {s.deployed ? (
-                          <p
-                            style={{
-                              marginTop: 8,
-                              fontSize: 11,
-                              color: "var(--text-muted)",
-                              lineHeight: 1.45,
-                            }}
-                          >
-                            Live chart and condition matrix open in{" "}
-                            <strong style={{ color: "var(--accent-cyan)" }}>
-                              Live view
-                            </strong>{" "}
-                            (engine updates are batched; not every second is a
-                            new snapshot).
-                          </p>
-                        ) : null}
                         <div className="my-strat-actions">
                           {pendingDelete?.id === s.id ? (
                             <>
@@ -3172,11 +3174,13 @@ export default function TradingSmartDashboard(props = {}) {
                                 <button
                                   type="button"
                                   className="strat-action-btn strat-btn-deploy"
-                                  style={
-                                    !sessLive
+                                  style={{
+                                    borderRadius: 999,
+                                    padding: "4px 10px",
+                                    ...(!sessLive
                                       ? { opacity: 0.6, cursor: "pointer" }
-                                      : undefined
-                                  }
+                                      : {}),
+                                  }}
                                   title={
                                     !sessLive
                                       ? "Connect broker (live session) to activate"
@@ -3210,7 +3214,7 @@ export default function TradingSmartDashboard(props = {}) {
                                     );
                                   }}
                                 >
-                                  &#x25B6; Activate…
+                                  Deploy
                                 </button>
                               ) : (
                                 <>
@@ -3235,11 +3239,13 @@ export default function TradingSmartDashboard(props = {}) {
                                       }
                                       setLiveViewTarget(s);
                                     }}
+                                    style={{ borderRadius: 999, padding: "4px 10px" }}
                                   >
-                                    &#x1F4CA; Live view
+                                    Live
                                   </button>
                                   <button
                                     className="strat-action-btn strat-btn-edit"
+                                    style={{ borderRadius: 999, padding: "4px 10px" }}
                                     onClick={async () => {
                                       if (
                                         useChartmate &&
@@ -3285,7 +3291,7 @@ export default function TradingSmartDashboard(props = {}) {
                                       );
                                     }}
                                   >
-                                    &#x23F9; Stop
+                                    Stop
                                   </button>
                                   {useChartmate &&
                                   typeof onCancelPendingForStrategy ===
@@ -3360,22 +3366,24 @@ export default function TradingSmartDashboard(props = {}) {
                                 type="button"
                                 className="strat-action-btn strat-btn-edit"
                                 title="Edit this strategy"
+                                style={{ borderRadius: 999, padding: "4px 10px" }}
                                 onClick={() => {
                                   // Pass the full raw DB row so AlgoStrategyBuilder can pre-populate all fields
                                   setEditAlgoTarget(s._raw ?? s);
                                   setShowExactAlgoBuilder(true);
                                 }}
                               >
-                                &#x270E; Edit
+                                Edit
                               </button>
                               <button
                                 type="button"
                                 className="strat-action-btn strat-btn-delete"
+                                style={{ borderRadius: 999, padding: "4px 10px" }}
                                 onClick={() =>
                                   setPendingDelete({ id: s.id, name: s.name })
                                 }
                               >
-                                &#x2715; Delete
+                                Delete
                               </button>
                             </>
                           )}
@@ -3395,10 +3403,11 @@ export default function TradingSmartDashboard(props = {}) {
                   >
                     <div
                       style={{
-                        padding: 20,
+                        padding: 16,
                         borderRadius: 12,
-                        background: "rgba(15,23,42,0.5)",
-                        border: "1px solid var(--border-color)",
+                        background:
+                          "linear-gradient(120deg, rgba(8,14,28,0.75), rgba(6,11,24,0.7))",
+                        border: "1px solid rgba(56,189,248,0.12)",
                       }}
                     >
                       <div
@@ -3413,29 +3422,46 @@ export default function TradingSmartDashboard(props = {}) {
                       </div>
                       <div
                         style={{
-                          fontSize: 11,
+                          fontSize: 10,
                           color: "var(--text-muted)",
-                          marginBottom: 14,
+                          marginBottom: 10,
                         }}
                       >
-                        Your strategy portfolio at a glance. Use{" "}
-                        <strong>+ Create Strategy</strong> to choose between{" "}
-                        <strong>New Algo Strategy</strong> and{" "}
-                        <strong>Options Strategy</strong>.
+                        Your strategy portfolio
                       </div>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                        <div className="my-strat-param">
-                          <span className="my-strat-param-label">Total</span>
-                          <span className="my-strat-param-value">
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 8,
+                          fontSize: 11,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "6px 8px",
+                            borderRadius: 8,
+                            background: "rgba(15,23,42,0.45)",
+                          }}
+                        >
+                          <span style={{ color: "var(--text-muted)" }}>Total</span>
+                          <span style={{ color: "var(--accent-cyan)" }}>
                             {myStrategies.length}
                           </span>
                         </div>
-                        <div className="my-strat-param">
-                          <span className="my-strat-param-label">Scanning</span>
-                          <span
-                            className="my-strat-param-value"
-                            style={{ color: "var(--accent-green)" }}
-                          >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "6px 8px",
+                            borderRadius: 8,
+                            background: "rgba(15,23,42,0.45)",
+                          }}
+                        >
+                          <span style={{ color: "var(--text-muted)" }}>Live</span>
+                          <span style={{ color: "var(--accent-green)" }}>
                             {
                               myStrategies.filter((s) => {
                                 const st = normalizeLifecycleState(
@@ -3451,12 +3477,19 @@ export default function TradingSmartDashboard(props = {}) {
                             }
                           </span>
                         </div>
-                        <div className="my-strat-param">
-                          <span className="my-strat-param-label">Off</span>
-                          <span
-                            className="my-strat-param-value"
-                            style={{ color: "var(--accent-yellow)" }}
-                          >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "6px 8px",
+                            borderRadius: 8,
+                            background: "rgba(15,23,42,0.45)",
+                          }}
+                        >
+                          <span style={{ color: "var(--text-muted)" }}>
+                            Stopped
+                          </span>
+                          <span style={{ color: "var(--accent-yellow)" }}>
                             {
                               myStrategies.filter((s) => {
                                 const st = normalizeLifecycleState(
@@ -3471,6 +3504,20 @@ export default function TradingSmartDashboard(props = {}) {
                               }).length
                             }
                           </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: "6px 8px",
+                            borderRadius: 8,
+                            background: "rgba(15,23,42,0.45)",
+                          }}
+                        >
+                          <span style={{ color: "var(--text-muted)" }}>
+                            Brokers
+                          </span>
+                          <span style={{ color: "var(--accent-purple)" }}>1</span>
                         </div>
                       </div>
                     </div>
