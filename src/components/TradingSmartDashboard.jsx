@@ -1696,7 +1696,7 @@ export default function TradingSmartDashboard(props = {}) {
                     >
                       <span
                         style={{
-                          fontSize: 28,
+                          fontSize: 16,
                           color: "rgba(148,163,184,0.45)",
                           lineHeight: 1,
                         }}
@@ -1705,7 +1705,7 @@ export default function TradingSmartDashboard(props = {}) {
                       </span>
                       <div
                         style={{
-                          fontSize: 27,
+                          fontSize: 14,
                           textTransform: "uppercase",
                           letterSpacing: 1.5,
                           fontWeight: 700,
@@ -1825,7 +1825,7 @@ export default function TradingSmartDashboard(props = {}) {
                     <div
                       style={{
                         marginTop: 4,
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: 700,
                         fontFamily: "'JetBrains Mono',monospace",
                         color: "var(--text-primary)",
@@ -1855,7 +1855,7 @@ export default function TradingSmartDashboard(props = {}) {
                     <div
                       style={{
                         marginTop: 4,
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: 700,
                         fontFamily: "'JetBrains Mono',monospace",
                         color:
@@ -1888,7 +1888,7 @@ export default function TradingSmartDashboard(props = {}) {
                     <div
                       style={{
                         marginTop: 4,
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: 700,
                         fontFamily: "'JetBrains Mono',monospace",
                         color: "var(--accent-cyan)",
@@ -2010,7 +2010,7 @@ export default function TradingSmartDashboard(props = {}) {
                                 flexWrap: "wrap",
                               }}
                             >
-                              <span style={{ fontSize: 29, fontWeight: 800 }}>
+                              <span style={{ fontSize: 14, fontWeight: 700 }}>
                                 {s.name}
                               </span>
                               <span className="my-strat-card-type type-momentum">
@@ -2028,7 +2028,7 @@ export default function TradingSmartDashboard(props = {}) {
                               <span
                                 style={{
                                   fontFamily: "'JetBrains Mono',monospace",
-                                  fontSize: 20,
+                                  fontSize: 11,
                                   padding: "2px 8px",
                                   borderRadius: 6,
                                   border: "1px solid rgba(56,189,248,0.14)",
@@ -2041,7 +2041,7 @@ export default function TradingSmartDashboard(props = {}) {
                               <span
                                 style={{
                                   fontFamily: "'JetBrains Mono',monospace",
-                                  fontSize: 20,
+                                  fontSize: 11,
                                   padding: "2px 8px",
                                   borderRadius: 6,
                                   background: "rgba(16,185,129,0.1)",
@@ -2061,7 +2061,7 @@ export default function TradingSmartDashboard(props = {}) {
                               <span
                                 style={{
                                   fontFamily: "'JetBrains Mono',monospace",
-                                  fontSize: 20,
+                                  fontSize: 11,
                                   padding: "2px 8px",
                                   borderRadius: 6,
                                   background: "rgba(15,23,42,0.55)",
@@ -2075,7 +2075,7 @@ export default function TradingSmartDashboard(props = {}) {
                               <span
                                 style={{
                                   fontFamily: "'JetBrains Mono',monospace",
-                                  fontSize: 20,
+                                  fontSize: 11,
                                   padding: "2px 8px",
                                   borderRadius: 6,
                                   background: "rgba(56,189,248,0.1)",
