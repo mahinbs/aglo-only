@@ -627,7 +627,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   --accent-foreground: 210 40% 96%;
   --border: 199 45% 28%;
   --input: 221 28% 16%;
-  --ring: 199 89% 60%;
+  --ring: 199 62% 46%;
   background: linear-gradient(180deg, rgba(8, 12, 22, 0.98), rgba(5, 9, 18, 0.98)) !important;
   border-color: rgba(56, 189, 248, 0.22) !important;
   color: var(--text-primary) !important;
@@ -641,6 +641,13 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   background: rgba(15, 23, 42, 0.7) !important;
   border-color: rgba(56, 189, 248, 0.18) !important;
   color: var(--text-primary) !important;
+}
+.ts-theme-modal [data-slot="input"]:focus-visible,
+.ts-theme-modal [data-slot="textarea"]:focus-visible,
+.ts-theme-modal [data-slot="select-trigger"]:focus-visible {
+  outline: none !important;
+  border-color: rgba(56, 189, 248, 0.36) !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
 }
 .ts-theme-modal [data-slot="button"][data-variant="default"] {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(99, 102, 241, 0.18)) !important;
