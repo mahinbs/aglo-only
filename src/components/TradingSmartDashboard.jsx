@@ -2836,7 +2836,14 @@ export default function TradingSmartDashboard(props = {}) {
               </div>
 
               {/* Equity curve */}
-              <div className="card">
+              <div
+                className="card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
+              >
                 <div className="card-header">
                   <div className="card-title">
                     <span
@@ -2875,7 +2882,13 @@ export default function TradingSmartDashboard(props = {}) {
                   comes from your ChartMate trade history when the broker
                   session is live.
                 </div>
-                <div className="chart-area">
+                <div
+                  className="chart-area"
+                  style={{
+                    flex: 1,
+                    minHeight: 260,
+                  }}
+                >
                   <canvas ref={canvasRef} className="chart-canvas" />
                 </div>
               </div>
