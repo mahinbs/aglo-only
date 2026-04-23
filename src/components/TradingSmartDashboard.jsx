@@ -3720,7 +3720,7 @@ export default function TradingSmartDashboard(props = {}) {
                       opacity: 0.7,
                     }}
                   >
-                    {"\u00A9"} 2024 TradingSmart.AI — Technology Platform | Not
+                    {"\u00A9"} {new Date().getFullYear()} TradingSmart — Technology Platform | Not
                     a Financial Advisor | Not SEBI/SEC Registered
                   </div>
                 </div>
