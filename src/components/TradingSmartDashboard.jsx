@@ -1743,7 +1743,7 @@ export default function TradingSmartDashboard(props = {}) {
                     transition: "color 0.5s",
                   }}
                 >
-                  {userName ? `${userName.toUpperCase()}'S TRADING ENGINE` : "ROHIT'S TRADING ENGINE"}
+                  {userName ? `${userName.toUpperCase()}'S TRADING ENGINE` : "TRADING ENGINE"}
                 </div>
                 <div
                   style={{
