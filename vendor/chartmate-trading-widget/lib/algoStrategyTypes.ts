@@ -61,6 +61,18 @@ export type AlgoGuideParams = {
   orbMinRangePct?: number;
   orbMaxRangePct?: number;
   orbTpRangeMult?: number;
+  orbBreakoutAfterMin?: number;
+  emaVixMin?: number;
+  emaVixMax?: number;
+  orbVixMax?: number;
+  stVixMin?: number;
+  stVixMax?: number;
+  vwapVixMin?: number;
+  lqVixMin?: number;
+  lqVixMax?: number;
+  orbRequireFiiNetBuying?: boolean;
+  orbBlockMacroEvents?: boolean;
+  orbMacroBlockWindowMin?: number;
   // VWAP
   vwapMaxTestsPerDay?: number;
   vwapLastEntryBeforeMin?: number;
