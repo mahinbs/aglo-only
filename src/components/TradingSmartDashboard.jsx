@@ -557,6 +557,11 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 /* MY STRATEGY PANEL */
 .my-strategy-panel { grid-column:1/-1; }
 .strategy-builder { display:grid; grid-template-columns:1fr; gap:20px; }
+.strategy-builder.match-image {
+  grid-template-columns:minmax(0,1.35fr) minmax(320px,0.65fr);
+  align-items:start;
+  gap:18px;
+}
 .strategy-form { display:flex; flex-direction:column; gap:14px; }
 .form-group { display:flex; flex-direction:column; gap:6px; }
 .form-label { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); font-weight:600; }
@@ -576,9 +581,22 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .strategy-cards::-webkit-scrollbar { width:4px; }
 .strategy-cards::-webkit-scrollbar-track { background:transparent; }
 .strategy-cards::-webkit-scrollbar-thumb { background:var(--border-glow); border-radius:4px; }
+.my-strategy-list-shell {
+  border:1px solid rgba(56,189,248,0.08);
+  background:linear-gradient(180deg, rgba(7,12,23,0.8), rgba(5,9,18,0.78));
+  border-radius:12px;
+  padding:10px;
+}
 .my-strat-card { padding:16px; border-radius:12px; background:rgba(15,23,42,0.5);
   border:1px solid var(--border-color); transition:all 0.3s; position:relative; }
 .my-strat-card:hover { border-color:var(--border-glow); }
+.my-strat-card-flat {
+  padding:12px 14px;
+  border-radius:10px;
+  border:1px solid rgba(56,189,248,0.1);
+  background:linear-gradient(120deg, rgba(8,14,28,0.76), rgba(6,11,24,0.72));
+  box-shadow:inset 0 1px 0 rgba(148,163,184,0.04);
+}
 .my-strat-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 .my-strat-card-name { font-weight:700; font-size:14px; color:var(--text-primary); }
 .my-strat-card-type { font-size:10px; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:1px; }
@@ -593,14 +611,70 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .my-strat-param-label { color:var(--text-muted); }
 .my-strat-param-value { color:var(--accent-cyan); font-family:'JetBrains Mono',monospace; font-weight:600; }
 .my-strat-actions { display:flex; gap:8px; }
+.my-strat-flat-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.my-strat-flat-title {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.my-strat-flat-meta {
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:8px;
+  margin-top:8px;
+  margin-bottom:10px;
+  font-size:10px;
+}
+.my-strat-flat-meta-item {
+  padding:5px 8px;
+  border-radius:6px;
+  background:rgba(15,23,42,0.45);
+  color:var(--text-muted);
+}
 .strat-action-btn { padding:6px 12px; border-radius:8px; border:1px solid; font-size:11px;
   font-weight:600; cursor:pointer; transition:all 0.3s; background:transparent; font-family:'Inter',sans-serif; }
 .strat-btn-deploy { border-color:rgba(52,211,153,0.3); color:var(--accent-green); }
 .strat-btn-deploy:hover { background:rgba(52,211,153,0.15); }
+.strat-btn-stop { border-color:rgba(251,191,36,0.3); color:var(--accent-yellow); }
+.strat-btn-stop:hover { background:rgba(251,191,36,0.15); }
 .strat-btn-edit { border-color:rgba(56,189,248,0.3); color:var(--accent-cyan); }
 .strat-btn-edit:hover { background:rgba(56,189,248,0.15); }
 .strat-btn-delete { border-color:rgba(244,63,94,0.3); color:var(--accent-red); }
 .strat-btn-delete:hover { background:rgba(244,63,94,0.15); }
+.my-strat-quickstats {
+  padding:14px 16px;
+  border-radius:12px;
+  background:linear-gradient(120deg, rgba(8,14,28,0.75), rgba(6,11,24,0.7));
+  border:1px solid rgba(56,189,248,0.12);
+}
+.my-strat-quickstats-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  border:1px solid rgba(56,189,248,0.08);
+  border-radius:10px;
+  overflow:hidden;
+}
+.my-strat-quickstats-cell {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 10px;
+  font-size:11px;
+  background:rgba(15,23,42,0.4);
+  border-right:1px solid rgba(56,189,248,0.06);
+  border-bottom:1px solid rgba(56,189,248,0.06);
+}
+.my-strat-quickstats-cell:nth-child(2n) { border-right:none; }
+.my-strat-quickstats-cell:nth-last-child(-n+2) { border-bottom:none; }
+@media (max-width: 1280px) {
+  .strategy-builder.match-image { grid-template-columns:1fr; }
+}
 .strat-deployed-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px;
   padding:2px 8px; border-radius:4px; background:rgba(52,211,153,0.1); color:var(--accent-green);
   font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:1px; }
@@ -1191,7 +1265,9 @@ export default function TradingSmartDashboard(props = {}) {
               Boolean(item._exchange) &&
               allowedBrokerExchanges.includes(item._exchange) &&
               [".NS", ".BO"].some((suf) =>
-                String(item.full_symbol || "").toUpperCase().endsWith(suf),
+                String(item.full_symbol || "")
+                  .toUpperCase()
+                  .endsWith(suf),
               ),
           )
           .slice(0, 16);
@@ -1504,7 +1580,7 @@ export default function TradingSmartDashboard(props = {}) {
               />
               {useChartmate
                 ? sessLive
-                  ? "Broker session live"
+                  ? "1/1 Broker Connected"
                   : summary?.broker_credentials_configured
                     ? "Session expired — reconnect (IST midnight)"
                     : "Broker not connected"
@@ -1515,8 +1591,9 @@ export default function TradingSmartDashboard(props = {}) {
                     : "Exchange connected"}
             </div>
             <div className="status-item">
-              <div className={`status-dot ${useChartmate ? "live" : "live"}`} />{" "}
-              {useChartmate ? "ChartMate data" : "WebSocket Active"}
+              <div className={`status-dot ${useChartmate ? "live" : "live"}`} />
+              Zerodha Connected
+              {/* {useChartmate ? "ChartMate data" : "WebSocket Active"} */}
             </div>
             {positionsStreamStale && (
               <div
@@ -1526,14 +1603,14 @@ export default function TradingSmartDashboard(props = {}) {
                 Options stream: stale
               </div>
             )}
-            <div className="status-item">
+            {/* <div className="status-item">
               <div
                 className={`status-dot ${(liveTradesCount ?? orders.length) > 0 ? "live" : "warn"}`}
               />
               {useChartmate
                 ? `Trades ${liveTradesCount ?? 0} · Open ${liveOpenPositionsCount ?? 0}`
                 : "Live feed"}
-            </div>
+            </div> */}
             {useChartmate && chartmateActions?.onConnectBroker && (
               <button
                 type="button"
@@ -1638,7 +1715,7 @@ export default function TradingSmartDashboard(props = {}) {
                     transition: "color 0.5s",
                   }}
                 >
-                  TSA-7 AUTONOMOUS ENGINE
+                  ROHIT'S TRADING ENGINE
                 </div>
                 <div
                   style={{
@@ -3062,12 +3139,19 @@ export default function TradingSmartDashboard(props = {}) {
                     lifecycle === "WAITING_MARKET_OPEN" ||
                     lifecycle === "TRIGGERED";
                   return (
-                    <div className="order-item" key={s.id ?? `${s.name}-${idx}`}>
-                      <div className={`order-icon ${isActive ? "buy" : "sell"}`}>
+                    <div
+                      className="order-item"
+                      key={s.id ?? `${s.name}-${idx}`}
+                    >
+                      <div
+                        className={`order-icon ${isActive ? "buy" : "sell"}`}
+                      >
                         {isActive ? "\u25B2" : "\u25BC"}
                       </div>
                       <div>
-                        <div className="order-pair">{s.name || "Unnamed Strategy"}</div>
+                        <div className="order-pair">
+                          {s.name || "Unnamed Strategy"}
+                        </div>
                         <div className="order-meta">
                           {(s.market_type || s.type || "equity")
                             .toString()
@@ -3110,471 +3194,293 @@ export default function TradingSmartDashboard(props = {}) {
                   </span>
                   My Strategies
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    position: "relative",
-                  }}
-                >
-                  <span className="card-badge badge-blue">
-                    {myStrategies.length} Saved
-                  </span>
-                  <button
-                    type="button"
-                    className="action-btn btn-primary"
-                    style={{ padding: "6px 14px", fontSize: 11 }}
-                    onClick={() => setStrategyCreateMenuOpen((prev) => !prev)}
-                  >
-                    + Create Strategy
-                  </button>
-                  {strategyCreateMenuOpen ? (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "calc(100% + 8px)",
-                        right: 0,
-                        minWidth: 210,
-                        borderRadius: 10,
-                        border: "1px solid var(--border-color)",
-                        background: "rgba(6,8,13,0.96)",
-                        boxShadow: "0 18px 36px rgba(0,0,0,0.45)",
-                        padding: 8,
-                        zIndex: 30,
-                        display: "grid",
-                        gap: 6,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="action-btn btn-primary"
-                        style={{
-                          justifyContent: "flex-start",
-                          padding: "8px 10px",
-                          fontSize: 11,
-                          borderRadius: 8,
-                        }}
-                        onClick={() => {
-                          setStratStep(0);
-                          setStrategyCreateMenuOpen(false);
-                          setShowExactAlgoBuilder(true);
-                        }}
-                      >
-                        New Algo Strategy
-                      </button>
-                      <button
-                        type="button"
-                        className="action-btn btn-primary"
-                        style={{
-                          justifyContent: "flex-start",
-                          padding: "8px 10px",
-                          fontSize: 11,
-                          borderRadius: 8,
-                        }}
-                        onClick={() => {
-                          setStrategyCreateMenuOpen(false);
-                          setShowExactOptionsBuilder(true);
-                        }}
-                      >
-                        Options Strategy
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
+                <span className="card-badge badge-blue">
+                  {myStrategies.length} Saved
+                </span>
               </div>
-              <div className="strategy-builder grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-                {/* Left: Strategy Cards */}
-                <div className="strategy-cards">
-                  {myStrategies.map((s) => {
-                    const lcState = normalizeLifecycleState(
-                      s.lifecycle_state,
-                      Boolean(s.deployed),
-                    );
-                    const badgeTitle =
-                      s.lifecycle_reason || s.lifecycle_updated_at
-                        ? `${s.lifecycle_reason ?? "No reason"}${s.lifecycle_updated_at ? `\nUpdated: ${s.lifecycle_updated_at}` : ""}`
-                        : undefined;
-                    return (
-                      <div
-                        className="my-strat-card"
-                        key={s.id}
-                        style={{
-                          padding: 12,
-                          borderRadius: 10,
-                          border: "1px solid rgba(56,189,248,0.12)",
-                          background:
-                            "linear-gradient(120deg, rgba(8,14,28,0.75), rgba(6,11,24,0.7))",
-                        }}
-                      >
-                        <div className="my-strat-card-header">
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              minWidth: 0,
-                            }}
-                          >
+              <div className="strategy-builder match-image">
+                <div className="my-strategy-list-shell">
+                  <div className="strategy-cards">
+                    {myStrategies.map((s) => {
+                      const lifecycle = normalizeLifecycleState(
+                        s.lifecycle_state,
+                        Boolean(s.deployed),
+                      );
+                      const isLive =
+                        lifecycle === "ACTIVE" ||
+                        lifecycle === "WAITING_MARKET_OPEN" ||
+                        lifecycle === "TRIGGERED";
+                      const strategyType = strategyKindTag(s);
+                      const strategyTypeClass =
+                        strategyType === "options"
+                          ? "type-meanrev"
+                          : "type-momentum";
+                      return (
+                        <div className="my-strat-card my-strat-card-flat" key={s.id}>
+                          <div className="my-strat-flat-top">
+                            <div className="my-strat-flat-title">
+                              <span
+                                className="my-strat-card-name"
+                                style={{ fontSize: 14, whiteSpace: "nowrap" }}
+                              >
+                                {s.name}
+                              </span>
+                              <span
+                                className={`my-strat-card-type ${strategyTypeClass}`}
+                                style={{
+                                  fontSize: 9,
+                                  letterSpacing: 1.2,
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                {strategyType}
+                              </span>
+                            </div>
                             <span
-                              className="my-strat-card-name"
-                              style={{ fontSize: 14, whiteSpace: "nowrap" }}
+                              className={`strategy-tag ${isLive ? "tag-active" : "tag-paused"}`}
+                              style={{ fontSize: 10 }}
                             >
-                              {s.name}
-                            </span>
-                            <span
-                              className="my-strat-card-type type-momentum"
-                              style={{
-                                fontSize: 9,
-                                letterSpacing: 1.2,
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              {strategyKindTag(s)}
+                              {isLive ? "LIVE" : "STOPPED"}
                             </span>
                           </div>
-                          <div />
-                        </div>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(3,minmax(0,1fr))",
-                            gap: 8,
-                            marginTop: 8,
-                            marginBottom: 8,
-                          }}
-                        >
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: "var(--text-muted)",
-                              padding: "5px 8px",
-                              borderRadius: 6,
-                              background: "rgba(15,23,42,0.45)",
-                            }}
-                          >
-                            <span style={{ opacity: 0.8 }}>Broker </span>
-                            <span style={{ color: "var(--accent-cyan)" }}>
-                              {String(summary?.broker || "Zerodha")}
-                            </span>
+
+                          <div className="my-strat-flat-meta">
+                            <div className="my-strat-flat-meta-item">
+                              <span style={{ opacity: 0.8 }}>Broker </span>
+                              <span style={{ color: "var(--accent-cyan)" }}>
+                                {String(
+                                  s.broker || summary?.broker || "Zerodha",
+                                )}
+                              </span>
+                            </div>
+                            <div className="my-strat-flat-meta-item">
+                              <span style={{ opacity: 0.8 }}>SL </span>
+                              <span style={{ color: "var(--accent-red)" }}>
+                                {s.stopLoss || "1.7%"}
+                              </span>
+                            </div>
+                            <div className="my-strat-flat-meta-item">
+                              <span style={{ opacity: 0.8 }}>TP </span>
+                              <span style={{ color: "var(--accent-green)" }}>
+                                {s.takeProfit || "2.4%"}
+                              </span>
+                            </div>
                           </div>
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: "var(--text-muted)",
-                              padding: "5px 8px",
-                              borderRadius: 6,
-                              background: "rgba(15,23,42,0.45)",
-                            }}
-                          >
-                            <span style={{ opacity: 0.8 }}>SL </span>
-                            <span style={{ color: "var(--accent-red)" }}>
-                              {s.stopLoss || "0.0%"}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: "var(--text-muted)",
-                              padding: "5px 8px",
-                              borderRadius: 6,
-                              background: "rgba(15,23,42,0.45)",
-                            }}
-                          >
-                            <span style={{ opacity: 0.8 }}>TP </span>
-                            <span style={{ color: "var(--accent-green)" }}>
-                              {s.takeProfit || "2.4%"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="my-strat-actions">
-                          {pendingDelete?.id === s.id ? (
-                            <>
-                              <button
-                                type="button"
-                                className="strat-action-btn strat-btn-delete"
-                                onClick={async () => {
-                                  const isOptions =
-                                    Boolean(s?.is_options) ||
-                                    strategyKindTag(s) === "options";
-                                  if (
-                                    useChartmate &&
-                                    (isOptions
-                                      ? chartmateActions?.onDeleteOptionsStrategy
-                                      : chartmateActions?.onDeleteStrategy)
-                                  ) {
-                                    const err = isOptions
-                                      ? await chartmateActions.onDeleteOptionsStrategy(
-                                          s.id,
-                                        )
-                                      : await chartmateActions.onDeleteStrategy(
-                                          s.id,
-                                          s.name,
-                                        );
-                                    if (err) {
-                                      addLog("error", err);
+
+                          <div className="my-strat-actions">
+                            {pendingDelete?.id === s.id ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="strat-action-btn strat-btn-delete"
+                                  onClick={async () => {
+                                    const isOptions =
+                                      Boolean(s?.is_options) ||
+                                      strategyKindTag(s) === "options";
+                                    if (
+                                      useChartmate &&
+                                      (isOptions
+                                        ? chartmateActions?.onDeleteOptionsStrategy
+                                        : chartmateActions?.onDeleteStrategy)
+                                    ) {
+                                      const err = isOptions
+                                        ? await chartmateActions.onDeleteOptionsStrategy(
+                                            s.id,
+                                          )
+                                        : await chartmateActions.onDeleteStrategy(
+                                            s.id,
+                                            s.name,
+                                          );
+                                      if (err) {
+                                        addLog("error", err);
+                                        setPendingDelete(null);
+                                        return;
+                                      }
+                                      chartmateActions.onRefresh?.();
                                       setPendingDelete(null);
                                       return;
                                     }
-                                    chartmateActions.onRefresh?.();
+                                    setMyStrategies((prev) =>
+                                      prev.filter((x) => x.id !== s.id),
+                                    );
+                                    addLog("warn", `Strategy "${s.name}" deleted`);
                                     setPendingDelete(null);
-                                    return;
+                                  }}
+                                >
+                                  Confirm delete
+                                </button>
+                                <button
+                                  type="button"
+                                  className="strat-action-btn strat-btn-edit"
+                                  onClick={() => setPendingDelete(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className={`strat-action-btn ${isLive ? "strat-btn-stop" : "strat-btn-deploy"}`}
+                                  style={{
+                                    borderRadius: 999,
+                                    padding: "4px 10px",
+                                    ...(!sessLive && !isLive
+                                      ? { opacity: 0.6, cursor: "pointer" }
+                                      : {}),
+                                  }}
+                                  title={
+                                    isLive
+                                      ? "Stop this live strategy"
+                                      : !sessLive
+                                        ? "Connect broker (live session) to activate"
+                                        : "Deploy this strategy live"
                                   }
-                                  setMyStrategies((prev) =>
-                                    prev.filter((x) => x.id !== s.id),
-                                  );
-                                  addLog(
-                                    "warn",
-                                    `Strategy "${s.name}" deleted`,
-                                  );
-                                  setPendingDelete(null);
-                                }}
-                              >
-                                Confirm delete
-                              </button>
-                              <button
-                                type="button"
-                                className="strat-action-btn strat-btn-edit"
-                                onClick={() => setPendingDelete(null)}
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="strat-action-btn strat-btn-deploy"
-                                style={{
-                                  borderRadius: 999,
-                                  padding: "4px 10px",
-                                  ...(!sessLive
-                                    ? { opacity: 0.6, cursor: "pointer" }
-                                    : {}),
-                                }}
-                                title={
-                                  !sessLive
-                                    ? "Connect broker (live session) to activate"
-                                    : "Activate this strategy live"
-                                }
-                                onClick={() => {
-                                  if (!sessLive) {
-                                    toast.error(
-                                      "Broker not connected — connect your broker (live session) before activating a strategy.",
-                                      {
-                                        description:
-                                          "Click 'Connect broker' in the top navigation bar.",
-                                      },
+                                  onClick={() => {
+                                    if (isLive) {
+                                      setMyStrategies((prev) =>
+                                        prev.map((x) =>
+                                          x.id === s.id
+                                            ? {
+                                                ...x,
+                                                deployed: false,
+                                                lifecycle_state: "PAUSED",
+                                              }
+                                            : x,
+                                        ),
+                                      );
+                                      addLog(
+                                        "warn",
+                                        `Strategy "${s.name}" stopped`,
+                                      );
+                                      return;
+                                    }
+
+                                    if (!sessLive) {
+                                      toast.error(
+                                        "Broker not connected — connect your broker (live session) before activating a strategy.",
+                                        {
+                                          description:
+                                            "Click 'Connect broker' in the top navigation bar.",
+                                        },
+                                      );
+                                      addLog(
+                                        "warn",
+                                        "Connect broker (live session) before activating a strategy.",
+                                      );
+                                      return;
+                                    }
+                                    const isOptions =
+                                      Boolean(s?.is_options) ||
+                                      strategyKindTag(s) === "options";
+                                    if (isOptions) {
+                                      setActivateOptionsTarget(s._raw ?? s);
+                                      return;
+                                    }
+                                    setGoLiveTarget(s);
+                                    setGoLiveForm(defaultsGoLiveFromCard(s));
+                                    setGoLiveRememberSymbol(
+                                      Boolean(
+                                        s?.position_config &&
+                                          typeof s.position_config === "object" &&
+                                          s.position_config.activation_defaults &&
+                                          typeof s.position_config
+                                            .activation_defaults === "object" &&
+                                          String(
+                                            s.position_config.activation_defaults
+                                              .symbol || "",
+                                          ).trim(),
+                                      ),
                                     );
-                                    addLog(
-                                      "warn",
-                                      "Connect broker (live session) before activating a strategy.",
-                                    );
-                                    return;
+                                  }}
+                                >
+                                  {isLive ? "Stop" : "Deploy"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="strat-action-btn strat-btn-delete"
+                                  style={{ borderRadius: 999, padding: "4px 10px" }}
+                                  onClick={() =>
+                                    setPendingDelete({ id: s.id, name: s.name })
                                   }
-                                  const isOptions =
-                                    Boolean(s?.is_options) ||
-                                    strategyKindTag(s) === "options";
-                                  if (isOptions) {
-                                    setActivateOptionsTarget(s._raw ?? s);
-                                    return;
-                                  }
-                                  setGoLiveTarget(s);
-                                  setGoLiveForm(defaultsGoLiveFromCard(s));
-                                  setGoLiveRememberSymbol(
-                                    Boolean(
-                                      s?.position_config &&
-                                      typeof s.position_config === "object" &&
-                                      s.position_config.activation_defaults &&
-                                      typeof s.position_config
-                                        .activation_defaults === "object" &&
-                                      String(
-                                        s.position_config.activation_defaults
-                                          .symbol || "",
-                                      ).trim(),
-                                    ),
-                                  );
-                                }}
-                              >
-                                Activate Strategy
-                              </button>
-                              <button
-                                type="button"
-                                className="strat-action-btn strat-btn-edit"
-                                title="Edit this strategy"
-                                style={{
-                                  borderRadius: 999,
-                                  padding: "4px 10px",
-                                }}
-                                onClick={() => {
-                                  const isOptions =
-                                    Boolean(s?.is_options) ||
-                                    strategyKindTag(s) === "options";
-                                  if (isOptions) {
-                                    setEditOptionsTarget(s._raw ?? s);
-                                    setShowExactOptionsBuilder(true);
-                                    return;
-                                  }
-                                  setEditAlgoTarget(s._raw ?? s);
-                                  setShowExactAlgoBuilder(true);
-                                }}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                className="strat-action-btn strat-btn-delete"
-                                style={{
-                                  borderRadius: 999,
-                                  padding: "4px 10px",
-                                }}
-                                onClick={() =>
-                                  setPendingDelete({ id: s.id, name: s.name })
-                                }
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div>
+                <div className="my-strat-quickstats">
                   <div
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 16,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      marginBottom: 4,
+                      color: "var(--text-primary)",
                     }}
                   >
-                    <div
-                      style={{
-                        padding: 16,
-                        borderRadius: 12,
-                        background:
-                          "linear-gradient(120deg, rgba(8,14,28,0.75), rgba(6,11,24,0.7))",
-                        border: "1px solid rgba(56,189,248,0.12)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 700,
-                          marginBottom: 4,
-                          color: "var(--text-primary)",
-                        }}
-                      >
-                        Quick Stats
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "var(--text-muted)",
-                          marginBottom: 10,
-                        }}
-                      >
-                        Your strategy portfolio
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: 8,
-                          fontSize: 11,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            padding: "6px 8px",
-                            borderRadius: 8,
-                            background: "rgba(15,23,42,0.45)",
-                          }}
-                        >
-                          <span style={{ color: "var(--text-muted)" }}>
-                            Total
-                          </span>
-                          <span style={{ color: "var(--accent-cyan)" }}>
-                            {myStrategies.length}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            padding: "6px 8px",
-                            borderRadius: 8,
-                            background: "rgba(15,23,42,0.45)",
-                          }}
-                        >
-                          <span style={{ color: "var(--text-muted)" }}>
-                            Live
-                          </span>
-                          <span style={{ color: "var(--accent-green)" }}>
-                            {
-                              myStrategies.filter((s) => {
-                                const st = normalizeLifecycleState(
-                                  s.lifecycle_state,
-                                  Boolean(s.deployed),
-                                );
-                                return (
-                                  st === "ACTIVE" ||
-                                  st === "WAITING_MARKET_OPEN" ||
-                                  st === "TRIGGERED"
-                                );
-                              }).length
-                            }
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            padding: "6px 8px",
-                            borderRadius: 8,
-                            background: "rgba(15,23,42,0.45)",
-                          }}
-                        >
-                          <span style={{ color: "var(--text-muted)" }}>
-                            Stopped
-                          </span>
-                          <span style={{ color: "var(--accent-yellow)" }}>
-                            {
-                              myStrategies.filter((s) => {
-                                const st = normalizeLifecycleState(
-                                  s.lifecycle_state,
-                                  Boolean(s.deployed),
-                                );
-                                return !(
-                                  st === "ACTIVE" ||
-                                  st === "WAITING_MARKET_OPEN" ||
-                                  st === "TRIGGERED"
-                                );
-                              }).length
-                            }
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            padding: "6px 8px",
-                            borderRadius: 8,
-                            background: "rgba(15,23,42,0.45)",
-                          }}
-                        >
-                          <span style={{ color: "var(--text-muted)" }}>
-                            Brokers
-                          </span>
-                          <span style={{ color: "var(--accent-purple)" }}>
-                            1
-                          </span>
-                        </div>
-                      </div>
+                    Quick Stats
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "var(--text-muted)",
+                      marginBottom: 10,
+                    }}
+                  >
+                    Your strategy portfolio
+                  </div>
+                  <div className="my-strat-quickstats-grid">
+                    <div className="my-strat-quickstats-cell">
+                      <span style={{ color: "var(--text-muted)" }}>Total</span>
+                      <span style={{ color: "var(--accent-cyan)" }}>
+                        {myStrategies.length}
+                      </span>
+                    </div>
+                    <div className="my-strat-quickstats-cell">
+                      <span style={{ color: "var(--text-muted)" }}>Live</span>
+                      <span style={{ color: "var(--accent-green)" }}>
+                        {
+                          myStrategies.filter((s) => {
+                            const st = normalizeLifecycleState(
+                              s.lifecycle_state,
+                              Boolean(s.deployed),
+                            );
+                            return (
+                              st === "ACTIVE" ||
+                              st === "WAITING_MARKET_OPEN" ||
+                              st === "TRIGGERED"
+                            );
+                          }).length
+                        }
+                      </span>
+                    </div>
+                    <div className="my-strat-quickstats-cell">
+                      <span style={{ color: "var(--text-muted)" }}>Stopped</span>
+                      <span style={{ color: "var(--accent-yellow)" }}>
+                        {
+                          myStrategies.filter((s) => {
+                            const st = normalizeLifecycleState(
+                              s.lifecycle_state,
+                              Boolean(s.deployed),
+                            );
+                            return !(
+                              st === "ACTIVE" ||
+                              st === "WAITING_MARKET_OPEN" ||
+                              st === "TRIGGERED"
+                            );
+                          }).length
+                        }
+                      </span>
+                    </div>
+                    <div className="my-strat-quickstats-cell">
+                      <span style={{ color: "var(--text-muted)" }}>Brokers</span>
+                      <span style={{ color: "var(--accent-purple)" }}>1</span>
                     </div>
                   </div>
                 </div>
@@ -3776,8 +3682,8 @@ export default function TradingSmartDashboard(props = {}) {
                   <p style={{ marginTop: 6 }}>
                     Past performance is not indicative of future results. You
                     should consult with a qualified financial advisor before
-                    making any investment decisions. By using this platform,
-                    you acknowledge that you understand the risks involved and
+                    making any investment decisions. By using this platform, you
+                    acknowledge that you understand the risks involved and
                     accept full responsibility for your trading decisions.
                   </p>
                   <div
@@ -3788,8 +3694,8 @@ export default function TradingSmartDashboard(props = {}) {
                       opacity: 0.7,
                     }}
                   >
-                    {"\u00A9"} 2024 TradingSmart.AI — Technology Platform | Not a
-                    Financial Advisor | Not SEBI/SEC Registered
+                    {"\u00A9"} 2024 TradingSmart.AI — Technology Platform | Not
+                    a Financial Advisor | Not SEBI/SEC Registered
                   </div>
                 </div>
               </div>
