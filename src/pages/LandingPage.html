@@ -582,8 +582,8 @@ img,svg{display:block;max-width:100%}
       <a href="#faq" class="nav-link">FAQ</a>
     </div>
     <div class="nav-cta">
-      <a href="/login" class="btn btn-ghost" data-open-signin>Sign in</a>
-      <a href="onboarding.html" class="btn btn-primary">Get started →</a>
+      <a href="/login" class="btn btn-ghost">Sign in</a>
+      <a href="/request-access" class="btn btn-primary">Get started →</a>
     </div>
     <button class="burger" aria-label="Menu"><span></span></button>
   </div>
@@ -611,7 +611,7 @@ img,svg{display:block;max-width:100%}
           Tell us your strategy in plain English. Our engineers code the algorithm, connect it to your broker, and deliver a deployed automated system within 72 hours. Features like AI trading analysis, backtesting, and paper trading included.
         </p>
         <div class="hero-ctas">
-          <a href="onboarding.html" class="btn btn-primary btn-lg">Automate My Strategy →</a>
+          <a href="/request-access" class="btn btn-primary btn-lg">Automate My Strategy →</a>
           <a href="#pricing" class="btn btn-ghost btn-lg">Book a Free Demo Call</a>
         </div>
       </div>
@@ -1291,7 +1291,7 @@ img,svg{display:block;max-width:100%}
           <li>Standard backtester</li>
           <li>Email support · 24h SLA</li>
         </ul>
-        <a href="onboarding.html" class="btn btn-ghost" style="width:100%">Start Starter</a>
+        <a href="/request-access" class="btn btn-ghost" style="width:100%">Start Starter</a>
       </div>
       <div class="price-card">
         <div class="price-name">Growth</div>
@@ -1309,7 +1309,7 @@ img,svg{display:block;max-width:100%}
           <li>Custom alerts &amp; kill-switch</li>
           <li>Priority email · 8h SLA</li>
         </ul>
-        <a href="onboarding.html" class="btn btn-ghost" style="width:100%">Choose Growth</a>
+        <a href="/request-access" class="btn btn-ghost" style="width:100%">Choose Growth</a>
       </div>
       <div class="price-card popular">
         <div class="price-name">Pro</div>
@@ -1327,7 +1327,7 @@ img,svg{display:block;max-width:100%}
           <li>Custom strategy builder</li>
           <li>Priority chat · 4h SLA</li>
         </ul>
-        <a href="onboarding.html" class="btn btn-primary" style="width:100%">Start 14-day trial</a>
+        <a href="/request-access" class="btn btn-primary" style="width:100%">Start 14-day trial</a>
       </div>
       <div class="price-card">
         <div class="price-name">Institutional</div>
@@ -1345,7 +1345,7 @@ img,svg{display:block;max-width:100%}
           <li>Dedicated account manager</li>
           <li>24/7 phone support</li>
         </ul>
-        <a href="onboarding.html" class="btn btn-ghost" style="width:100%">Talk to sales</a>
+        <a href="/request-access" class="btn btn-ghost" style="width:100%">Talk to sales</a>
       </div>
     </div>
     <div class="pricing-note reveal" style="text-align:center;margin-top:28px;font-size:13px;color:var(--fg-2)">
@@ -1385,7 +1385,7 @@ img,svg{display:block;max-width:100%}
         <h2>Stop babysitting trades.<br><span style="background:linear-gradient(135deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Start trading smarter.</span></h2>
         <p>Join 28,400+ traders running their entire portfolio on TradingSmart.AI. 14-day free trial. No credit card required.</p>
         <div class="cta-ctas">
-          <a href="onboarding.html" class="btn btn-primary btn-lg">Create free account →</a>
+          <a href="/request-access" class="btn btn-primary btn-lg">Create free account →</a>
           <a href="#pricing" class="btn btn-ghost btn-lg">Book a demo</a>
         </div>
       </div>
@@ -1449,38 +1449,6 @@ img,svg{display:block;max-width:100%}
     </div>
   </div>
 </footer>
-
-<!-- ═══ SIGN-IN MODAL ═══ -->
-<div class="signin-modal" id="signinModal" role="dialog" aria-modal="true" aria-labelledby="signinTitle">
-  <div class="signin-card">
-    <button class="signin-close" data-close-signin aria-label="Close">&times;</button>
-    <div class="signin-logo">
-      <svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
-    </div>
-    <h2 class="signin-title" id="signinTitle">Welcome back</h2>
-    <p class="signin-sub">Sign in to your TradingSmart.AI command center</p>
-    <form id="signinForm" autocomplete="on">
-      <div class="signin-error" id="signinError" style="display:none"></div>
-      <div class="signin-field">
-        <label class="signin-label" for="signinEmail">Email address</label>
-        <input class="signin-input" type="email" name="email" id="signinEmail" placeholder="you@yourcompany.com" autocomplete="email" required>
-      </div>
-      <div class="signin-field">
-        <label class="signin-label" for="signinPassword">Password</label>
-        <input class="signin-input" type="password" name="password" id="signinPassword" placeholder="••••••••••••" autocomplete="current-password" required>
-      </div>
-      <div class="signin-row">
-        <label class="signin-remember"><input type="checkbox" name="remember" checked> Remember me</label>
-        <a href="/login" class="signin-forgot">Forgot password?</a>
-      </div>
-      <button type="submit" class="signin-submit">Access Dashboard &rarr;</button>
-    </form>
-    <div class="signin-divider">New to TradingSmart</div>
-    <div class="signin-foot">
-      Don't have an account? <a href="onboarding.html">Request access</a>
-    </div>
-  </div>
-</div>
 
 <script>
 // Stock-line canvas backdrop removed by request.
@@ -1886,65 +1854,6 @@ img,svg{display:block;max-width:100%}
   },2200);
 })();
 
-/* ═══ SIGN-IN MODAL ═══ */
-(function(){
-  const modal = document.getElementById('signinModal');
-  const form = document.getElementById('signinForm');
-  const opens = document.querySelectorAll('[data-open-signin]');
-  const closes = document.querySelectorAll('[data-close-signin]');
-  if(!modal) return;
-
-  // Must match VALID_ACCOUNTS in index.html
-  const VALID_ACCOUNTS=[
-    {email:'admin@tradingsmart.ai',password:'TradeSmart@2026',name:'Admin'},
-    {email:'demo@tradingsmart.ai',password:'DemoAlgo#123',name:'Rohit'},
-    {email:'kavya@tradingsmart.ai',password:'Kavya@2026',name:'Kavya Shree'},
-    {email:'paul@tradingsmart.ai',password:'Paul@2026',name:'Paul Samson'}
-  ];
-
-  function open(e){
-    if(e) e.preventDefault();
-    modal.classList.add('open');
-    document.body.style.overflow='hidden';
-    setTimeout(()=>{const i=modal.querySelector('input[name=email]');if(i)i.focus();},280);
-  }
-  function close(){
-    modal.classList.remove('open');
-    document.body.style.overflow='';
-  }
-  opens.forEach(b=>b.addEventListener('click',open));
-  closes.forEach(b=>b.addEventListener('click',close));
-  modal.addEventListener('click',e=>{if(e.target===modal)close();});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal.classList.contains('open'))close();});
-
-  if(form){
-    const errEl=document.getElementById('signinError');
-    form.addEventListener('submit',e=>{
-      e.preventDefault();
-      const email=form.email.value.trim().toLowerCase();
-      const pass=form.password.value;
-      const btn=form.querySelector('button[type=submit]');
-      if(errEl){errEl.textContent='';errEl.style.display='none';}
-      if(!email||!pass){
-        if(errEl){errEl.textContent='Please enter both email and password.';errEl.style.display='block';}
-        return;
-      }
-      btn.disabled=true;btn.textContent='AUTHENTICATING…';
-      setTimeout(()=>{
-        const matched=VALID_ACCOUNTS.find(a=>a.email===email&&a.password===pass);
-        if(matched){
-          try{
-            sessionStorage.setItem('tsa_session',JSON.stringify({email:matched.email,name:matched.name,loggedInAt:Date.now()}));
-          }catch(err){}
-          window.location.href='/login';
-        }else{
-          if(errEl){errEl.textContent='Invalid email or password. Please try again.';errEl.style.display='block';}
-          btn.disabled=false;btn.textContent='Access Dashboard \u2192';
-        }
-      },900);
-    });
-  }
-})();
 </script>
 </body>
 </html>
