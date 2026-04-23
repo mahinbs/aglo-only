@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { FaArrowLeft, FaArrowRight, FaCheck, FaRobot, FaRocket, FaUser } from "react-icons/fa6";
 import { supabase } from "@/lib/supabase";
 import "@/styles/onboarding-access.css";
 
@@ -164,13 +165,15 @@ export default function AccessRequestPage() {
         <div className="scanlines" />
         <div className="onboard-wrapper">
           <div className="success-screen active">
-            <div className="success-icon">&#x1F680;</div>
+            <div className="success-icon">
+              <FaRocket aria-hidden="true" />
+            </div>
             <div className="success-title">APPLICATION SUBMITTED</div>
             <div className="success-text">
               Our team will review your request. If approved, you will receive ChartMate / TradingSmart access instructions by email.
             </div>
             <Link to="/login" className="success-btn">
-              &#x2190; Back to Login
+              <FaArrowLeft aria-hidden="true" /> Back to Login
             </Link>
           </div>
         </div>
@@ -189,10 +192,13 @@ export default function AccessRequestPage() {
       <div className="onboard-wrapper">
         <div className="onboard-header">
           <Link to="/login" className="onboard-logo">
-            <div className="onboard-logo-icon">&#x1F916;</div> TRADINGSMART.AI
+            <div className="onboard-logo-icon">
+              <FaRobot aria-hidden="true" />
+            </div>{" "}
+            TRADINGSMART.AI
           </Link>
           <Link to="/login" className="onboard-back">
-            &#x2190; Back to Login
+            <FaArrowLeft aria-hidden="true" /> Back to Login
           </Link>
         </div>
 
@@ -212,7 +218,7 @@ export default function AccessRequestPage() {
               const cls = n < step ? "done" : n === step ? "active" : "";
               return (
                 <div key={name} className={`progress-dot ${cls}`}>
-                  <div className="progress-dot-circle">{n < step ? "\u2713" : n}</div>
+                  <div className="progress-dot-circle">{n < step ? <FaCheck aria-hidden="true" /> : n}</div>
                   <div className="progress-dot-label">{name}</div>
                 </div>
               );
@@ -242,7 +248,9 @@ export default function AccessRequestPage() {
               <div className="step active">
                 <div className="step-title">Personal Information</div>
                 <div className="step-subtitle">Let&apos;s start with your basic details</div>
-                <div className="section-label">&#x1F464; Basic Details</div>
+                <div className="section-label">
+                  <FaUser aria-hidden="true" /> Basic Details
+                </div>
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">Full Name <span className="req">*</span></label>
@@ -428,12 +436,12 @@ export default function AccessRequestPage() {
             <div className="btn-row">
               {step > 1 && (
                 <button type="button" className="btn btn-back" onClick={prev}>
-                  &#x2190; Back
+                  <FaArrowLeft aria-hidden="true" /> Back
                 </button>
               )}
               {step < STEP_NAMES.length ? (
                 <button type="button" className="btn btn-next" onClick={next}>
-                  Next &#x2192;
+                  Next <FaArrowRight aria-hidden="true" />
                 </button>
               ) : (
                 <button type="button" className="btn btn-submit" disabled={busy} onClick={() => void submit()}>
