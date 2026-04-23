@@ -182,13 +182,13 @@ function brokerAllowedExchanges(brokerRaw) {
 function inferExchangeFromSearchRow(item) {
   const full = String(item?.full_symbol || "").toUpperCase();
   const hint = String(item?.exchange || "").toUpperCase();
+  const type = String(item?.type || "").toLowerCase();
+  // Restrict this search surface to Indian cash symbols only.
+  // Prevents global/forex/crypto rows (e.g. BTC, EURUSD) from being mislabeled as NSE.
+  if (type && !["stock", "etf"].includes(type)) return "";
   if (full.endsWith(".BO") || hint.includes("BSE")) return "BSE";
   if (full.endsWith(".NS") || hint.includes("NSE")) return "NSE";
-  if (full.startsWith("^BSE")) return "BSE";
-  if (full.startsWith("^")) return "NSE";
-  if (hint.includes("MCX")) return "MCX";
-  if (hint.includes("NCDEX")) return "NCDEX";
-  return "NSE";
+  return "";
 }
 
 // ─── SVG Logo Component (matches your TradingSmart.ai brain+chart logo) ───
@@ -1186,7 +1186,14 @@ export default function TradingSmartDashboard(props = {}) {
             ...item,
             _exchange: inferExchangeFromSearchRow(item),
           }))
-          .filter((item) => allowedBrokerExchanges.includes(item._exchange))
+          .filter(
+            (item) =>
+              Boolean(item._exchange) &&
+              allowedBrokerExchanges.includes(item._exchange) &&
+              [".NS", ".BO"].some((suf) =>
+                String(item.full_symbol || "").toUpperCase().endsWith(suf),
+              ),
+          )
           .slice(0, 16);
         setGoLiveSearchResults(filtered);
         setGoLiveSearchOpen(filtered.length > 0);
