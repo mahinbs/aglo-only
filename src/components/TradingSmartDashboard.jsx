@@ -7,6 +7,24 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
+import {
+  FaBan,
+  FaBolt,
+  FaBrain,
+  FaBullseye,
+  FaChartLine,
+  FaCircleCheck,
+  FaClipboardList,
+  FaFlag,
+  FaHourglassHalf,
+  FaLaptopCode,
+  FaPaperclip,
+  FaRobot,
+  FaRocket,
+  FaScaleBalanced,
+  FaTriangleExclamation,
+  FaXmark,
+} from "react-icons/fa6";
 import { ModalShell } from "./ModalShell.jsx";
 import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
@@ -1707,7 +1725,7 @@ export default function TradingSmartDashboard(props = {}) {
                   animation: "pulse 2s ease-in-out infinite",
                 }}
               >
-                &#x1F916;
+                <FaRobot />
               </div>
               <div>
                 <div
@@ -1782,7 +1800,7 @@ export default function TradingSmartDashboard(props = {}) {
                 }}
               >
                 <span className="kill-icon" style={{ fontSize: 22 }}>
-                  {killActive ? "\u26D4" : "\u26A0"}
+                  {killActive ? <FaBan /> : <FaTriangleExclamation />}
                 </span>
                 <span className="kill-text">
                   {killBusy ? "WORKING…" : killActive ? "LOCKED" : "STOP"}
@@ -1805,7 +1823,9 @@ export default function TradingSmartDashboard(props = {}) {
               lineHeight: 1.5,
             }}
           >
-            <span style={{ fontSize: 14 }}>&#x2696;&#xFE0F;</span>
+            <span style={{ fontSize: 14 }}>
+              <FaScaleBalanced />
+            </span>
             <span>
               <strong style={{ color: "var(--accent-yellow)" }}>
                 Platform Disclosure:
@@ -1871,19 +1891,6 @@ export default function TradingSmartDashboard(props = {}) {
               </div>
             </div>
           </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: "var(--text-muted)",
-              marginBottom: 18,
-              padding: "0 8px",
-              lineHeight: 1.5,
-            }}
-          >
-            <strong>INR-only live mode</strong>. Broker metrics/order feed use
-            live broker snapshot data. Strategy table remains strategy metadata
-            and does not attribute broker tradebook rows back to strategy IDs.
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 mb-[24px]">
             {/* LIVE MONITORING */}
@@ -1929,7 +1936,7 @@ export default function TradingSmartDashboard(props = {}) {
                         fontSize: 16,
                       }}
                     >
-                      &#x1F1EE;&#x1F1F3;
+                      <FaFlag />
                     </span>
                     <div
                       style={{
@@ -2511,7 +2518,7 @@ export default function TradingSmartDashboard(props = {}) {
                       color: "var(--accent-purple)",
                     }}
                   >
-                    &#x23F3;
+                    <FaHourglassHalf />
                   </span>
                   Live Order Feed
                 </div>
@@ -2780,7 +2787,7 @@ export default function TradingSmartDashboard(props = {}) {
                         color: "var(--accent-cyan)",
                       }}
                     >
-                      &#x1F916;
+                      <FaRobot />
                     </span>
                     Robot Command Center
                   </div>
@@ -2948,7 +2955,7 @@ export default function TradingSmartDashboard(props = {}) {
                         color: "var(--accent-blue)",
                       }}
                     >
-                      &#x1F4C8;
+                      <FaChartLine />
                     </span>
                     Equity Curve
                   </div>
@@ -3001,7 +3008,7 @@ export default function TradingSmartDashboard(props = {}) {
                         color: "var(--accent-purple)",
                       }}
                     >
-                      &#x1F9E0;
+                      <FaBrain />
                     </span>
                     Active Strategies
                   </div>
@@ -3121,7 +3128,7 @@ export default function TradingSmartDashboard(props = {}) {
                       color: "var(--accent-green)",
                     }}
                   >
-                    &#x26A1;
+                    <FaBolt />
                   </span>
                   Strategies Status
                 </div>
@@ -3199,7 +3206,7 @@ export default function TradingSmartDashboard(props = {}) {
                       color: "var(--accent-cyan)",
                     }}
                   >
-                    &#x1F3AF;
+                    <FaBullseye />
                   </span>
                   My Strategies
                 </div>
@@ -3508,7 +3515,7 @@ export default function TradingSmartDashboard(props = {}) {
                       color: "var(--accent-purple)",
                     }}
                   >
-                    &#x1F4BB;
+                    <FaLaptopCode />
                   </span>
                   Request Strategy Development
                 </div>
@@ -3618,7 +3625,7 @@ export default function TradingSmartDashboard(props = {}) {
                       color: "var(--accent-yellow)",
                     }}
                   >
-                    &#x1F4CB;
+                    <FaClipboardList />
                   </span>
                   System Activity Log
                 </div>
@@ -3669,7 +3676,16 @@ export default function TradingSmartDashboard(props = {}) {
                       letterSpacing: 1,
                     }}
                   >
-                    ⚠️ IMPORTANT RISK DISCLOSURE
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <FaTriangleExclamation />
+                      IMPORTANT RISK DISCLOSURE
+                    </span>
                   </div>
                   <p>
                     Trading in stocks, options, futures, forex, and
@@ -5202,7 +5218,7 @@ export default function TradingSmartDashboard(props = {}) {
                 aria-label="Close strategy development request form"
                 onClick={() => setShowDevRequest(false)}
               >
-                &#x2715;
+                <FaXmark />
               </button>
             </div>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -5326,7 +5342,15 @@ export default function TradingSmartDashboard(props = {}) {
                       style={{ padding: "10px 20px", fontSize: 12 }}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      &#x1F4CE; Choose PDF File
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <FaPaperclip /> Choose PDF File
+                      </span>
                     </button>
                     {devForm.pdfName ? (
                       <span
@@ -5339,7 +5363,7 @@ export default function TradingSmartDashboard(props = {}) {
                           gap: 6,
                         }}
                       >
-                        &#x2714; {devForm.pdfName}
+                        <FaCircleCheck /> {devForm.pdfName}
                       </span>
                     ) : (
                       <span
@@ -5420,7 +5444,18 @@ export default function TradingSmartDashboard(props = {}) {
                 >
                   {devSubmitBusy
                     ? "Submitting…"
-                    : "🚀 Submit Development Request"}
+                    : (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <FaRocket />
+                          Submit Development Request
+                        </span>
+                      )}
                 </button>
               </div>
 
