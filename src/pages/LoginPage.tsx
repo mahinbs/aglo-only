@@ -74,7 +74,7 @@ export default function LoginPage() {
             </button>
           </div> */}
 
-          <div className="px-6 pb-7 pt-1">
+          <div className="px-6 pb-7 pt-4">
             <div className="mb-6 flex flex-col items-center text-center">
               <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 text-sm text-white shadow-[0_8px_24px_rgba(34,211,238,0.35)]">
                 <FaArrowUpRightFromSquare />
