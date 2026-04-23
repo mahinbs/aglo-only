@@ -378,6 +378,54 @@ function AlgoGuidePresetEntryPanel({
               />
             </Field>
           </Row>
+          <Row>
+            <Field label="VIX max" hint="India VIX (live gate)">
+              <Input
+                type="number"
+                step={0.5}
+                min={8}
+                max={40}
+                className="h-10 bg-zinc-900 border-zinc-700 text-sm"
+                value={p.orbVixMax ?? 22}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!Number.isFinite(v)) return;
+                  patchParams({ orbVixMax: v });
+                }}
+              />
+            </Field>
+            <Field label="Macro block (min)" hint="Skip entries this many min before high-impact IN/US event">
+              <Input
+                type="number"
+                step={5}
+                min={5}
+                max={120}
+                className="h-10 bg-zinc-900 border-zinc-700 text-sm"
+                value={p.orbMacroBlockWindowMin ?? 30}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!Number.isFinite(v)) return;
+                  patchParams({ orbMacroBlockWindowMin: v });
+                }}
+              />
+            </Field>
+          </Row>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Switch
+                checked={p.orbRequireFiiNetBuying !== false}
+                onCheckedChange={(v) => patchParams({ orbRequireFiiNetBuying: Boolean(v) })}
+              />
+              <span className="text-sm text-zinc-300">Require FII net buying (NSE daily)</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Switch
+                checked={p.orbBlockMacroEvents !== false}
+                onCheckedChange={(v) => patchParams({ orbBlockMacroEvents: Boolean(v) })}
+              />
+              <span className="text-sm text-zinc-300">Block before high-impact macro events</span>
+            </label>
+          </div>
         </>
       )}
 
@@ -448,6 +496,21 @@ function AlgoGuidePresetEntryPanel({
                 }}
               />
             </Field>
+            <Field label="VIX min" hint="India VIX (live gate)">
+              <Input
+                type="number"
+                step={0.5}
+                min={5}
+                max={30}
+                className="h-10 bg-zinc-900 border-zinc-700 text-sm"
+                value={p.vwapVixMin ?? 11}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!Number.isFinite(v)) return;
+                  patchParams({ vwapVixMin: v });
+                }}
+              />
+            </Field>
           </Row>
         </>
       )}
@@ -480,6 +543,14 @@ function AlgoGuidePresetEntryPanel({
           <Row>
             <Field label="TP risk:reward" hint="× SL distance"><Input type="number" step={0.1} min={0.5} max={6} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.emaTpRiskReward ?? 2.5} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ emaTpRiskReward: v }); }} /></Field>
           </Row>
+          <Row>
+            <Field label="VIX min" hint="India VIX (live gate)">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.emaVixMin ?? 12} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ emaVixMin: v }); }} />
+            </Field>
+            <Field label="VIX max">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.emaVixMax ?? 25} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ emaVixMax: v }); }} />
+            </Field>
+          </Row>
         </>
       )}
 
@@ -495,6 +566,14 @@ function AlgoGuidePresetEntryPanel({
             <Field label="Session end (IST)"><Input type="time" className="h-10 bg-zinc-900 border-zinc-700 text-sm max-w-[140px]" value={istMinutesToTimeInput(p.stSessionEndMin ?? 750)} onChange={(e) => { const mm = timeInputToIstMinutes(e.target.value); if (mm != null) patchParams({ stSessionEndMin: mm }); }} /></Field>
             <Field label="Min ATR filter" hint="% of price (skip chop)"><Input type="number" step={0.01} min={0} max={1} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={100 * (p.stAtrFilterPct ?? 0.001)} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ stAtrFilterPct: v / 100 }); }} /></Field>
             <Field label="TP (× ATR)"><Input type="number" step={0.1} min={0.5} max={8} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.stTpAtrMult ?? 3} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ stTpAtrMult: v }); }} /></Field>
+          </Row>
+          <Row>
+            <Field label="VIX min" hint="India VIX (live gate)">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.stVixMin ?? 12} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ stVixMin: v }); }} />
+            </Field>
+            <Field label="VIX max">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.stVixMax ?? 25} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ stVixMax: v }); }} />
+            </Field>
           </Row>
         </>
       )}
@@ -512,6 +591,14 @@ function AlgoGuidePresetEntryPanel({
             <Field label="Confirm within (bars)"><Input type="number" min={2} max={20} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.rsiDivConfirmBars ?? 6} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ rsiDivConfirmBars: v }); }} /></Field>
             <Field label="TP2 × risk"><Input type="number" step={0.1} min={1} max={8} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.rsiDivTp2Mult ?? 3} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ rsiDivTp2Mult: v }); }} /></Field>
           </Row>
+          <Row>
+            <Field label="VIX min" hint="India VIX (live gate)">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.emaVixMin ?? 12} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ emaVixMin: v }); }} />
+            </Field>
+            <Field label="VIX max">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.emaVixMax ?? 25} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ emaVixMax: v }); }} />
+            </Field>
+          </Row>
         </>
       )}
 
@@ -525,6 +612,14 @@ function AlgoGuidePresetEntryPanel({
           </Row>
           <Row>
             <Field label="ATR period (SL)"><Input type="number" min={2} max={21} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.lqAtrPeriod ?? 7} onChange={(e) => { const v = parseInt(e.target.value, 10); if (Number.isFinite(v)) patchParams({ lqAtrPeriod: v }); }} /></Field>
+          </Row>
+          <Row>
+            <Field label="VIX min" hint="India VIX (live gate)">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.lqVixMin ?? 12} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ lqVixMin: v }); }} />
+            </Field>
+            <Field label="VIX max">
+              <Input type="number" step={0.5} className="h-10 bg-zinc-900 border-zinc-700 text-sm" value={p.lqVixMax ?? 30} onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) patchParams({ lqVixMax: v }); }} />
+            </Field>
           </Row>
         </>
       )}
