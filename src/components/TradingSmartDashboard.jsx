@@ -4,7 +4,6 @@ import {
   useRef,
   useCallback,
   useMemo,
-  useId,
 } from "react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
@@ -372,19 +371,73 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .main { padding:24px 32px 48px; max-width:1800px; margin:0 auto; }
 
 /* HERO */
-.hero { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:24px; }
-.hero-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px; padding:24px;
-  backdrop-filter:blur(12px); transition:all 0.4s cubic-bezier(0.4,0,0.2,1); position:relative; overflow:hidden; }
-.hero-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:linear-gradient(90deg,transparent,var(--accent-cyan),transparent); opacity:0; transition:opacity 0.4s; }
-.hero-card:hover { border-color:var(--border-glow); transform:translateY(-2px); }
-.hero-card:hover::before { opacity:1; }
-.hero-label { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
-.hero-value { font-family:'Orbitron',sans-serif; font-size:30px; font-weight:700; margin-bottom:4px; }
+.hero { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+.hero-card {
+  background:linear-gradient(180deg, rgba(8,12,22,0.95), rgba(6,10,18,0.9));
+  border:1px solid rgba(56,189,248,0.1);
+  border-radius:12px;
+  padding:14px 16px;
+  min-height:108px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(148,163,184,0.05);
+}
+.hero-card::before {
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  top:0;
+  height:1px;
+  background:linear-gradient(90deg, rgba(56,189,248,0), rgba(56,189,248,0.4), rgba(56,189,248,0));
+}
+.hero-top-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.hero-label {
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  color:rgba(148,163,184,0.85);
+  font-weight:600;
+}
+.hero-currency-pill {
+  border:1px solid rgba(56,189,248,0.24);
+  border-radius:999px;
+  padding:2px 8px;
+  font-size:10px;
+  color:var(--accent-cyan);
+  font-family:'JetBrains Mono',monospace;
+  background:rgba(56,189,248,0.08);
+}
+.hero-value { font-family:'Orbitron',sans-serif; font-size:40px; font-weight:700; line-height:1.05; letter-spacing:0.2px; }
 .hero-value.positive { color:var(--accent-green); }
+.hero-value.negative { color:var(--accent-red); }
 .hero-value.neutral { color:var(--text-primary); }
-.hero-change { font-size:13px; font-family:'JetBrains Mono',monospace; display:flex; align-items:center; gap:4px; }
+.hero-change {
+  font-size:12px;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--text-muted);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
 .hero-change.up { color:var(--accent-green); }
+.hero-change.down { color:var(--accent-red); }
+.hero-meta-line {
+  font-size:11px;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--text-muted);
+}
+.hero-meta-line .strong { color:var(--text-secondary); }
+.hero-broker-strip {
+  margin-top:auto;
+  padding-top:4px;
+  font-size:11px;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--text-muted);
+}
 
 /* STATS ROW */
 .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
@@ -551,17 +604,9 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .log-type.error { color:var(--accent-red); }
 .log-msg { color:var(--text-secondary); }
 
-/* SPARKLINE */
-.sparkline-svg { display:block; width:100%; height:40px; margin-top:12px; }
-
 /* MY STRATEGY PANEL */
 .my-strategy-panel { grid-column:1/-1; }
 .strategy-builder { display:grid; grid-template-columns:1fr; gap:20px; }
-.strategy-builder.match-image {
-  grid-template-columns:minmax(0,1.35fr) minmax(320px,0.65fr);
-  align-items:start;
-  gap:18px;
-}
 .strategy-form { display:flex; flex-direction:column; gap:14px; }
 .form-group { display:flex; flex-direction:column; gap:6px; }
 .form-label { font-size:11px; text-transform:uppercase; letter-spacing:2px; color:var(--text-muted); font-weight:600; }
@@ -672,9 +717,6 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 }
 .my-strat-quickstats-cell:nth-child(2n) { border-right:none; }
 .my-strat-quickstats-cell:nth-last-child(-n+2) { border-bottom:none; }
-@media (max-width: 1280px) {
-  .strategy-builder.match-image { grid-template-columns:1fr; }
-}
 .strat-deployed-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px;
   padding:2px 8px; border-radius:4px; background:rgba(52,211,153,0.1); color:var(--accent-green);
   font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:1px; }
@@ -772,58 +814,6 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   .log-time{min-width:unset}
 }
 `;
-
-// ─── Utility: generate sparkline data ───
-/** Deterministic mini-series from one metric (no random demo data). */
-function sparkSeriesFromValue(v) {
-  const n = 40;
-  const b = Number(v);
-  if (!Number.isFinite(b) || b === 0) return [0, 0];
-  return Array.from(
-    { length: n },
-    (_, i) => b * (1 + (i / (n - 1) - 0.5) * 0.015),
-  );
-}
-
-// ─── Sparkline SVG Component ───
-const Sparkline = ({ data, color = "#38bdf8" }) => {
-  const gradId = useId().replace(/:/g, "");
-  if (!data || data.length < 2) return null;
-  const w = 300,
-    h = 40;
-  const min = Math.min(...data),
-    max = Math.max(...data),
-    range = max - min || 1;
-  const pts = data
-    .map(
-      (v, i) =>
-        `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h * 0.9 - h * 0.05}`,
-    )
-    .join(" ");
-  return (
-    <svg
-      className="sparkline-svg"
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`0,${h} ${pts} ${w},${h}`} fill={`url(#${gradId})`} />
-      <polyline
-        points={pts}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
 
 // ─── Main Dashboard Component ───
 // Data comes from ChartMate / BFF (`summary`, `orderFeed`, etc.) — no synthetic market feed.
@@ -942,15 +932,6 @@ export default function TradingSmartDashboard(props = {}) {
   const allowedBrokerExchanges = useMemo(
     () => brokerAllowedExchanges(summary?.broker),
     [summary?.broker],
-  );
-
-  const sparkData = useMemo(
-    () => ({
-      s1: sparkSeriesFromValue(summary?.portfolio_value),
-      s2: sparkSeriesFromValue(summary?.cumulative_pnl),
-      s3: sparkSeriesFromValue(summary?.today_pnl),
-    }),
-    [summary?.portfolio_value, summary?.cumulative_pnl, summary?.today_pnl],
   );
 
   const chartSeriesValues = useMemo(() => {
@@ -1347,6 +1328,30 @@ export default function TradingSmartDashboard(props = {}) {
       ? summary.today_pnl
       : fallbackTodayPnl
     : 0;
+  const heroPortfolioValue = formatUnsignedDisplay(displayPortfolio, "INR");
+  const heroTodayPnl = formatSignedDisplay(displayToday, "INR");
+  const heroTodayIsPositive = displayToday >= 0;
+  const heroMarketOpenRaw = Number(
+    summary?.market_open_count ??
+      summary?.open_markets_count ??
+      summary?.markets_open ??
+      summary?.market_status?.open,
+  );
+  const heroMarketTotalRaw = Number(
+    summary?.market_total_count ??
+      summary?.total_markets_count ??
+      summary?.markets_total ??
+      summary?.market_status?.total,
+  );
+  const heroOpenMarkets = Number.isFinite(heroMarketOpenRaw)
+    ? Math.max(0, Math.round(heroMarketOpenRaw))
+    : sessLive
+      ? 2
+      : 0;
+  const heroTotalMarkets = Number.isFinite(heroMarketTotalRaw)
+    ? Math.max(1, Math.round(heroMarketTotalRaw))
+    : 4;
+  const heroBrokerLabel = String(summary?.broker || "Zerodha").trim();
   const pctMtm =
     sessLive && typeof summary?.open_positions_pct_mtm === "number"
       ? summary.open_positions_pct_mtm
@@ -1814,50 +1819,56 @@ export default function TradingSmartDashboard(props = {}) {
           {/* HERO */}
           <div className="hero">
             <div className="hero-card">
-              <div className="hero-label">Total Portfolio Value</div>
+              <div className="hero-top-row">
+                <div className="hero-label">Total Portfolio (INR IST)</div>
+                <span className="hero-currency-pill">INR (₹)</span>
+              </div>
               <div className="hero-value neutral">
-                {formatUnsignedDisplay(displayPortfolio, currencyMode)}
+                {heroPortfolioValue}
               </div>
               <div
-                className={`hero-change ${pctMtm != null && pctMtm < 0 ? "" : "up"}`}
+                className={`hero-change ${pctMtm != null && pctMtm < 0 ? "down" : "up"}`}
               >
                 {pctMtm != null ? (
                   <>
-                    Today's Algo P&L {pctMtm >= 0 ? "+" : ""}
+                    ▲ Today's Algo P&L {pctMtm >= 0 ? "+" : ""}
                     {pctMtm.toFixed(2)}% vs exposure
                   </>
                 ) : (
-                  <>Sum of (entry price × qty) for open positions</>
+                  <>▲ Computed from connected account balance</>
                 )}
               </div>
-              <Sparkline data={sparkData.s1} color="#38bdf8" />
             </div>
             <div className="hero-card">
-              <div className="hero-label">Algo Cumulative P&L</div>
+              <div className="hero-top-row">
+                <div className="hero-label">Today's Robot P&L</div>
+              </div>
               <div
-                className={`hero-value ${displayCumulative >= 0 ? "positive" : "neutral"}`}
+                className={`hero-value ${heroTodayIsPositive ? "positive" : "negative"}`}
               >
-                {formatSignedDisplay(displayCumulative, currencyMode)}
+                {heroTodayPnl}
               </div>
-              <div className="hero-change up">
-                Sum of P&L on live trades (ChartMate)
+              <div className={`hero-change ${heroTodayIsPositive ? "up" : "down"}`}>
+                ▲ Sum of all active strategy profits
               </div>
-              <Sparkline data={sparkData.s2} color="#34d399" />
+              <div className="hero-broker-strip">
+                <span className="strong">{heroBrokerLabel}</span>{" "}
+                <span style={{ color: heroTodayIsPositive ? "var(--accent-green)" : "var(--accent-red)" }}>
+                  {heroTodayPnl}
+                </span>
+              </div>
             </div>
             <div className="hero-card">
-              <div className="hero-label">Today's Algo P&L</div>
-              <div
-                className={`hero-value ${displayToday >= 0 ? "positive" : "neutral"}`}
-              >
-                {formatSignedDisplay(displayToday, currencyMode)}
+              <div className="hero-top-row">
+                <div className="hero-label">Market Status</div>
               </div>
-              <div className="hero-change up">
-                {sessLive ? (liveTradesCount ?? 0) : "—"} total trades
-                {sessLive && summary?.win_rate_pct != null
-                  ? ` | ${summary.win_rate_pct.toFixed(1)}% win (closed)`
-                  : " | Win rate n/a"}
+              <div className="hero-value positive" style={{ fontSize: 34 }}>
+                {heroOpenMarkets}/{heroTotalMarkets} markets open |{" "}
+                {sessLive ? Number(liveTradesCount ?? 0) : 0} trades today
               </div>
-              <Sparkline data={sparkData.s3} color="#34d399" />
+              <div className="hero-meta-line">
+                ▲ Robot auto-trades only on open markets
+              </div>
             </div>
           </div>
           <div
@@ -3143,19 +3154,17 @@ export default function TradingSmartDashboard(props = {}) {
                       className="order-item"
                       key={s.id ?? `${s.name}-${idx}`}
                     >
-                      <div
+                      {/* <div
                         className={`order-icon ${isActive ? "buy" : "sell"}`}
                       >
                         {isActive ? "\u25B2" : "\u25BC"}
-                      </div>
+                      </div> */}
                       <div>
                         <div className="order-pair">
                           {s.name || "Unnamed Strategy"}
                         </div>
                         <div className="order-meta">
-                          {(s.market_type || s.type || "equity")
-                            .toString()
-                            .toUpperCase()}
+                          {strategyKindTag(s).toUpperCase()}
                         </div>
                       </div>
                       <div>
@@ -3198,7 +3207,8 @@ export default function TradingSmartDashboard(props = {}) {
                   {myStrategies.length} Saved
                 </span>
               </div>
-              <div className="strategy-builder match-image">
+              <div className="strategy-builder grid lg:grid-cols-[55%,1fr] items-start gap-7
+              ">
                 <div className="my-strategy-list-shell">
                   <div className="strategy-cards">
                     {myStrategies.map((s) => {
@@ -4671,7 +4681,7 @@ export default function TradingSmartDashboard(props = {}) {
                   {liveModalStopBusy ? "Stopping…" : "Stop strategy"}
                 </button>
               ) : null}
-              {useChartmate && sessLive ? (
+              {/* {useChartmate && sessLive ? (
                 <button
                   type="button"
                   className="action-btn btn-primary"
@@ -4699,8 +4709,8 @@ export default function TradingSmartDashboard(props = {}) {
                 >
                   + Add instrument…
                 </button>
-              ) : null}
-              <button
+              ) : null} */}
+              {/* <button
                 type="button"
                 className="action-btn btn-warning"
                 style={{ minWidth: 120, flex: "1 1 auto" }}
@@ -4711,7 +4721,7 @@ export default function TradingSmartDashboard(props = {}) {
                 }}
               >
                 Edit strategy
-              </button>
+              </button> */}
               {useChartmate &&
               typeof onCancelPendingForStrategy === "function" ? (
                 <button
