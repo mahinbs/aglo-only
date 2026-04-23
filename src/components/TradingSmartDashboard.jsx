@@ -564,7 +564,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .order-feed::-webkit-scrollbar { width:4px; }
 .order-feed::-webkit-scrollbar-track { background:transparent; }
 .order-feed::-webkit-scrollbar-thumb { background:var(--border-glow); border-radius:4px; }
-.order-item { display:grid; grid-template-columns:44px 1fr auto; gap:12px; align-items:center; padding:12px;
+.order-item { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; padding:12px;
   border-radius:10px; background:rgba(15,23,42,0.4); border:1px solid var(--border-color);
   transition:all 0.3s; animation:orderSlide 0.5s ease-out; }
 @keyframes orderSlide { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
