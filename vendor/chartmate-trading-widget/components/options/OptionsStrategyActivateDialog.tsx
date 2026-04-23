@@ -391,7 +391,7 @@ export function OptionsStrategyActivateDialog({
             {isPaper ? (
               <><FlaskConical className="h-4 w-4 text-blue-400" />Paper trade — {strategy.underlying}</>
             ) : (
-              <><Zap className="h-4 w-4 text-primary" />Activate live — {strategy.underlying}</>
+              <><Zap className="h-4 w-4 text-sky-400" />Activate live — {strategy.underlying}</>
             )}
           </DialogTitle>
           <DialogDescription className="flex flex-col gap-1 mt-1">
@@ -403,7 +403,7 @@ export function OptionsStrategyActivateDialog({
             <span className="flex items-center gap-1.5">
               <Badge
                 variant="outline"
-                className={isPaper ? "border-blue-500/40 text-blue-400 text-[10px]" : "border-primary/40 text-primary text-[10px]"}
+                className={isPaper ? "border-blue-500/40 text-blue-400 text-[10px]" : "border-sky-500/40 text-sky-400 text-[10px]"}
               >
                 {isPaper ? "Paper · Simulated" : "Live · Real orders"}
               </Badge>
@@ -548,7 +548,7 @@ export function OptionsStrategyActivateDialog({
               </div>
               <div className="flex items-end gap-3">
                 <div className="flex items-center gap-1.5">
-                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+                  <TrendingUp className="h-4 w-4 text-sky-400" />
                   <span className="text-xl font-bold tabular-nums">
                     {ltp != null ? `${assetCurrency === "USD" ? "$" : "₹"}${ltp.toFixed(2)}` : "—"}
                   </span>
@@ -568,7 +568,7 @@ export function OptionsStrategyActivateDialog({
               {ltp != null && (
                 <div className="flex items-center justify-between text-[12px]">
                   <span className="text-muted-foreground">Est. premium cost</span>
-                  <span className="font-semibold text-emerald-400">
+                  <span className="font-semibold text-sky-400">
                     ≈ {investmentCurrency === "USD" ? "$" : "₹"}
                     {Number(investmentAmount || "0").toLocaleString("en-IN", { maximumFractionDigits: 2 })}
                   </span>
@@ -581,7 +581,7 @@ export function OptionsStrategyActivateDialog({
             <Label className="text-sm">Investment amount</Label>
             <div className="flex items-center gap-2">
               <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5 shrink-0">
-                <span className="px-2 py-1 text-xs rounded bg-primary text-primary-foreground">₹ INR</span>
+                <span className="px-2 py-1 text-xs rounded bg-sky-500/20 text-sky-300">₹ INR</span>
               </div>
               <Input
                 type="number"
@@ -623,7 +623,7 @@ export function OptionsStrategyActivateDialog({
           <Button
             onClick={handleConfirm}
             disabled={saving || !brokerConnected || brokerChecking || !validSymbol || loadingChain || loadingExpiries}
-            className={isPaper ? "bg-blue-600 hover:bg-blue-500 text-white" : ""}
+            className={isPaper ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-sky-600 hover:bg-sky-500 text-white"}
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
             {isPaper ? (
