@@ -63,7 +63,7 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[360px] rounded-2xl border border-cyan-300/20 bg-[linear-gradient(180deg,rgba(9,17,33,0.94),rgba(4,9,22,0.94))] shadow-[0_30px_80px_rgba(0,0,0,0.65)] backdrop-blur-xl">
+        <div className="w-full max-w-[440px] rounded-2xl border border-cyan-300/20 bg-[linear-gradient(180deg,rgba(17,27,48,0.96),rgba(10,15,28,0.96))] shadow-[0_30px_80px_rgba(0,0,0,0.65)] backdrop-blur-xl">
           <div className="flex items-start justify-end px-4 pt-4">
             <button
               type="button"
