@@ -1920,7 +1920,7 @@ export default function TradingSmartDashboard(props = {}) {
                       minWidth: 0,
                     }}
                   >
-                    <span
+                    {/* <span
                       style={{
                         width: 34,
                         height: 34,
@@ -1934,7 +1934,7 @@ export default function TradingSmartDashboard(props = {}) {
                       }}
                     >
                       <FaFlag />
-                    </span>
+                    </span> */}
                     <div
                       style={{
                         display: "flex",
@@ -1943,7 +1943,7 @@ export default function TradingSmartDashboard(props = {}) {
                         flexWrap: "wrap",
                       }}
                     >
-                      <span
+                      {/* <span
                         style={{
                           fontSize: 16,
                           color: "rgba(148,163,184,0.45)",
@@ -1951,7 +1951,7 @@ export default function TradingSmartDashboard(props = {}) {
                         }}
                       >
                         |
-                      </span>
+                      </span> */}
                       <div
                         style={{
                           fontSize: 14,
