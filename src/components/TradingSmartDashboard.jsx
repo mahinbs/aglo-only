@@ -376,7 +376,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   background:linear-gradient(180deg, rgba(8,12,22,0.95), rgba(6,10,18,0.9));
   border:1px solid rgba(56,189,248,0.1);
   border-radius:12px;
-  padding:14px 16px;
+  padding:18px 20px;
   min-height:108px;
   display:flex;
   flex-direction:column;
