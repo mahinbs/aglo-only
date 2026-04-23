@@ -732,6 +732,13 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 }
 .my-strat-quickstats-cell:nth-child(2n) { border-right:none; }
 .my-strat-quickstats-cell:nth-last-child(-n+2) { border-bottom:none; }
+@media (min-width: 1280px) {
+  .strategy-builder.my-strategy-two-col {
+    grid-template-columns:minmax(0,1.35fr) minmax(320px,0.65fr);
+    align-items:start;
+    gap:16px;
+  }
+}
 .strat-deployed-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px;
   padding:2px 8px; border-radius:4px; background:rgba(52,211,153,0.1); color:var(--accent-green);
   font-family:'JetBrains Mono',monospace; font-weight:600; letter-spacing:1px; }
@@ -3207,11 +3214,80 @@ export default function TradingSmartDashboard(props = {}) {
                   </span>
                   My Strategies
                 </div>
-                <span className="card-badge badge-blue">
-                  {myStrategies.length} Saved
-                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    position: "relative",
+                  }}
+                >
+                  <span className="card-badge badge-blue">
+                    {myStrategies.length} Saved
+                  </span>
+                  <button
+                    type="button"
+                    className="action-btn btn-primary"
+                    style={{ padding: "6px 14px", fontSize: 11 }}
+                    onClick={() => setStrategyCreateMenuOpen((prev) => !prev)}
+                  >
+                    + Create Strategy
+                  </button>
+                  {strategyCreateMenuOpen ? (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 8px)",
+                        right: 0,
+                        minWidth: 210,
+                        borderRadius: 10,
+                        border: "1px solid var(--border-color)",
+                        background: "rgba(6,8,13,0.96)",
+                        boxShadow: "0 18px 36px rgba(0,0,0,0.45)",
+                        padding: 8,
+                        zIndex: 30,
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="action-btn btn-primary"
+                        style={{
+                          justifyContent: "flex-start",
+                          padding: "8px 10px",
+                          fontSize: 11,
+                          borderRadius: 8,
+                        }}
+                        onClick={() => {
+                          setStratStep(0);
+                          setStrategyCreateMenuOpen(false);
+                          setShowExactAlgoBuilder(true);
+                        }}
+                      >
+                        New Algo Strategy
+                      </button>
+                      <button
+                        type="button"
+                        className="action-btn btn-primary"
+                        style={{
+                          justifyContent: "flex-start",
+                          padding: "8px 10px",
+                          fontSize: 11,
+                          borderRadius: 8,
+                        }}
+                        onClick={() => {
+                          setStrategyCreateMenuOpen(false);
+                          setShowExactOptionsBuilder(true);
+                        }}
+                      >
+                        Options Strategy
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-              <div className="strategy-builder grid lg:grid-cols-[58%,1fr] items-start gap-4">
+              <div className="strategy-builder my-strategy-two-col">
                 <div className="my-strategy-list-shell">
                   <div className="strategy-cards">
                     {myStrategies.map((s) => {
@@ -3251,7 +3327,7 @@ export default function TradingSmartDashboard(props = {}) {
                             </div>
                             <span
                               className={`strategy-tag ${isLive ? "tag-active" : "tag-paused"}`}
-                              style={{ fontSize: 9, letterSpacing: 1.2 }}
+                              style={{ fontSize: 10 }}
                             >
                               {isLive ? "LIVE" : "STOPPED"}
                             </span>
@@ -3431,7 +3507,7 @@ export default function TradingSmartDashboard(props = {}) {
                 <div className="my-strat-quickstats">
                   <div
                     style={{
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: 700,
                       marginBottom: 4,
                       color: "var(--text-primary)",
