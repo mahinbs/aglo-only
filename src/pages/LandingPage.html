@@ -1773,6 +1773,33 @@ img,svg{display:block;max-width:100%}
   }
 })();
 
+// ═══ IFRAME ROUTE BRIDGE (NAVIGATE PARENT URL) ═══
+(function(){
+  document.addEventListener('click',(e)=>{
+    const anchor=e.target.closest('a[href]');
+    if(!anchor) return;
+
+    const href=anchor.getAttribute('href');
+    if(!href) return;
+
+    // Keep in-page hash scroll working inside the landing document.
+    if(href.startsWith('#')) return;
+
+    // Respect external-tab or non-http links.
+    const target=(anchor.getAttribute('target')||'').toLowerCase();
+    if(target==='_blank' || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+
+    e.preventDefault();
+    const nextUrl = new URL(anchor.href, window.location.href).toString();
+
+    if(window.top && window.top !== window){
+      window.top.location.href = nextUrl;
+    }else{
+      window.location.href = nextUrl;
+    }
+  });
+})();
+
 // ═══ SPOTLIGHT CURSOR ═══
 (function(){
   const sp=document.getElementById('spotlight');

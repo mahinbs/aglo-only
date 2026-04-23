@@ -645,19 +645,19 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .strategy-cards::-webkit-scrollbar-track { background:transparent; }
 .strategy-cards::-webkit-scrollbar-thumb { background:var(--border-glow); border-radius:4px; }
 .my-strategy-list-shell {
-  border:1px solid rgba(56,189,248,0.08);
-  background:linear-gradient(180deg, rgba(7,12,23,0.8), rgba(5,9,18,0.78));
+  border:1px solid rgba(56,189,248,0.07);
+  background:linear-gradient(180deg, rgba(6,11,21,0.86), rgba(4,8,17,0.82));
   border-radius:12px;
-  padding:10px;
+  padding:8px;
 }
 .my-strat-card { padding:16px; border-radius:12px; background:rgba(15,23,42,0.5);
   border:1px solid var(--border-color); transition:all 0.3s; position:relative; }
 .my-strat-card:hover { border-color:var(--border-glow); }
 .my-strat-card-flat {
-  padding:12px 14px;
+  padding:10px 12px;
   border-radius:10px;
-  border:1px solid rgba(56,189,248,0.1);
-  background:linear-gradient(120deg, rgba(8,14,28,0.76), rgba(6,11,24,0.72));
+  border:1px solid rgba(56,189,248,0.08);
+  background:linear-gradient(120deg, rgba(8,14,28,0.64), rgba(6,11,24,0.6));
   box-shadow:inset 0 1px 0 rgba(148,163,184,0.04);
 }
 .my-strat-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
@@ -687,20 +687,17 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   min-width:0;
 }
 .my-strat-flat-meta {
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0, 1fr));
-  gap:8px;
-  margin-top:8px;
-  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-top:6px;
+  margin-bottom:9px;
   font-size:10px;
-}
-.my-strat-flat-meta-item {
-  padding:5px 8px;
-  border-radius:6px;
-  background:rgba(15,23,42,0.45);
+  font-family:'JetBrains Mono',monospace;
   color:var(--text-muted);
 }
-.strat-action-btn { padding:6px 12px; border-radius:8px; border:1px solid; font-size:11px;
+.my-strat-flat-meta-item { white-space:nowrap; }
+.strat-action-btn { padding:4px 10px; border-radius:999px; border:1px solid; font-size:10px;
   font-weight:600; cursor:pointer; transition:all 0.3s; background:transparent; font-family:'Inter',sans-serif; }
 .strat-btn-deploy { border-color:rgba(52,211,153,0.3); color:var(--accent-green); }
 .strat-btn-deploy:hover { background:rgba(52,211,153,0.15); }
@@ -711,15 +708,15 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
 .strat-btn-delete { border-color:rgba(244,63,94,0.3); color:var(--accent-red); }
 .strat-btn-delete:hover { background:rgba(244,63,94,0.15); }
 .my-strat-quickstats {
-  padding:14px 16px;
+  padding:12px 14px;
   border-radius:12px;
-  background:linear-gradient(120deg, rgba(8,14,28,0.75), rgba(6,11,24,0.7));
-  border:1px solid rgba(56,189,248,0.12);
+  background:linear-gradient(120deg, rgba(8,14,28,0.68), rgba(6,11,24,0.62));
+  border:1px solid rgba(56,189,248,0.1);
 }
 .my-strat-quickstats-grid {
   display:grid;
   grid-template-columns:1fr 1fr;
-  border:1px solid rgba(56,189,248,0.08);
+  border:1px solid rgba(56,189,248,0.06);
   border-radius:10px;
   overflow:hidden;
 }
@@ -729,9 +726,9 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   align-items:center;
   padding:8px 10px;
   font-size:11px;
-  background:rgba(15,23,42,0.4);
-  border-right:1px solid rgba(56,189,248,0.06);
-  border-bottom:1px solid rgba(56,189,248,0.06);
+  background:rgba(9,15,31,0.46);
+  border-right:1px solid rgba(56,189,248,0.04);
+  border-bottom:1px solid rgba(56,189,248,0.04);
 }
 .my-strat-quickstats-cell:nth-child(2n) { border-right:none; }
 .my-strat-quickstats-cell:nth-last-child(-n+2) { border-bottom:none; }
@@ -3214,8 +3211,7 @@ export default function TradingSmartDashboard(props = {}) {
                   {myStrategies.length} Saved
                 </span>
               </div>
-              <div className="strategy-builder grid lg:grid-cols-[55%,1fr] items-start gap-7
-              ">
+              <div className="strategy-builder grid lg:grid-cols-[58%,1fr] items-start gap-4">
                 <div className="my-strategy-list-shell">
                   <div className="strategy-cards">
                     {myStrategies.map((s) => {
@@ -3255,7 +3251,7 @@ export default function TradingSmartDashboard(props = {}) {
                             </div>
                             <span
                               className={`strategy-tag ${isLive ? "tag-active" : "tag-paused"}`}
-                              style={{ fontSize: 10 }}
+                              style={{ fontSize: 9, letterSpacing: 1.2 }}
                             >
                               {isLive ? "LIVE" : "STOPPED"}
                             </span>
@@ -3435,7 +3431,7 @@ export default function TradingSmartDashboard(props = {}) {
                 <div className="my-strat-quickstats">
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: 700,
                       marginBottom: 4,
                       color: "var(--text-primary)",
