@@ -3028,28 +3028,12 @@ export default function TradingSmartDashboard(props = {}) {
                   >
                     &#x26A1;
                   </span>
-                  Active Strategies
+                  Strategies Status
                 </div>
                 <span className="card-badge badge-green">Real-time</span>
               </div>
               <div className="order-feed">
-                {summary?.feed_paused ? (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: "var(--accent-orange)",
-                      padding: "12px 8px",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    Order feed is hidden until your{" "}
-                    <strong>broker day session is live</strong> (reconnect
-                    above). That avoids showing old database rows as if they
-                    were today’s executions. Open-position KPIs above still use
-                    your current open rows.
-                  </div>
-                ) : null}
-                {!summary?.feed_paused && orders.length === 0 ? (
+                {myStrategies.length === 0 ? (
                   <div
                     style={{
                       fontSize: 12,
@@ -3057,53 +3041,50 @@ export default function TradingSmartDashboard(props = {}) {
                       padding: "12px 8px",
                     }}
                   >
-                    No trades in the last 60 days (live rows only). After you
-                    trade with a linked strategy, rows appear here with IST
-                    timestamps.
+                    No strategies available yet. Create a strategy to track its
+                    status here.
                   </div>
                 ) : null}
-                {orders.map((o) => (
-                  <div className="order-item" key={o.id}>
-                    <div className={`order-icon ${o.type}`}>
-                      {o.type === "buy" ? "\u25B2" : "\u25BC"}
-                    </div>
-                    <div>
-                      <div className="order-pair">
-                        {o.symbol}{" "}
-                        <span
+                {myStrategies.map((s, idx) => {
+                  const lifecycle = normalizeLifecycleState(
+                    s.lifecycle_state ?? s.status,
+                    Boolean(s.deployed),
+                  );
+                  const isActive =
+                    lifecycle === "ACTIVE" ||
+                    lifecycle === "WAITING_MARKET_OPEN" ||
+                    lifecycle === "TRIGGERED";
+                  return (
+                    <div className="order-item" key={s.id ?? `${s.name}-${idx}`}>
+                      <div className={`order-icon ${isActive ? "buy" : "sell"}`}>
+                        {isActive ? "\u25B2" : "\u25BC"}
+                      </div>
+                      <div>
+                        <div className="order-pair">{s.name || "Unnamed Strategy"}</div>
+                        <div className="order-meta">
+                          {(s.market_type || s.type || "equity")
+                            .toString()
+                            .toUpperCase()}
+                        </div>
+                      </div>
+                      <div>
+                        <div
+                          className="order-pnl"
                           style={{
-                            color:
-                              o.type === "buy"
-                                ? "var(--accent-green)"
-                                : "var(--accent-red)",
-                            fontSize: 11,
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {o.type}
-                        </span>
-                      </div>
-                      <div className="order-meta">
-                        {o.strategy} &bull; {o.qty} @{" "}
-                        {formatUnsignedDisplay(Number(o.price), currencyMode)}
-                      </div>
-                    </div>
-                    <div>
-                      <div
-                        className="order-pnl"
-                        style={{
-                          color:
-                            o.pnl >= 0
+                            color: isActive
                               ? "var(--accent-green)"
                               : "var(--accent-red)",
-                        }}
-                      >
-                        {formatSignedDisplay(Number(o.pnl), currencyMode)}
+                          }}
+                        >
+                          {isActive ? "Active" : "Not Active"}
+                        </div>
+                        <div className="order-time">
+                          {isActive ? "Running" : "Inactive"}
+                        </div>
                       </div>
-                      <div className="order-time">{o.time}</div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
