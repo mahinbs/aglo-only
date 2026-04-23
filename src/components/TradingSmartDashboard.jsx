@@ -380,7 +380,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(-
   min-height:108px;
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:8px;
   position:relative;
   overflow:hidden;
   box-shadow:inset 0 1px 0 rgba(148,163,184,0.05);
@@ -1852,7 +1852,7 @@ export default function TradingSmartDashboard(props = {}) {
                 ▲ Sum of all active strategy profits
               </div>
               <div className="hero-broker-strip">
-                <span className="strong">{heroBrokerLabel}</span>{" "}
+                <span className="strong capitalize text-orange-400">{heroBrokerLabel}</span>{" "}
                 <span style={{ color: heroTodayIsPositive ? "var(--accent-green)" : "var(--accent-red)" }}>
                   {heroTodayPnl}
                 </span>
