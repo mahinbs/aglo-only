@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TradingSmart.AI — The Unified Multi-Broker Algo Engine</title>
-<meta name="description" content="Run automated trading strategies across 179+ global brokers from a single dashboard. Stocks, Forex, Crypto, Futures. SEBI/SEC compliant.">
+<title>TradingSmart.AI — Done-for-You Algo Setup with Full Trading Platform</title>
+<meta name="description" content="Get done-for-you algo setup with AI trading analysis, backtesting, paper trading, and live broker execution across 179+ global brokers from one dashboard.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,21 +12,27 @@
 :root{
   --bg-0:#060912;--bg-1:#0a0f1c;--bg-2:#0d1424;--bg-3:#111b30;
   --fg-0:#f0f6ff;--fg-1:#c6d1e6;--fg-2:#8896b0;--fg-3:#4a5670;
-  --cy:#38bdf8;--bl:#6366f1;--pu:#a855f7;--pk:#ec4899;--gr:#10b981;--yl:#fbbf24;--rd:#f43f5e;
-  --border:rgba(56,189,248,0.12);--border-hi:rgba(56,189,248,0.28);
-  --gl1:radial-gradient(ellipse at top left,rgba(56,189,248,0.12),transparent 60%);
-  --gl2:radial-gradient(ellipse at bottom right,rgba(168,85,247,0.10),transparent 60%);
+  --cy:#14b8a6;--bl:#0ea5e9;--pu:#3b82f6;--pk:#6366f1;--gr:#22c55e;--yl:#f59e0b;--rd:#f43f5e;
+  --border:rgba(20,184,166,0.14);--border-hi:rgba(20,184,166,0.34);
+  --gl1:radial-gradient(ellipse at top left,rgba(20,184,166,0.14),transparent 60%);
+  --gl2:radial-gradient(ellipse at bottom right,rgba(59,130,246,0.09),transparent 60%);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-*::selection{background:rgba(56,189,248,0.35);color:#fff}
+*::selection{background:rgba(20,184,166,0.35);color:#fff}
 html{scroll-behavior:smooth;overflow-x:hidden;width:100%;scroll-padding-top:80px}
 body{background:var(--bg-0);color:var(--fg-0);font-family:'Inter',system-ui,sans-serif;line-height:1.55;overflow-x:hidden;width:100%;max-width:100vw;-webkit-font-smoothing:antialiased;min-height:100vh;position:relative}
 body::before{content:'';position:fixed;inset:0;background:var(--gl1),var(--gl2);pointer-events:none;z-index:1}
-.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(56,189,248,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,0.04) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse at center,black 20%,transparent 80%);animation:gridDrift 60s linear infinite}
-@keyframes gridDrift{to{background-position:56px 56px}}
+.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(to right,rgba(20,184,166,0.05) 1px,transparent 1px),linear-gradient(to bottom,rgba(20,184,166,0.05) 1px,transparent 1px);background-size:80px 80px}
+.grid-bg-glow{position:absolute;top:50%;left:50%;width:min(70vw,640px);height:min(70vw,640px);transform:translate(-50%,-50%);background:rgba(20,184,166,0.10);border-radius:999px;filter:blur(120px);animation:gridGlowPulse 3s ease-in-out infinite;opacity:0.85}
+.grid-squares{position:absolute;inset:0}
+.grid-square{position:absolute;width:80px;height:80px;background:rgba(20,184,166,0.10);transition:top 1s ease,left 1s ease,opacity 1s ease}
+.grid-drops{position:absolute;inset:0;overflow:hidden}
+.grid-drop{position:absolute;top:-150px;width:2px;height:150px;background:linear-gradient(to bottom,transparent,rgba(20,184,166,0.9));animation-name:gridDrop;animation-timing-function:linear;animation-fill-mode:both}
+@keyframes gridGlowPulse{0%,100%{opacity:0.45}50%{opacity:0.9}}
+@keyframes gridDrop{from{transform:translateY(0);opacity:0}15%{opacity:1}to{transform:translateY(calc(100vh + 220px));opacity:0}}
 .noise{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0.025;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
 canvas.particles{position:fixed;inset:0;z-index:1;pointer-events:none}
-.spotlight{position:fixed;pointer-events:none;inset:0;z-index:3;background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(56,189,248,0.05),transparent 40%);transition:opacity 0.3s}
+.spotlight{position:fixed;pointer-events:none;inset:0;z-index:3;background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(20,184,166,0.08),transparent 40%);transition:opacity 0.3s}
 a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 img,svg{display:block;max-width:100%}
@@ -50,22 +56,20 @@ img,svg{display:block;max-width:100%}
 .nav.scrolled{border-bottom-color:var(--border);background:rgba(6,9,18,0.92)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;gap:24px}
 .scroll-progress{position:absolute;bottom:-1px;left:0;height:2px;width:var(--sp,0%);background:linear-gradient(90deg,var(--cy),var(--pu));transition:width 0.1s;box-shadow:0 0 8px var(--cy)}
-.brand{display:flex;align-items:center;gap:12px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:16px;letter-spacing:2px;color:var(--fg-0)}
-.brand-logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--cy),var(--bl));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0}
-.brand-logo::before{content:'';position:absolute;inset:0;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,0.3),transparent);animation:brandSpin 4s linear infinite}
-.brand-logo svg{width:22px;height:22px;position:relative;z-index:2}
-@keyframes brandSpin{to{transform:rotate(360deg)}}
+.brand{display:flex;align-items:center;gap:14px;font-family:'Orbitron',sans-serif;font-weight:800;font-size:16px;letter-spacing:2px;color:var(--fg-0)}
+.brand-logo{width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-logo-img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 20px rgba(14,165,233,0.25))}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-link{padding:10px 16px;font-size:13px;font-weight:500;color:var(--fg-1);border-radius:8px;transition:all 0.2s;position:relative}
-.nav-link:hover{color:var(--fg-0);background:rgba(56,189,248,0.06)}
+.nav-link:hover{color:var(--fg-0);background:rgba(20,184,166,0.08)}
 .nav-link::after{content:'';position:absolute;left:16px;right:16px;bottom:4px;height:1px;background:var(--cy);transform:scaleX(0);transition:transform 0.3s}
 .nav-link:hover::after{transform:scaleX(1)}
 .nav-cta{display:flex;gap:10px;align-items:center}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:0.3px;transition:all 0.3s cubic-bezier(.2,.8,.2,1);position:relative;overflow:hidden;white-space:nowrap;cursor:pointer}
 .btn-ghost{color:var(--fg-1);border:1px solid var(--border)}
-.btn-ghost:hover{background:rgba(56,189,248,0.06);border-color:var(--border-hi);color:var(--fg-0)}
-.btn-primary{background:linear-gradient(135deg,var(--cy),var(--bl));color:#fff;box-shadow:0 8px 24px rgba(56,189,248,0.25),inset 0 1px 0 rgba(255,255,255,0.2)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(56,189,248,0.4),inset 0 1px 0 rgba(255,255,255,0.3)}
+.btn-ghost:hover{background:rgba(20,184,166,0.08);border-color:var(--border-hi);color:var(--fg-0)}
+.btn-primary{background:linear-gradient(135deg,var(--cy),var(--bl));color:#fff;box-shadow:0 8px 24px rgba(20,184,166,0.28),inset 0 1px 0 rgba(255,255,255,0.2)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(20,184,166,0.42),inset 0 1px 0 rgba(255,255,255,0.3)}
 .btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.25) 50%,transparent 70%);transform:translateX(-100%);transition:transform 0.8s}
 .btn-primary:hover::after{transform:translateX(100%)}
 .btn-lg{padding:16px 30px;font-size:14px;border-radius:12px}
@@ -79,13 +83,13 @@ img,svg{display:block;max-width:100%}
 .hero{position:relative;padding:80px 0 120px;min-height:86vh;display:flex;align-items:center;overflow:hidden}
 .hero-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:64px;align-items:center}
 .hero-left{position:relative;z-index:5}
-.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(56,189,248,0.08);border:1px solid var(--border-hi);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--cy);margin-bottom:24px;animation:badgeFadeUp 0.8s ease 0.2s both}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:rgba(20,184,166,0.10);border:1px solid var(--border-hi);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--cy);margin-bottom:24px;animation:badgeFadeUp 0.8s ease 0.2s both}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--gr);box-shadow:0 0 0 4px rgba(16,185,129,0.2);animation:pulseDot 2s ease-in-out infinite}
 @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)}50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
 @keyframes badgeFadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .hero h1{font-family:'Inter',sans-serif;font-size:clamp(40px,6vw,76px);font-weight:800;line-height:1.02;letter-spacing:-2px;margin-bottom:24px;color:var(--fg-0)}
 .hero h1 .word{display:inline-block;opacity:0;transform:translateY(40px);animation:heroWord 0.8s cubic-bezier(.2,.8,.2,1) forwards}
-.hero h1 .gradient{background:linear-gradient(135deg,#38bdf8 0%,#818cf8 40%,#c084fc 80%,#f472b6 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;position:relative}
+.hero h1 .gradient{background:linear-gradient(135deg,var(--cy) 0%,var(--bl) 42%,var(--pu) 78%,var(--pk) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;position:relative}
 .hero h1 .gradient::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:3px;background:linear-gradient(90deg,transparent,var(--cy),var(--pu),transparent);opacity:0;animation:underlineIn 0.6s ease 1.4s forwards}
 @keyframes heroWord{to{opacity:1;transform:translateY(0)}}
 @keyframes underlineIn{to{opacity:1}}
@@ -94,14 +98,8 @@ img,svg{display:block;max-width:100%}
 .hero-sub strong{color:var(--fg-0);font-weight:600}
 .hero-ctas{display:flex;gap:14px;flex-wrap:wrap;opacity:0;animation:fadeUp 0.8s ease 1.2s both;margin-bottom:36px}
 .hero-trust{display:flex;align-items:center;gap:18px;opacity:0;animation:fadeUp 0.8s ease 1.4s both}
-.trust-avatars{display:flex}
-.trust-avatar{width:36px;height:36px;border-radius:50%;border:2px solid var(--bg-0);margin-left:-10px;background:linear-gradient(135deg,var(--cy),var(--pu));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
-.trust-avatar:first-child{margin-left:0}
-.trust-avatar:nth-child(2){background:linear-gradient(135deg,#f59e0b,#ef4444)}
-.trust-avatar:nth-child(3){background:linear-gradient(135deg,#10b981,#0ea5e9)}
-.trust-avatar:nth-child(4){background:linear-gradient(135deg,#a855f7,#ec4899)}
-.trust-text{font-size:12px;color:var(--fg-2);line-height:1.4}
-.trust-stars{color:var(--yl);letter-spacing:2px;font-size:11px}
+.trust-text{font-size:14px;color:var(--fg-1);line-height:1.45}
+.trust-stars{color:var(--yl);letter-spacing:2px;font-size:16px}
 .trust-text strong{color:var(--fg-0)}
 
 /* Hero right: animated dashboard preview */
@@ -109,7 +107,7 @@ img,svg{display:block;max-width:100%}
 .hero-visual{position:relative;transform-style:preserve-3d;transform:rotateY(-12deg) rotateX(6deg);transition:transform 0.4s cubic-bezier(.2,.8,.2,1);opacity:0;animation:heroVisualIn 1s ease 0.6s forwards}
 @keyframes heroVisualIn{to{opacity:1}}
 .hero-visual:hover{transform:rotateY(-6deg) rotateX(2deg)}
-.hv-card{position:relative;background:linear-gradient(180deg,rgba(17,27,48,0.8),rgba(10,15,28,0.9));border:1px solid var(--border);border-radius:20px;padding:22px;backdrop-filter:blur(20px);box-shadow:0 40px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(56,189,248,0.08) inset,0 0 60px rgba(56,189,248,0.12);overflow:hidden}
+.hv-card{position:relative;background:linear-gradient(180deg,rgba(17,27,48,0.8),rgba(10,15,28,0.9));border:1px solid var(--border);border-radius:20px;padding:22px;backdrop-filter:blur(20px);box-shadow:0 40px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(20,184,166,0.08) inset,0 0 60px rgba(20,184,166,0.12);overflow:hidden}
 .hv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cy),var(--pu),var(--pk),transparent);animation:hvLine 4s ease-in-out infinite}
 @keyframes hvLine{0%,100%{opacity:0.4;transform:translateX(0)}50%{opacity:1;transform:translateX(0)}}
 .hv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -132,7 +130,7 @@ img,svg{display:block;max-width:100%}
 @keyframes fadeArea{to{opacity:1}}
 .hv-chart-dot{fill:var(--cy);opacity:0;animation:dotIn 0.3s ease forwards}
 .hv-feed{display:flex;flex-direction:column;gap:6px}
-.hv-trade{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(6,9,18,0.5);border:1px solid rgba(56,189,248,0.06);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;opacity:0;transform:translateX(-20px);animation:tradeIn 0.5s ease forwards}
+.hv-trade{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(6,9,18,0.5);border:1px solid rgba(20,184,166,0.10);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px;opacity:0;transform:translateX(-20px);animation:tradeIn 0.5s ease forwards}
 .hv-trade:nth-child(1){animation-delay:2s}
 .hv-trade:nth-child(2){animation-delay:2.2s}
 .hv-trade:nth-child(3){animation-delay:2.4s}
@@ -155,6 +153,50 @@ img,svg{display:block;max-width:100%}
 .hv-float-label{font-size:9px;color:var(--fg-2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px}
 .hv-float-value{color:var(--gr);font-weight:700}
 
+/* Hero engine board mimic */
+.hv-engine{display:flex;flex-direction:column;gap:10px}
+.hv-engine-top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;background:rgba(15,23,42,0.55);border:1px solid var(--border)}
+.hv-engine-title{display:flex;flex-direction:column;gap:2px}
+.hv-engine-title strong{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:1.6px;color:var(--cy)}
+.hv-engine-title span{font-size:9px;color:var(--gr);font-family:'JetBrains Mono',monospace}
+.hv-engine-status{display:flex;align-items:center;gap:8px;font-size:9px;color:var(--fg-2);font-family:'JetBrains Mono',monospace}
+.hv-engine-status b{color:var(--fg-0);font-weight:700}
+.hv-engine-kill{width:30px;height:30px;border-radius:50%;border:1px solid rgba(244,63,94,0.45);background:radial-gradient(circle at 35% 30%,rgba(244,63,94,0.35),rgba(122,16,44,0.88));color:#fecdd3;font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:1px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(244,63,94,0.35),inset 0 -2px 6px rgba(0,0,0,0.5);animation:killBtnPulse 2.4s ease-in-out infinite}
+@keyframes killBtnPulse{0%,100%{box-shadow:0 0 14px rgba(244,63,94,0.26),inset 0 -2px 6px rgba(0,0,0,0.5);transform:scale(1)}50%{box-shadow:0 0 22px rgba(244,63,94,0.45),inset 0 -2px 6px rgba(0,0,0,0.5);transform:scale(1.04)}}
+.hv-engine-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hv-engine-stat{padding:10px;border-radius:10px;background:rgba(15,23,42,0.55);border:1px solid var(--border)}
+.hv-engine-stat .k{font-size:8px;text-transform:uppercase;letter-spacing:1px;color:var(--fg-3);margin-bottom:4px}
+.hv-engine-stat .v{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--fg-0);line-height:1}
+.hv-engine-stat .s{font-size:9px;color:var(--fg-2);margin-top:4px}
+.hv-engine-stat .up{color:var(--gr)}
+.hv-engine-stat .v.up{animation:pnlBreathe 2.8s ease-in-out infinite}
+@keyframes pnlBreathe{0%,100%{text-shadow:0 0 0 rgba(16,185,129,0)}50%{text-shadow:0 0 14px rgba(16,185,129,0.45)}}
+.hv-engine-panels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hv-engine-panel{padding:10px;border-radius:10px;background:rgba(10,15,28,0.65);border:1px solid var(--border)}
+.hv-engine-panel.binance{border-left:2px solid #f59e0b}
+.hv-engine-panel.ib{border-left:2px solid #6366f1}
+.hv-engine-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.hv-engine-panel-head b{font-size:9px;letter-spacing:1px;color:var(--fg-1);text-transform:uppercase}
+.hv-engine-pill{font-size:8px;padding:2px 6px;border-radius:999px;background:rgba(52,211,153,0.12);color:var(--gr);border:1px solid rgba(52,211,153,0.2);font-family:'JetBrains Mono',monospace}
+.hv-engine-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid rgba(20,184,166,0.08)}
+.hv-engine-row:first-of-type{border-top:none;padding-top:0}
+.hv-engine-row .n{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--fg-0);white-space:nowrap;min-width:0}
+.hv-engine-row .t{font-size:8px;color:var(--fg-3);font-family:'JetBrains Mono',monospace}
+.hv-engine-row .p{font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--gr)}
+.hv-engine-row .type{display:inline-flex;align-items:center;justify-content:center;padding:2px 5px;border-radius:4px;font-size:7px;letter-spacing:1px;color:var(--cy);background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.14);text-transform:uppercase;flex-shrink:0;line-height:1}
+.hv-engine-row .meta{display:flex;align-items:center;gap:8px;margin-top:2px}
+.hv-engine-row .w{font-size:8px;color:var(--cy);font-family:'JetBrains Mono',monospace}
+.hv-engine-row-right{display:flex;align-items:center;gap:6px}
+.hv-engine-live{font-size:7px;padding:2px 5px;border-radius:999px;background:rgba(52,211,153,0.12);color:var(--gr);border:1px solid rgba(52,211,153,0.2);font-family:'JetBrains Mono',monospace;letter-spacing:1px}
+.hv-engine-live.killed{background:rgba(244,63,94,0.1);color:var(--rd);border-color:rgba(244,63,94,0.2)}
+.hv-engine-live:not(.killed){position:relative;padding-left:11px}
+.hv-engine-live:not(.killed)::before{content:'';position:absolute;left:4px;top:50%;transform:translateY(-50%);width:4px;height:4px;border-radius:50%;background:currentColor;box-shadow:0 0 8px rgba(16,185,129,0.8);animation:liveDot 1.4s ease-in-out infinite}
+@keyframes liveDot{0%,100%{opacity:0.55;transform:translateY(-50%) scale(0.85)}50%{opacity:1;transform:translateY(-50%) scale(1.15)}}
+.hv-engine-ctl{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.hv-engine-ctl.stop{border:1px solid rgba(244,63,94,0.3);color:#fda4af;background:rgba(244,63,94,0.08)}
+.hv-engine-ctl.remove{border:1px solid rgba(99,102,241,0.25);color:#818cf8;background:rgba(99,102,241,0.08)}
+.hv-engine-row.killed{opacity:0.45}
+
 /* ═══ MARQUEE BROKERS ═══ */
 .marquee-section{padding:40px 0;position:relative;z-index:5;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(6,9,18,0.6)}
 .marquee-title{text-align:center;font-size:11px;color:var(--fg-2);text-transform:uppercase;letter-spacing:3px;font-weight:600;margin-bottom:28px}
@@ -168,29 +210,51 @@ img,svg{display:block;max-width:100%}
 .m-chip{display:inline-flex;align-items:center;gap:10px;padding:12px 20px;background:rgba(17,27,48,0.6);border:1px solid var(--border);border-radius:12px;white-space:nowrap;transition:all 0.3s;flex-shrink:0}
 .m-chip:hover{border-color:var(--border-hi);background:rgba(17,27,48,0.9);transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,0.4)}
 .m-chip-logo{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:800;font-size:11px;color:#fff;flex-shrink:0}
+.m-chip-logo.img{background:rgba(255,255,255,0.04);padding:4px;border:1px solid rgba(255,255,255,0.12)}
+.m-chip-logo-img{width:100%;height:100%;object-fit:contain}
+.m-chip-logo-fallback{display:none;width:100%;height:100%;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-weight:800}
 .m-chip-name{font-size:13px;font-weight:600;color:var(--fg-1)}
 
-/* ═══ STATS ═══ */
-.stats-section{padding:80px 0;position:relative}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+/* ═══ STATS CAROUSEL ═══ */
+.stats-section{padding:36px 0 52px;position:relative;border-bottom:1px solid rgba(20,184,166,0.08)}
+.stats-marquee{overflow:hidden;position:relative;mask-image:linear-gradient(90deg,transparent,black 10%,black 90%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,black 10%,black 90%,transparent)}
+.stats-track{display:flex;gap:16px;width:max-content;animation:marquee 44s linear infinite}
 .stat-card{position:relative;padding:32px 24px;border-radius:20px;background:linear-gradient(180deg,rgba(17,27,48,0.7),rgba(10,15,28,0.5));border:1px solid var(--border);overflow:hidden;transition:all 0.4s cubic-bezier(.2,.8,.2,1)}
-.stat-card::before{content:'';position:absolute;top:-60%;left:-10%;width:120%;height:60%;background:radial-gradient(ellipse at center,rgba(56,189,248,0.15),transparent 70%);opacity:0;transition:opacity 0.4s}
-.stat-card:hover{border-color:var(--border-hi);transform:translateY(-6px);box-shadow:0 20px 60px rgba(56,189,248,0.12)}
+.stats-track .stat-card{width:264px;flex-shrink:0}
+.stats-track .feature{width:320px;flex-shrink:0;padding:28px 22px}
+.stats-track .feature h3{font-size:24px}
+.stats-track .stat-card,
+.stats-track .feature{text-align:center}
+.stats-track .stat-icon,
+.stats-track .feature-icon{margin-left:auto;margin-right:auto}
+.stats-track .stat-trend,
+.stats-track .feature-meta{justify-content:center}
+.stat-card::before{content:'';position:absolute;top:-60%;left:-10%;width:120%;height:60%;background:radial-gradient(ellipse at center,rgba(20,184,166,0.18),transparent 70%);opacity:0;transition:opacity 0.4s}
+.stat-card:hover{border-color:var(--border-hi);transform:translateY(-6px);box-shadow:0 20px 60px rgba(20,184,166,0.16)}
 .stat-card:hover::before{opacity:1}
 .stat-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px;position:relative;z-index:2}
-.stat-icon-1{background:linear-gradient(135deg,rgba(56,189,248,0.15),rgba(99,102,241,0.15));border:1px solid rgba(56,189,248,0.3);color:var(--cy)}
+.stat-icon-1{background:linear-gradient(135deg,rgba(20,184,166,0.18),rgba(14,165,233,0.16));border:1px solid rgba(20,184,166,0.35);color:var(--cy)}
 .stat-icon-2{background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(6,182,212,0.15));border:1px solid rgba(16,185,129,0.3);color:var(--gr)}
-.stat-icon-3{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(236,72,153,0.15));border:1px solid rgba(168,85,247,0.3);color:var(--pu)}
+.stat-icon-3{background:linear-gradient(135deg,rgba(59,130,246,0.16),rgba(99,102,241,0.16));border:1px solid rgba(59,130,246,0.3);color:var(--pu)}
 .stat-icon-4{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(239,68,68,0.15));border:1px solid rgba(251,191,36,0.3);color:var(--yl)}
 .stat-value{font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:800;line-height:1;letter-spacing:-2px;margin-bottom:8px;color:var(--fg-0);position:relative;z-index:2}
 .stat-value .suffix{font-size:24px;color:var(--cy);margin-left:2px}
 .stat-label{font-size:12px;color:var(--fg-2);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;position:relative;z-index:2}
 .stat-trend{margin-top:10px;font-size:11px;color:var(--gr);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:4px;position:relative;z-index:2}
 
+/* ═══ TRUST STRIP ═══ */
+.trust-strip{padding:56px 0 32px;position:relative;border-bottom:1px solid rgba(20,184,166,0.08)}
+.benefits-head{max-width:760px;margin:0 auto 18px;text-align:center}
+.benefits-head h2{font-size:clamp(26px,3.5vw,40px);font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:10px}
+.benefits-head p{font-size:15px;color:var(--fg-1)}
+.trust-strip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.trust-chip{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:12px;background:rgba(17,27,48,0.55);border:1px solid var(--border);font-size:12px;color:var(--fg-1);font-weight:600;line-height:1.35}
+.trust-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--cy);box-shadow:0 0 12px rgba(20,184,166,0.8);flex-shrink:0}
+
 /* ═══ SECTION BASE ═══ */
-.section{padding:100px 0;position:relative}
+.section{padding:100px 0;position:relative;border-bottom:1px solid rgba(20,184,166,0.08)}
 .section-head{text-align:center;margin-bottom:64px;max-width:720px;margin-left:auto;margin-right:auto}
-.section-label{display:inline-block;padding:5px 12px;background:rgba(56,189,248,0.08);border:1px solid var(--border-hi);border-radius:100px;color:var(--cy);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:18px}
+.section-label{display:inline-block;padding:5px 12px;background:rgba(20,184,166,0.10);border:1px solid var(--border-hi);border-radius:100px;color:var(--cy);font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:18px}
 .section-title{font-size:clamp(32px,4.5vw,52px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;margin-bottom:16px;color:var(--fg-0)}
 .section-title .accent{background:linear-gradient(135deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .section-desc{font-size:17px;color:var(--fg-1);max-width:640px;margin:0 auto}
@@ -213,25 +277,34 @@ img,svg{display:block;max-width:100%}
 .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .feature{position:relative;padding:36px 28px;border-radius:20px;background:linear-gradient(180deg,rgba(17,27,48,0.6),rgba(10,15,28,0.6));border:1px solid var(--border);overflow:hidden;transition:all 0.4s cubic-bezier(.2,.8,.2,1);cursor:default}
 .feature::before{content:'';position:absolute;inset:0;border-radius:20px;padding:1px;background:linear-gradient(135deg,var(--cy),var(--pu),var(--pk));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity 0.4s}
-.feature::after{content:'';position:absolute;top:var(--y,50%);left:var(--x,50%);width:300px;height:300px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(56,189,248,0.15),transparent 70%);opacity:0;transition:opacity 0.3s;pointer-events:none}
+.feature::after{content:'';position:absolute;top:var(--y,50%);left:var(--x,50%);width:300px;height:300px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(20,184,166,0.18),transparent 70%);opacity:0;transition:opacity 0.3s;pointer-events:none}
 .feature:hover{transform:translateY(-6px);background:linear-gradient(180deg,rgba(17,27,48,0.8),rgba(10,15,28,0.8))}
 .feature:hover::before{opacity:1}
 .feature:hover::after{opacity:1}
-.feature-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;position:relative;background:linear-gradient(135deg,rgba(56,189,248,0.12),rgba(99,102,241,0.12));border:1px solid var(--border-hi)}
+.feature-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:20px;position:relative;background:linear-gradient(135deg,rgba(20,184,166,0.14),rgba(14,165,233,0.14));border:1px solid var(--border-hi)}
 .feature-icon svg{width:26px;height:26px;color:var(--cy)}
 .feature h3{font-size:20px;font-weight:700;margin-bottom:10px;color:var(--fg-0);letter-spacing:-0.3px}
 .feature p{color:var(--fg-1);font-size:14px;line-height:1.65}
 .feature-meta{margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:11px;color:var(--cy);font-weight:600;text-transform:uppercase;letter-spacing:1.5px}
 
+/* Platform section custom symmetry layout */
+.platform-layout{display:grid;grid-template-columns:1.15fr 0.85fr;gap:26px;align-items:start}
+.platform-content{position:sticky;top:110px}
+.platform-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.platform-content.section-head{margin:0;max-width:520px;text-align:left}
+.platform-content .section-title{font-size:clamp(46px,6.6vw,86px);font-weight:900;line-height:0.98;letter-spacing:-2.3px;margin-bottom:18px}
+.platform-content .section-desc{font-size:20px;line-height:1.45;max-width:500px}
+#how .section-title{font-size:clamp(46px,6.6vw,86px);font-weight:900;line-height:0.98;letter-spacing:-2.3px}
+
 /* Orbital ring for icons */
 .orbit-icon{position:relative}
-.orbit-ring{position:absolute;inset:-6px;border-radius:50%;border:1px dashed rgba(56,189,248,0.3);animation:orbitSpin 20s linear infinite;pointer-events:none}
+.orbit-ring{position:absolute;inset:-6px;border-radius:50%;border:1px dashed rgba(20,184,166,0.35);animation:orbitSpin 20s linear infinite;pointer-events:none}
 @keyframes orbitSpin{to{transform:rotate(360deg)}}
 
 /* ═══ DASHBOARD PREVIEW SECTION ═══ */
-.preview-section{padding:100px 0;position:relative;overflow:hidden}
+.preview-section{padding:100px 0;position:relative;overflow:hidden;border-bottom:1px solid rgba(20,184,166,0.08)}
 .preview-wrap{position:relative;perspective:1400px;max-width:1100px;margin:0 auto}
-.preview-card{position:relative;background:linear-gradient(180deg,rgba(17,27,48,0.95),rgba(10,15,28,0.95));border:1px solid var(--border-hi);border-radius:24px;padding:24px;transform-style:preserve-3d;transition:transform 0.5s cubic-bezier(.2,.8,.2,1);box-shadow:0 40px 100px rgba(0,0,0,0.6),0 0 80px rgba(56,189,248,0.1)}
+.preview-card{position:relative;background:linear-gradient(180deg,rgba(17,27,48,0.95),rgba(10,15,28,0.95));border:1px solid var(--border-hi);border-radius:24px;padding:24px;transform-style:preserve-3d;transition:transform 0.5s cubic-bezier(.2,.8,.2,1);box-shadow:0 40px 100px rgba(0,0,0,0.6),0 0 80px rgba(20,184,166,0.14)}
 .preview-card::before{content:'';position:absolute;top:-1px;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--cy),var(--pu),transparent)}
 .preview-chrome{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:20px}
 .preview-url{display:flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(6,9,18,0.6);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--fg-2);border:1px solid var(--border)}
@@ -242,13 +315,13 @@ img,svg{display:block;max-width:100%}
 .preview-stat-value{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--fg-0);margin-bottom:4px}
 .preview-stat-change{font-size:11px;font-family:'JetBrains Mono',monospace}
 .preview-bars{height:110px;display:flex;align-items:flex-end;gap:3px;margin-top:12px}
-.preview-bar{flex:1;background:linear-gradient(180deg,var(--cy),rgba(56,189,248,0.2));border-radius:2px 2px 0 0;opacity:0.7;transition:all 0.3s;min-height:4px}
+.preview-bar{flex:1;background:linear-gradient(180deg,var(--cy),rgba(20,184,166,0.24));border-radius:2px 2px 0 0;opacity:0.7;transition:all 0.3s;min-height:4px}
 .preview-bar:hover{opacity:1;background:linear-gradient(180deg,var(--pu),var(--cy))}
 .preview-strategies{grid-column:1/-1;margin-top:8px;padding:18px;background:rgba(6,9,18,0.5);border:1px solid var(--border);border-radius:14px}
 .preview-strategies h4{font-size:11px;color:var(--fg-2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
 .preview-strategies h4 span{color:var(--gr);font-family:'JetBrains Mono',monospace}
 .preview-strat-list{display:flex;flex-direction:column;gap:8px}
-.preview-strat{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 12px;background:rgba(17,27,48,0.6);border:1px solid rgba(56,189,248,0.06);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px}
+.preview-strat{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;padding:10px 12px;background:rgba(17,27,48,0.6);border:1px solid rgba(20,184,166,0.12);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:11px}
 .preview-strat-dot{width:8px;height:8px;border-radius:50%;background:var(--gr);box-shadow:0 0 10px var(--gr);animation:pulseDot 2s infinite}
 .preview-strat-name{color:var(--fg-0);font-weight:600}
 .preview-strat-spark{width:60px;height:20px}
@@ -263,7 +336,7 @@ img,svg{display:block;max-width:100%}
 .step{position:relative;text-align:center;padding:0 16px;z-index:2}
 .step-num{width:80px;height:80px;margin:0 auto 20px;border-radius:50%;background:linear-gradient(135deg,var(--bg-2),var(--bg-3));border:2px solid var(--border-hi);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:28px;font-weight:800;color:var(--cy);position:relative;box-shadow:0 10px 30px rgba(0,0,0,0.4)}
 .step-num::before{counter-increment:step;content:counter(step,decimal-leading-zero);background:linear-gradient(135deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.step-num::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px dashed rgba(56,189,248,0.2);animation:orbitSpin 20s linear infinite}
+.step-num::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px dashed rgba(20,184,166,0.24);animation:orbitSpin 20s linear infinite}
 .step h3{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--fg-0)}
 .step p{font-size:13px;color:var(--fg-1);line-height:1.6}
 
@@ -274,7 +347,7 @@ img,svg{display:block;max-width:100%}
 .strat:hover{transform:translateY(-4px);border-color:var(--border-hi)}
 .strat:hover::before{transform:scaleX(1)}
 .strat-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.strat-cat{font-size:10px;color:var(--cy);text-transform:uppercase;letter-spacing:2px;font-weight:700;padding:3px 8px;background:rgba(56,189,248,0.1);border:1px solid var(--border-hi);border-radius:6px}
+.strat-cat{font-size:10px;color:var(--cy);text-transform:uppercase;letter-spacing:2px;font-weight:700;padding:3px 8px;background:rgba(20,184,166,0.14);border:1px solid var(--border-hi);border-radius:6px}
 .strat-risk{font-size:10px;color:var(--fg-2);text-transform:uppercase;letter-spacing:1.5px}
 .strat-risk .bar{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}
 .strat-risk .bar span{width:3px;height:10px;background:var(--fg-3);border-radius:1px}
@@ -297,7 +370,7 @@ img,svg{display:block;max-width:100%}
 .testimonials{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .testimonial{padding:28px;border-radius:18px;background:linear-gradient(180deg,rgba(17,27,48,0.6),rgba(10,15,28,0.6));border:1px solid var(--border);position:relative;transition:all 0.3s}
 .testimonial:hover{border-color:var(--border-hi);transform:translateY(-3px)}
-.testimonial::before{content:'"';position:absolute;top:12px;right:20px;font-family:'Orbitron',sans-serif;font-size:80px;color:rgba(56,189,248,0.08);line-height:1;font-weight:900}
+.testimonial::before{content:'"';position:absolute;top:12px;right:20px;font-family:'Orbitron',sans-serif;font-size:80px;color:rgba(20,184,166,0.10);line-height:1;font-weight:900}
 .t-stars{display:flex;gap:2px;margin-bottom:12px;color:var(--yl);font-size:13px;letter-spacing:2px}
 .t-quote{font-size:14px;line-height:1.65;color:var(--fg-1);margin-bottom:20px;position:relative;z-index:2}
 .t-author{display:flex;align-items:center;gap:12px;padding-top:16px;border-top:1px solid var(--border)}
@@ -306,10 +379,24 @@ img,svg{display:block;max-width:100%}
 .t-author-name{color:var(--fg-0);font-weight:600;margin-bottom:2px}
 .t-author-role{color:var(--fg-2)}
 
+/* Arjun featured card (reference-inspired, theme matched) */
+.testimonial.has-portrait{padding:0;display:grid;grid-template-columns:132px minmax(0,1fr);overflow:hidden}
+.testimonial.has-portrait::before{display:none}
+.t-side{position:relative;background:linear-gradient(180deg,rgba(20,184,166,0.16),rgba(15,23,42,0.14));border-right:1px solid rgba(20,184,166,0.22);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.t-side::before{content:'';position:absolute;inset:10px 8px;border-radius:28px;background:linear-gradient(180deg,rgba(17,27,48,0.86),rgba(10,15,28,0.86));border:1px solid rgba(20,184,166,0.3);box-shadow:inset 0 0 24px rgba(20,184,166,0.12)}
+.t-side::after{content:'';position:absolute;left:8px;right:8px;bottom:8px;height:34%;border-radius:0 0 26px 26px;background:radial-gradient(ellipse at center,rgba(20,184,166,0.24),rgba(99,102,241,0.1) 60%,transparent 78%);filter:blur(8px)}
+.t-side-photo{position:relative;z-index:2;width:100%;height:100%;object-fit:cover;object-position:44% center;transform:none;filter:drop-shadow(0 8px 14px rgba(2,6,23,0.45))}
+.t-side-photo.marcus-photo{object-position:60% center}
+.t-side-photo.tomasz-photo{object-position:40% center}
+.t-main{padding:24px 24px 22px;display:flex;flex-direction:column}
+.testimonial.has-portrait .t-quote{margin-bottom:16px}
+.testimonial.has-portrait .t-author{margin-top:auto;gap:0;padding-top:14px;border-top:1px solid var(--border)}
+.testimonial.has-portrait .t-author-info{padding-left:0}
+
 /* ═══ PRICING ═══ */
 .pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1280px;margin:0 auto}
 .price-card{position:relative;padding:36px 28px;border-radius:20px;background:linear-gradient(180deg,rgba(17,27,48,0.7),rgba(10,15,28,0.7));border:1px solid var(--border);transition:all 0.3s}
-.price-card.popular{border-color:var(--cy);box-shadow:0 0 40px rgba(56,189,248,0.15);transform:scale(1.03)}
+.price-card.popular{border-color:var(--cy);box-shadow:0 0 40px rgba(20,184,166,0.18);transform:scale(1.03)}
 .price-card.popular::before{content:'MOST POPULAR';position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:4px 14px;background:linear-gradient(135deg,var(--cy),var(--pu));color:#fff;font-size:10px;font-weight:700;letter-spacing:1.5px;border-radius:100px;white-space:nowrap}
 .price-name{font-size:13px;color:var(--fg-2);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:14px}
 .price-amount{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:800;color:var(--fg-0);letter-spacing:-2px;margin-bottom:2px;line-height:1.05}
@@ -331,16 +418,16 @@ img,svg{display:block;max-width:100%}
 .faq-item{border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden;background:rgba(17,27,48,0.4);transition:all 0.3s}
 .faq-item.open{border-color:var(--border-hi)}
 .faq-q{width:100%;padding:18px 22px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:15px;font-weight:600;color:var(--fg-0);cursor:pointer}
-.faq-q::after{content:'';width:18px;height:18px;flex-shrink:0;border-radius:50%;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;transition:transform 0.3s}
+.faq-q::after{content:'';width:18px;height:18px;flex-shrink:0;border-radius:50%;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%2314b8a6' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;transition:transform 0.3s}
 .faq-item.open .faq-q::after{transform:rotate(180deg)}
 .faq-a{max-height:0;overflow:hidden;transition:max-height 0.4s ease,padding 0.4s ease}
 .faq-a-inner{padding:0 22px 20px;color:var(--fg-1);font-size:14px;line-height:1.65}
 .faq-item.open .faq-a{max-height:400px}
 
 /* ═══ CTA ═══ */
-.cta-section{position:relative;padding:100px 0;overflow:hidden}
-.cta-card{position:relative;padding:80px 40px;border-radius:28px;background:linear-gradient(135deg,rgba(56,189,248,0.1),rgba(168,85,247,0.1));border:1px solid var(--border-hi);text-align:center;overflow:hidden}
-.cta-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(56,189,248,0.15),transparent 60%);animation:ctaGlow 6s ease-in-out infinite}
+.cta-section{position:relative;padding:100px 0;overflow:hidden;border-bottom:1px solid rgba(20,184,166,0.08)}
+.cta-card{position:relative;padding:80px 40px;border-radius:28px;background:linear-gradient(135deg,rgba(20,184,166,0.12),rgba(139,92,246,0.12));border:1px solid var(--border-hi);text-align:center;overflow:hidden}
+.cta-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(20,184,166,0.18),transparent 60%);animation:ctaGlow 6s ease-in-out infinite}
 @keyframes ctaGlow{0%,100%{opacity:0.6}50%{opacity:1}}
 .cta-mesh{position:absolute;inset:0;opacity:0.3;background:conic-gradient(from 0deg at 50% 50%,var(--cy),var(--pu),var(--pk),var(--cy));filter:blur(60px);animation:meshSpin 20s linear infinite}
 @keyframes meshSpin{to{transform:rotate(360deg)}}
@@ -373,7 +460,14 @@ img,svg{display:block;max-width:100%}
   .hv-float-1{left:-40px}
   .hv-float-2{right:-20px}
   .features-grid{grid-template-columns:repeat(2,1fr)}
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .platform-layout{grid-template-columns:1fr}
+  .platform-content{position:static}
+  .platform-content.section-head{max-width:720px;text-align:center}
+  .platform-content .section-title{font-size:clamp(36px,5.6vw,62px);letter-spacing:-1.6px;line-height:1.02}
+  .platform-content .section-desc{font-size:17px;max-width:640px}
+  #how .section-title{font-size:clamp(36px,5.6vw,62px);letter-spacing:-1.6px;line-height:1.02}
+  .platform-grid{grid-template-columns:1fr 1fr}
+  .trust-strip-grid{grid-template-columns:repeat(2,1fr)}
   .steps{grid-template-columns:repeat(2,1fr);gap:40px 20px}
   .steps::before{display:none}
   .strat-grid{grid-template-columns:repeat(2,1fr)}
@@ -393,11 +487,17 @@ img,svg{display:block;max-width:100%}
   .section{padding:70px 0}
   .section-head{margin-bottom:40px}
   .features-grid{grid-template-columns:1fr}
-  .stats-grid{grid-template-columns:1fr 1fr}
+  .platform-grid{grid-template-columns:1fr}
+  .trust-strip-grid{grid-template-columns:1fr}
   .stat-value{font-size:32px}
+  .stats-track .stat-card{width:236px}
+  .stats-track .feature{width:280px}
   .steps{grid-template-columns:1fr;gap:32px}
   .strat-grid{grid-template-columns:1fr}
   .testimonials{grid-template-columns:1fr}
+  .testimonial.has-portrait{grid-template-columns:104px minmax(0,1fr)}
+  .t-main{padding:18px 16px 16px}
+  .t-side-photo{width:100%;height:100%;object-position:44% center}
   .pricing{grid-template-columns:1fr;max-width:480px}
   .cta-card{padding:48px 24px}
   .footer-grid{grid-template-columns:1fr 1fr;gap:28px}
@@ -406,14 +506,9 @@ img,svg{display:block;max-width:100%}
   .ticker-bar{font-size:10px}
   .hv-card{padding:16px}
   .hv-pnl-value{font-size:26px}
+  .hv-engine-stats{grid-template-columns:1fr}
+  .hv-engine-panels{grid-template-columns:1fr}
   .hero-ctas .btn{width:100%;justify-content:center}
-}
-@media (max-width:480px){
-  .container,.container-sm{padding:0 14px}
-  .hero h1{font-size:32px;line-height:1.12}
-  .footer-grid{grid-template-columns:1fr;gap:20px}
-  .footer-bottom{align-items:flex-start}
-  .ticker-track{padding:0 14px}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}
@@ -454,10 +549,14 @@ img,svg{display:block;max-width:100%}
 @media (max-width:480px){.signin-card{padding:32px 22px 26px}.signin-title{font-size:20px}}
 </style>
 </head>
-<body id="top">
+<body>
 
 <!-- ═══ BACKGROUND LAYERS ═══ -->
-<div class="grid-bg"></div>
+<div class="grid-bg" id="gridBg">
+  <div class="grid-bg-glow"></div>
+  <div class="grid-squares" id="gridSquares"></div>
+  <div class="grid-drops" id="gridDrops"></div>
+</div>
 <div class="noise"></div>
 <canvas class="particles" id="particleCanvas"></canvas>
 <div class="spotlight" id="spotlight"></div>
@@ -470,9 +569,9 @@ img,svg{display:block;max-width:100%}
 <!-- ═══ NAV ═══ -->
 <nav class="nav" id="nav">
   <div class="container nav-inner">
-    <a href="#top" class="brand">
+    <a href="#" class="brand">
       <div class="brand-logo">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h7v7"/></svg>
+        <img src="/logo.png" alt="TradingSmart logo" class="brand-logo-img">
       </div>
       TRADINGSMART.AI
     </a>
@@ -483,8 +582,8 @@ img,svg{display:block;max-width:100%}
       <a href="#faq" class="nav-link">FAQ</a>
     </div>
     <div class="nav-cta">
-      <a href="/login" class="btn btn-ghost" target="_top">Sign in</a>
-      <a href="/request-access" class="btn btn-primary" target="_top">Get started →</a>
+      <a href="/login" class="btn btn-ghost" data-open-signin>Sign in</a>
+      <a href="onboarding.html" class="btn btn-primary">Get started →</a>
     </div>
     <button class="burger" aria-label="Menu"><span></span></button>
   </div>
@@ -496,33 +595,24 @@ img,svg{display:block;max-width:100%}
   <div class="container">
     <div class="hero-grid">
       <div class="hero-left">
-        <div class="badge"><span class="badge-dot"></span> Live · 179+ brokers · 24/7 execution</div>
+        <div class="badge"><span class="badge-dot"></span> Done-For-You · No Coding · Engineers Build It</div>
         <h1>
-          <span class="word" style="animation-delay:0.3s">The</span>
-          <span class="word" style="animation-delay:0.4s">unified</span>
-          <span class="word gradient" style="animation-delay:0.55s">algo&nbsp;engine</span><br>
-          <span class="word" style="animation-delay:0.7s">for</span>
-          <span class="word" style="animation-delay:0.8s">every</span>
-          <span class="word" style="animation-delay:0.9s">market.</span>
+          <span class="word" style="animation-delay:0.3s">We</span>
+          <span class="word" style="animation-delay:0.4s">turn</span>
+          <span class="word" style="animation-delay:0.5s">your</span>
+          <span class="word" style="animation-delay:0.6s">trading</span>
+          <span class="word gradient" style="animation-delay:0.7s">strategy</span>
+          <span class="word" style="animation-delay:0.8s">into</span>
+          <span class="word" style="animation-delay:0.9s">an</span>
+          <span class="word gradient" style="animation-delay:1s">automated</span>
+          <span class="word" style="animation-delay:1.1s">system.</span>
         </h1>
         <p class="hero-sub">
-          Connect <strong>Zerodha, Binance, Interactive Brokers</strong> and 176 more. Deploy SEBI/SEC-registered strategies. Execute 24/7 across stocks, forex, crypto, and futures — from <strong>one intelligent dashboard</strong>.
+          Tell us your strategy in plain English. Our engineers code the algorithm, connect it to your broker, and deliver a deployed automated system within 72 hours. Features like AI trading analysis, backtesting, and paper trading included.
         </p>
         <div class="hero-ctas">
-          <a href="/request-access" class="btn btn-primary btn-lg" target="_top">Start free trial →</a>
-          <!-- <a href="#preview" class="btn btn-ghost btn-lg">Watch 2-min demo ▸</a> -->
-        </div>
-        <div class="hero-trust">
-          <div class="trust-avatars">
-            <div class="trust-avatar">R</div>
-            <div class="trust-avatar">K</div>
-            <div class="trust-avatar">P</div>
-            <div class="trust-avatar">A</div>
-          </div>
-          <div class="trust-text">
-            <div class="trust-stars">★★★★★ <span style="color:var(--fg-1);font-family:'JetBrains Mono',monospace">4.9/5</span></div>
-            <div>Trusted by <strong>28,400+</strong> traders worldwide</div>
-          </div>
+          <a href="onboarding.html" class="btn btn-primary btn-lg">Automate My Strategy →</a>
+          <a href="#pricing" class="btn btn-ghost btn-lg">Book a Free Demo Call</a>
         </div>
       </div>
 
@@ -542,43 +632,139 @@ img,svg{display:block;max-width:100%}
           </div>
 
           <div class="hv-card">
-            <div class="hv-header">
-              <div class="hv-title"><span class="hv-title-dot"></span> TSA · Live Engine</div>
-              <div class="hv-dots"><span></span><span></span><span></span></div>
-            </div>
-
-            <div class="hv-pnl">
-              <div class="hv-pnl-label">Total Portfolio P&L</div>
-              <div class="hv-pnl-value" id="heroPnl">+$47,392.18</div>
-              <div class="hv-pnl-change">▲ +$1,284.50 (+2.78%) Today</div>
-            </div>
-
-            <div class="hv-chart">
-              <svg viewBox="0 0 400 120" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="heroGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.5"/>
-                    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
-                  </linearGradient>
-                </defs>
-                <path class="hv-chart-area" d="M0,90 L20,80 L40,85 L60,70 L80,72 L100,60 L120,55 L140,58 L160,50 L180,45 L200,48 L220,40 L240,35 L260,38 L280,28 L300,25 L320,22 L340,18 L360,14 L380,10 L400,8 L400,120 L0,120 Z"/>
-                <path class="hv-chart-line" d="M0,90 L20,80 L40,85 L60,70 L80,72 L100,60 L120,55 L140,58 L160,50 L180,45 L200,48 L220,40 L240,35 L260,38 L280,28 L300,25 L320,22 L340,18 L360,14 L380,10 L400,8"/>
-                <circle class="hv-chart-dot" cx="400" cy="8" r="4" style="animation-delay:4.4s"/>
-              </svg>
-            </div>
-
-            <div class="hv-feed">
-              <div class="hv-trade">
-                <div class="hv-trade-left"><span class="hv-pill pill-buy">BUY</span><span class="hv-sym">NIFTY 24200 CE</span></div>
-                <span class="hv-amt">+₹4,380</span>
+            <div class="hv-engine">
+              <div class="hv-engine-top">
+                <div class="hv-engine-title">
+                  <strong>TradingSmart.AI Trading Engine</strong>
+                  <span>Engine Running</span>
+                </div>
+                <div class="hv-engine-status">
+                  <span>4/4 brokers</span>
+                  <b>72h 15m</b>
+                  <button class="hv-engine-kill" aria-label="Overall kill switch">STOP</button>
+                </div>
               </div>
-              <div class="hv-trade">
-                <div class="hv-trade-left"><span class="hv-pill pill-buy">BUY</span><span class="hv-sym">BTC/USDT</span></div>
-                <span class="hv-amt">+$1,204</span>
+
+              <div class="hv-engine-stats">
+                <div class="hv-engine-stat">
+                  <div class="k">Total Portfolio</div>
+                  <div class="v">$630,835.88</div>
+                  <div class="s">Across all connected accounts</div>
+                </div>
+                <div class="hv-engine-stat">
+                  <div class="k">Today's P&L</div>
+                  <div class="v up" id="heroPnl">+$12,777.00</div>
+                  <div class="s">▲ Sum of active strategies</div>
+                </div>
+                <div class="hv-engine-stat">
+                  <div class="k">Market Status</div>
+                  <div class="v up">3/4 open</div>
+                  <div class="s">35 trades today</div>
+                </div>
               </div>
-              <div class="hv-trade">
-                <div class="hv-trade-left"><span class="hv-pill pill-sell">SELL</span><span class="hv-sym">EUR/USD</span></div>
-                <span class="hv-amt">+$218</span>
+
+              <div class="hv-engine-panels">
+                <div class="hv-engine-panel binance">
+                  <div class="hv-engine-panel-head">
+                    <b>Binance (Crypto)</b>
+                    <span class="hv-engine-pill">Live</span>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">BTC Range Trader <span class="type">Grid</span></div>
+                      <div class="meta"><div class="t">BTC/USDT</div><div class="p">+$1,634</div><div class="w">92% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">Altcoin Momentum <span class="type">Momentum</span></div>
+                      <div class="meta"><div class="t">SOL/USDT, AVAX/USDT</div><div class="p">+$918</div><div class="w">88% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">Funding Rate Arb <span class="type">Arb</span></div>
+                      <div class="meta"><div class="t">BNB/USDT, ETH/USDT</div><div class="p">+$1,029</div><div class="w">91% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                  <div class="hv-engine-row killed">
+                    <div>
+                      <div class="n">Large Cap Alpha <span class="type">Swing</span></div>
+                      <div class="meta"><div class="t">BTC/USDT, ETH/USDT</div><div class="p">+$0</div><div class="w">0% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live killed">KILLED</span>
+                      <span class="hv-engine-ctl stop">▶</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="hv-engine-panel ib">
+                  <div class="hv-engine-panel-head">
+                    <b>Interactive Brokers (US)</b>
+                    <span class="hv-engine-pill">Live</span>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">FAANG Rotator <span class="type">Momentum</span></div>
+                      <div class="meta"><div class="t">AAPL, NVDA</div><div class="p">+$1,220</div><div class="w">90% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">SPX Iron Fly <span class="type">Options</span></div>
+                      <div class="meta"><div class="t">SPY, QQQ</div><div class="p">+$640</div><div class="w">84% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">Earnings Sniper <span class="type">Scalp</span></div>
+                      <div class="meta"><div class="t">AMD, META</div><div class="p">+$488</div><div class="w">78% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                  <div class="hv-engine-row">
+                    <div>
+                      <div class="n">London Breakout <span class="type">Breakout</span></div>
+                      <div class="meta"><div class="t">ES, NQ</div><div class="p">+$902</div><div class="w">86% win</div></div>
+                    </div>
+                    <div class="hv-engine-row-right">
+                      <span class="hv-engine-live">LIVE</span>
+                      <span class="hv-engine-ctl stop">■</span>
+                      <span class="hv-engine-ctl remove">×</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -591,7 +777,7 @@ img,svg{display:block;max-width:100%}
 <!-- ═══ MARQUEE ═══ -->
 <section class="marquee-section">
   <div class="container">
-    <div class="marquee-title">Integrated with <span>179+ brokers</span> across 18 countries</div>
+    <div class="marquee-title">Integration with <span>179+ brokers</span> across 18 countries possible!</div>
   </div>
   <div class="marquee">
     <div class="marquee-track" id="marqueeTrack1"></div>
@@ -601,15 +787,32 @@ img,svg{display:block;max-width:100%}
   </div>
 </section>
 
-<!-- ═══ STATS ═══ -->
-<section class="stats-section">
+<!-- ═══ TRUST STRIP (ADDITIVE) ═══ -->
+<section class="trust-strip">
   <div class="container">
-    <div class="stats-grid reveal-stagger">
+    <div class="benefits-head reveal">
+      <div class="section-label">Why traders all over the world choose us</div>
+      <h2>Built to remove manual trading stress and execution gaps</h2>
+      <p>Your strategy gets implemented by engineers, and you get a platform to analyze, test, and execute with confidence.</p>
+    </div>
+    <div class="trust-strip-grid reveal-stagger">
+      <div class="trust-chip"><span class="trust-chip-dot"></span>Done-for-you setup means no coding, no freelancer back-and-forth</div>
+      <div class="trust-chip"><span class="trust-chip-dot"></span>Rules run consistently instead of manual, emotional execution</div>
+      <div class="trust-chip"><span class="trust-chip-dot"></span>Backtest and paper trade before risking live capital</div>
+      <div class="trust-chip"><span class="trust-chip-dot"></span>You keep broker control while we handle implementation and updates</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STATS CAROUSEL ═══ -->
+<section class="stats-section" id="features">
+  <div class="stats-marquee reveal">
+    <div class="stats-track">
       <div class="stat-card">
         <div class="stat-icon stat-icon-1">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg>
         </div>
-        <div class="stat-value" data-count="179"><span class="count">0</span><span class="suffix">+</span></div>
+        <div class="stat-value">179<span class="suffix">+</span></div>
         <div class="stat-label">Brokers Supported</div>
         <div class="stat-trend">▲ 12 added this quarter</div>
       </div>
@@ -617,7 +820,7 @@ img,svg{display:block;max-width:100%}
         <div class="stat-icon stat-icon-2">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 010 7H6"/></svg>
         </div>
-        <div class="stat-value"><span class="cur" style="font-size:24px;color:var(--gr);margin-right:2px">$</span><span class="count" data-count="2.4">0</span><span class="suffix">B+</span></div>
+        <div class="stat-value"><span class="cur" style="font-size:24px;color:var(--gr);margin-right:2px">$</span>2.40<span class="suffix">B+</span></div>
         <div class="stat-label">Executed Volume</div>
         <div class="stat-trend">▲ $84M past 24h</div>
       </div>
@@ -625,7 +828,7 @@ img,svg{display:block;max-width:100%}
         <div class="stat-icon stat-icon-3">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M12.5 7.5a4 4 0 11-8 0 4 4 0 018 0zM20 8v6M23 11h-6"/></svg>
         </div>
-        <div class="stat-value"><span class="count" data-count="28400">0</span></div>
+        <div class="stat-value">28,400</div>
         <div class="stat-label">Active Traders</div>
         <div class="stat-trend">▲ +1,840 this month</div>
       </div>
@@ -633,23 +836,10 @@ img,svg{display:block;max-width:100%}
         <div class="stat-icon stat-icon-4">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3"/></svg>
         </div>
-        <div class="stat-value"><span class="count" data-count="99.97">0</span><span class="suffix">%</span></div>
+        <div class="stat-value">99.97<span class="suffix">%</span></div>
         <div class="stat-label">Engine Uptime</div>
         <div class="stat-trend">SLA enforced 24/7</div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ FEATURES ═══ -->
-<section class="section" id="features">
-  <div class="container">
-    <div class="section-head reveal">
-      <div class="section-label">Capabilities</div>
-      <h2 class="section-title">Everything you need to <span class="accent">trade autonomously</span></h2>
-      <p class="section-desc">Purpose-built for serious traders. Every feature engineered for speed, reliability, and precision.</p>
-    </div>
-    <div class="features-grid reveal-stagger">
       <div class="feature" data-tilt>
         <div class="feature-icon orbit-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -686,17 +876,192 @@ img,svg{display:block;max-width:100%}
         <div class="feature-icon orbit-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
         </div>
-        <h3>SEBI-registered strategies</h3>
-        <p>Every strategy on our marketplace is authored by SEBI-registered Research Analysts or verified independent traders. Real people, real track records.</p>
-        <div class="feature-meta">✓ SEBI / SEC compliant</div>
+        <h3>Vetted strategy providers</h3>
+        <p>Every strategy on our marketplace is authored by verified, regulated providers or independently audited traders. Real people, real track records.</p>
+        <div class="feature-meta">✓ Multi-jurisdiction compliant</div>
       </div>
       <div class="feature" data-tilt>
         <div class="feature-icon orbit-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         </div>
         <h3>Backtest across 15 years</h3>
-        <p>Test any strategy on 15 years of tick-level data. Slippage models, commission profiles, walk-forward optimization — all built in.</p>
+        <p>Test any strategy on 15 years of tick-level data. Slippage models, commission profiles, walk-forward optimization - all built in.</p>
         <div class="feature-meta">📈 Monte Carlo included</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Sub-millisecond execution</h3>
+        <p>Co-located infrastructure routes orders to exchanges in under 40ms. Your strategies never wait on stale quotes.</p>
+        <div class="feature-meta">⚡ Avg. latency: 38ms</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <h3>Institutional-grade security</h3>
+        <p>256-bit AES encryption, ISO 27001 certified infrastructure, OAuth 2.0 broker connections. Your API keys never leave our vault.</p>
+        <div class="feature-meta">🛡️ SOC 2 Type II</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>24/7 autonomous engine</h3>
+        <p>Your algo runs even when you sleep. Automatic market-hours detection, kill-switch safety, and smart re-entry on disconnections.</p>
+        <div class="feature-meta">⏱️ 99.97% uptime</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h3>Live P&L analytics</h3>
+        <p>Per-strategy, per-broker, per-trade attribution. Multi-currency dashboards. Tax-ready exports for any jurisdiction.</p>
+        <div class="feature-meta">📊 7 base currencies</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+        </div>
+        <h3>Vetted strategy providers</h3>
+        <p>Every strategy on our marketplace is authored by verified, regulated providers or independently audited traders. Real people, real track records.</p>
+        <div class="feature-meta">✓ Multi-jurisdiction compliant</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <h3>Backtest across 15 years</h3>
+        <p>Test any strategy on 15 years of tick-level data. Slippage models, commission profiles, walk-forward optimization - all built in.</p>
+        <div class="feature-meta">📈 Monte Carlo included</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-1">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/></svg>
+        </div>
+        <div class="stat-value">179<span class="suffix">+</span></div>
+        <div class="stat-label">Brokers Supported</div>
+        <div class="stat-trend">▲ 12 added this quarter</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-2">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 010 7H6"/></svg>
+        </div>
+        <div class="stat-value"><span class="cur" style="font-size:24px;color:var(--gr);margin-right:2px">$</span>2.40<span class="suffix">B+</span></div>
+        <div class="stat-label">Executed Volume</div>
+        <div class="stat-trend">▲ $84M past 24h</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-3">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M12.5 7.5a4 4 0 11-8 0 4 4 0 018 0zM20 8v6M23 11h-6"/></svg>
+        </div>
+        <div class="stat-value">28,400</div>
+        <div class="stat-label">Active Traders</div>
+        <div class="stat-trend">▲ +1,840 this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon stat-icon-4">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14M22 4L12 14.01l-3-3"/></svg>
+        </div>
+        <div class="stat-value">99.97<span class="suffix">%</span></div>
+        <div class="stat-label">Engine Uptime</div>
+        <div class="stat-trend">SLA enforced 24/7</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3>Sub-millisecond execution</h3>
+        <p>Co-located infrastructure routes orders to exchanges in under 40ms. Your strategies never wait on stale quotes.</p>
+        <div class="feature-meta">⚡ Avg. latency: 38ms</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <h3>Institutional-grade security</h3>
+        <p>256-bit AES encryption, ISO 27001 certified infrastructure, OAuth 2.0 broker connections. Your API keys never leave our vault.</p>
+        <div class="feature-meta">🛡️ SOC 2 Type II</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>24/7 autonomous engine</h3>
+        <p>Your algo runs even when you sleep. Automatic market-hours detection, kill-switch safety, and smart re-entry on disconnections.</p>
+        <div class="feature-meta">⏱️ 99.97% uptime</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h3>Live P&L analytics</h3>
+        <p>Per-strategy, per-broker, per-trade attribution. Multi-currency dashboards. Tax-ready exports for any jurisdiction.</p>
+        <div class="feature-meta">📊 7 base currencies</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+        </div>
+        <h3>Vetted strategy providers</h3>
+        <p>Every strategy on our marketplace is authored by verified, regulated providers or independently audited traders. Real people, real track records.</p>
+        <div class="feature-meta">✓ Multi-jurisdiction compliant</div>
+      </div>
+      <div class="feature" data-tilt>
+        <div class="feature-icon orbit-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <h3>Backtest across 15 years</h3>
+        <p>Test any strategy on 15 years of tick-level data. Slippage models, commission profiles, walk-forward optimization - all built in.</p>
+        <div class="feature-meta">📈 Monte Carlo included</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PLATFORM CAPABILITIES (ADDITIVE) ═══ -->
+<section class="section" id="platform-capabilities">
+  <div class="container">
+    <div class="platform-layout">
+      <div class="platform-grid reveal-stagger">
+        <div class="feature" data-tilt>
+          <div class="feature-icon orbit-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 13l3-3 3 2 4-5"/></svg>
+          </div>
+          <h3>AI trading analysis</h3>
+          <p>Validate entries with structured scoring and plain-language context so setups are easier to trust before execution.</p>
+          <div class="feature-meta">🧠 Multi-factor signal validation</div>
+        </div>
+        <div class="feature" data-tilt>
+          <div class="feature-icon orbit-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M4 15l4-4 3 3 5-6 4 4"/></svg>
+          </div>
+          <h3>Historical backtesting</h3>
+          <p>Replay strategies with drawdown, slippage, and trade-level metrics before you commit real capital.</p>
+          <div class="feature-meta">📈 Walk-forward and Monte Carlo ready</div>
+        </div>
+        <div class="feature" data-tilt>
+          <div class="feature-icon orbit-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+          </div>
+          <h3>Paper trading sandbox</h3>
+          <p>Dry-run your automation in live-like conditions to test risk controls and execution flow before switching live.</p>
+          <div class="feature-meta">🧪 Validate safely before deployment</div>
+        </div>
+        <div class="feature" data-tilt>
+          <div class="feature-icon orbit-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+          </div>
+          <h3>Global news feed</h3>
+          <p>Get fast market headlines across regions so you can react to macro, earnings, and policy events in time.</p>
+          <div class="feature-meta">📰 Live macro + earnings updates</div>
+        </div>
+      </div>
+      <div class="section-head reveal platform-content">
+        <div class="section-label">Platform access included</div>
+        <h2 class="section-title">Beyond the engine:<br><span class="accent">the<br>full trading stack</span></h2>
+        <p class="section-desc">Keep your existing broker integrations and add the core platform workflows serious traders use daily before and after going live.</p>
       </div>
     </div>
   </div>
@@ -743,9 +1108,9 @@ img,svg{display:block;max-width:100%}
             <div class="preview-strat-list">
               <div class="preview-strat">
                 <div class="preview-strat-dot"></div>
-                <div><span class="preview-strat-name">VWAP Crossover Pro</span> · Zerodha · NSE</div>
+                <div><span class="preview-strat-name">VWAP Crossover Pro</span> · Interactive Brokers · US Equities</div>
                 <svg class="preview-strat-spark" viewBox="0 0 60 20"><path d="M0,15 L10,12 L20,14 L30,8 L40,10 L50,5 L60,3" fill="none" stroke="#10b981" stroke-width="1.5"/></svg>
-                <div class="preview-strat-pnl">+₹24,380</div>
+                <div class="preview-strat-pnl">+$2,430</div>
               </div>
               <div class="preview-strat">
                 <div class="preview-strat-dot"></div>
@@ -761,9 +1126,9 @@ img,svg{display:block;max-width:100%}
               </div>
               <div class="preview-strat">
                 <div class="preview-strat-dot"></div>
-                <div><span class="preview-strat-name">NIFTY Expiry Scalper</span> · Angel One · F&O</div>
+                <div><span class="preview-strat-name">DAX Session Scalper</span> · IG Group · EU Futures</div>
                 <svg class="preview-strat-spark" viewBox="0 0 60 20"><path d="M0,14 L10,12 L20,13 L30,8 L40,9 L50,5 L60,2" fill="none" stroke="#10b981" stroke-width="1.5"/></svg>
-                <div class="preview-strat-pnl">+₹8,420</div>
+                <div class="preview-strat-pnl">+€890</div>
               </div>
             </div>
           </div>
@@ -779,18 +1144,18 @@ img,svg{display:block;max-width:100%}
     <div class="section-head reveal">
       <div class="section-label">How it works</div>
       <h2 class="section-title">Live in <span class="accent">72 hours</span></h2>
-      <p class="section-desc">Our engineers hand-code your chosen strategy onto your trading robot. Typical go-live takes ~72 hours end-to-end.</p>
+      <p class="section-desc">Our engineers hand-code your chosen strategy onto your trading robot, validate it with backtests and paper workflows, then take it live. Typical go-live takes ~72 hours end-to-end.</p>
     </div>
     <div class="steps reveal-stagger">
       <div class="step">
         <div class="step-num"></div>
         <h3>Connect brokers</h3>
-        <p>OAuth one-tap link for Zerodha, Groww, Binance, Interactive Brokers and 175 more. Read-only keys supported.</p>
+        <p>OAuth one-tap link for Interactive Brokers, Binance, OANDA, Schwab and 175 more. Read-only keys supported.</p>
       </div>
       <div class="step">
         <div class="step-num"></div>
-        <h3>Pick your strategy</h3>
-        <p>Choose from our SEBI-registered marketplace or submit a custom spec. Review backtests, drawdowns, and live performance.</p>
+        <h3>Share your strategy</h3>
+        <p>Tell us your logic! Even a rough idea works. Via a call, WhatsApp, or a short form. No coding knowledge needed, plain English is enough.</p>
       </div>
       <div class="step">
         <div class="step-num"></div>
@@ -800,7 +1165,7 @@ img,svg{display:block;max-width:100%}
       <div class="step">
         <div class="step-num"></div>
         <h3>Monitor & scale</h3>
-        <p>Real-time P&L, instant alerts, and a global kill-switch. Scale winning strategies with a slider.</p>
+        <p>Real-time P&L, instant alerts, and a global kill-switch. Move from paper to live with confidence and scale winning strategies with a slider.</p>
       </div>
     </div>
   </div>
@@ -812,72 +1177,88 @@ img,svg{display:block;max-width:100%}
     <div class="section-head reveal">
       <div class="section-label">Testimonials</div>
       <h2 class="section-title">Trusted by traders <span class="accent">worldwide</span></h2>
-      <p class="section-desc">From solo retail traders to multi-crore funds, here's what they say.</p>
+      <p class="section-desc">From solo retail traders to professional desks, here's what they say.</p>
     </div>
     <div class="testimonials reveal-stagger">
-      <div class="testimonial">
-        <div class="t-stars">★★★★★</div>
-        <div class="t-quote">"I was juggling Zerodha for equities, Binance for crypto, and OANDA for forex on three screens. TradingSmart collapsed everything into one dashboard with better P&L tracking than any of the native apps."</div>
-        <div class="t-author">
-          <div class="t-avatar">RS</div>
-          <div class="t-author-info">
-            <div class="t-author-name">Rohit Sharma</div>
-            <div class="t-author-role">Prop Trader · Mumbai</div>
+      <div class="testimonial has-portrait">
+        <div class="t-side" aria-hidden="true">
+          <img class="t-side-photo" src="/testimonials/arjun.png" alt="">
+        </div>
+        <div class="t-main">
+          <div class="t-stars">★★★★★</div>
+          <div class="t-quote">"I was juggling Interactive Brokers for equities, Binance for crypto, and OANDA for forex on three screens. TradingSmart collapsed everything into one dashboard with better P&L tracking than any native app."</div>
+          <div class="t-author">
+            <div class="t-author-info">
+              <div class="t-author-name">Arjun K. Varma</div>
+              <div class="t-author-role">Prop Trader · London</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial has-portrait">
+        <div class="t-side" aria-hidden="true">
+          <img class="t-side-photo" src="/testimonials/elena.png" alt="">
+        </div>
+        <div class="t-main">
+          <div class="t-stars">★★★★★</div>
+          <div class="t-quote">"The marketplace quality sold me. Full audit trail, real track records, and clear author attribution on every strategy. Backtest and paper workflow visibility made execution decisions much cleaner."</div>
+          <div class="t-author">
+            <div class="t-author-info">
+              <div class="t-author-name">Elena Rossi</div>
+              <div class="t-author-role">Retail Investor · Toronto</div>
+            </div>
           </div>
         </div>
       </div>
       <div class="testimonial">
         <div class="t-stars">★★★★★</div>
-        <div class="t-quote">"The strategies from SEBI-registered RAs are what sold me. Full audit trail, real track records, and I can see exactly who I'm copying. This is how algo trading should have worked from day one."</div>
+        <div class="t-quote">"I run a small fund (~$1.1M AUM). Moving to TradingSmart let me deprecate three internal tools and cut infra costs by 60%. Their engineers had our strategy coded and live in about 3 days."</div>
         <div class="t-author">
-          <div class="t-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">KS</div>
+          <div class="t-avatar" style="background:linear-gradient(135deg,#06b6d4,#3b82f6)">GS</div>
           <div class="t-author-info">
-            <div class="t-author-name">Kavya Shree</div>
-            <div class="t-author-role">Retail Investor · Bengaluru</div>
+            <div class="t-author-name">Grant Sterling</div>
+            <div class="t-author-role">Fund Manager · Sydney</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial has-portrait">
+        <div class="t-side" aria-hidden="true">
+          <img class="t-side-photo tomasz-photo" src="/testimonials/Tomasz.png" alt="">
+        </div>
+        <div class="t-main">
+          <div class="t-stars">★★★★★</div>
+          <div class="t-quote">"The backtester is the best I've used outside of institutional tools. Monte Carlo on walk-forward results — that's usually a $500/mo subscription by itself."</div>
+          <div class="t-author">
+            <div class="t-author-info">
+              <div class="t-author-name">Tomasz Nowak</div>
+              <div class="t-author-role">Quant · Hong Kong</div>
+            </div>
           </div>
         </div>
       </div>
       <div class="testimonial">
         <div class="t-stars">★★★★★</div>
-        <div class="t-quote">"Execution speeds are noticeably faster than my previous platform. The kill-switch has saved me twice during flash events. Rock solid infrastructure."</div>
+        <div class="t-quote">"Best part? The multi-currency view. I can see my Kraken USD P&L, OANDA GBP, and Eurex EUR all converted to my home currency in real-time. No spreadsheet gymnastics."</div>
         <div class="t-author">
-          <div class="t-avatar" style="background:linear-gradient(135deg,#10b981,#0ea5e9)">PS</div>
+          <div class="t-avatar" style="background:linear-gradient(135deg,#fbbf24,#f43f5e)">WC</div>
           <div class="t-author-info">
-            <div class="t-author-name">Paul Samson</div>
-            <div class="t-author-role">Futures Trader · Singapore</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial">
-        <div class="t-stars">★★★★★</div>
-        <div class="t-quote">"The backtester is the best I've used outside of institutional tools. Monte Carlo on walk-forward results — that's usually a $500/mo subscription by itself."</div>
-        <div class="t-author">
-          <div class="t-avatar" style="background:linear-gradient(135deg,#a855f7,#ec4899)">MC</div>
-          <div class="t-author-info">
-            <div class="t-author-name">Michael Chen</div>
-            <div class="t-author-role">Quant · Hong Kong</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial">
-        <div class="t-stars">★★★★★</div>
-        <div class="t-quote">"I run a small fund (~₹8cr AUM). Moving to TradingSmart let me deprecate three internal tools and cut infra costs by 60%. Their engineers had our strategy coded and live in about 3 days."</div>
-        <div class="t-author">
-          <div class="t-avatar" style="background:linear-gradient(135deg,#06b6d4,#3b82f6)">PM</div>
-          <div class="t-author-info">
-            <div class="t-author-name">Priya Menon</div>
-            <div class="t-author-role">Fund Manager · Chennai</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial">
-        <div class="t-stars">★★★★★</div>
-        <div class="t-quote">"Best part? The multi-currency view. I can see my Kraken USD P&L, OANDA GBP, and Zerodha INR all converted to my home currency in real-time. No spreadsheet gymnastics."</div>
-        <div class="t-author">
-          <div class="t-avatar" style="background:linear-gradient(135deg,#fbbf24,#f43f5e)">DM</div>
-          <div class="t-author-info">
-            <div class="t-author-name">Dev Mehta</div>
+            <div class="t-author-name">Wei Chen</div>
             <div class="t-author-role">Independent Trader · Dubai</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial has-portrait">
+        <div class="t-side" aria-hidden="true">
+          <img class="t-side-photo marcus-photo" src="/testimonials/marcus.png" alt="">
+        </div>
+        <div class="t-main">
+          <div class="t-stars">★★★★★</div>
+          <div class="t-quote">"Execution speeds are noticeably faster than my previous platform. The kill-switch has saved me twice during flash events. Rock solid infrastructure."</div>
+          <div class="t-author">
+            <div class="t-author-info">
+              <div class="t-author-name">Marcus Thorne</div>
+              <div class="t-author-role">Futures Trader · Singapore</div>
+            </div>
           </div>
         </div>
       </div>
@@ -891,7 +1272,7 @@ img,svg{display:block;max-width:100%}
     <div class="section-head reveal">
       <div class="section-label">Pricing</div>
       <h2 class="section-title">Simple, <span class="accent">transparent</span> pricing</h2>
-      <p class="section-desc">One-time integration fee + monthly maintenance. Plans start at <strong>$149 setup + $49/mo</strong>.</p>
+      <p class="section-desc">One-time integration fee + monthly maintenance. Plans start at <strong>$149 setup + $49/mo</strong> with platform access for AI analysis, backtesting, and paper workflows.</p>
     </div>
     <div class="pricing reveal-stagger">
       <div class="price-card">
@@ -910,7 +1291,7 @@ img,svg{display:block;max-width:100%}
           <li>Standard backtester</li>
           <li>Email support · 24h SLA</li>
         </ul>
-        <a href="/request-access" class="btn btn-ghost" style="width:100%" target="_top">Start Starter</a>
+        <a href="onboarding.html" class="btn btn-ghost" style="width:100%">Start Starter</a>
       </div>
       <div class="price-card">
         <div class="price-name">Growth</div>
@@ -928,7 +1309,7 @@ img,svg{display:block;max-width:100%}
           <li>Custom alerts &amp; kill-switch</li>
           <li>Priority email · 8h SLA</li>
         </ul>
-        <a href="/request-access" class="btn btn-ghost" style="width:100%" target="_top">Choose Growth</a>
+        <a href="onboarding.html" class="btn btn-ghost" style="width:100%">Choose Growth</a>
       </div>
       <div class="price-card popular">
         <div class="price-name">Pro</div>
@@ -946,7 +1327,7 @@ img,svg{display:block;max-width:100%}
           <li>Custom strategy builder</li>
           <li>Priority chat · 4h SLA</li>
         </ul>
-        <a href="/request-access" class="btn btn-primary" style="width:100%" target="_top">Start 14-day trial</a>
+        <a href="onboarding.html" class="btn btn-primary" style="width:100%">Start 14-day trial</a>
       </div>
       <div class="price-card">
         <div class="price-name">Institutional</div>
@@ -964,11 +1345,11 @@ img,svg{display:block;max-width:100%}
           <li>Dedicated account manager</li>
           <li>24/7 phone support</li>
         </ul>
-        <a href="/request-access" class="btn btn-ghost" style="width:100%" target="_top">Talk to sales</a>
+        <a href="onboarding.html" class="btn btn-ghost" style="width:100%">Talk to sales</a>
       </div>
     </div>
     <div class="pricing-note reveal" style="text-align:center;margin-top:28px;font-size:13px;color:var(--fg-2)">
-      Integration fee covers broker API setup, strategy deployment, and go-live validation. Monthly maintenance covers hosting, monitoring, and support. All plans include SEBI/SEC-compliant execution, encrypted API vault, and a 14-day money-back guarantee. Annual billing saves 20%.
+      Integration fee covers broker API setup, strategy deployment, and go-live validation. Monthly maintenance covers hosting, monitoring, and support. All plans include compliance-first execution controls, encrypted API vault, and a 14-day money-back guarantee. Annual billing saves 20%.
     </div>
   </div>
 </section>
@@ -981,13 +1362,15 @@ img,svg{display:block;max-width:100%}
       <h2 class="section-title">Frequently asked <span class="accent">questions</span></h2>
     </div>
     <div class="faq reveal">
-      <div class="faq-item"><button class="faq-q">Is TradingSmart.AI a broker or a financial advisor?<span></span></button><div class="faq-a"><div class="faq-a-inner">No. We are a <strong>technology platform</strong> that connects to your existing brokerage accounts and executes strategies authored by SEBI-registered Research Analysts and verified independent traders. We never hold your funds, give financial advice, or recommend trades ourselves. Your money stays at your broker at all times.</div></div></div>
+      <div class="faq-item"><button class="faq-q">Is TradingSmart.AI a broker or a financial advisor?<span></span></button><div class="faq-a"><div class="faq-a-inner">No. We are a <strong>technology platform</strong> that connects to your existing brokerage accounts and executes strategies authored by verified strategy providers and independent traders. We never hold your funds, give financial advice, or recommend trades ourselves. Your money stays at your broker at all times.</div></div></div>
       <div class="faq-item"><button class="faq-q">How are my broker API keys protected?<span></span></button><div class="faq-a"><div class="faq-a-inner">Keys are encrypted at rest with 256-bit AES in an ISO 27001-certified key vault. We use read/trade scopes only — withdrawals are never possible. You can revoke access at any time directly from your broker.</div></div></div>
       <div class="faq-item"><button class="faq-q">What happens if the engine disconnects from my broker?<span></span></button><div class="faq-a"><div class="faq-a-inner">Our engine runs three redundant execution nodes across AWS regions. On disconnect, the system auto-failovers within 200ms and re-syncs your positions before resuming. You'll also receive an instant alert by email and SMS.</div></div></div>
       <div class="faq-item"><button class="faq-q">Do I need to know how to code?<span></span></button><div class="faq-a"><div class="faq-a-inner">No. Our engineers hand-code your chosen strategy onto your trading robot, wire it to your broker API, and validate it end-to-end. You provide the strategy spec (or pick one from the marketplace) and we handle the implementation. Typical go-live takes ~72 hours.</div></div></div><div class="faq-item"><button class="faq-q">How long does setup actually take?<span></span></button><div class="faq-a"><div class="faq-a-inner">About <strong>72 hours</strong> from kick-off to live trading. The integration fee covers broker API wiring, manual coding of your strategy, QA on paper trades, and go-live validation. Complex custom strategies may take a few days longer — we'll confirm the timeline before we start.</div></div></div>
-      <div class="faq-item"><button class="faq-q">Can I use my existing broker?<span></span></button><div class="faq-a"><div class="faq-a-inner">Very likely yes — we support 179+ brokers including Zerodha, Groww, Upstox, Angel One, ICICI Direct, Interactive Brokers, Binance, Coinbase, OANDA, and many more. If your broker isn't listed, reach out and we'll prioritize it.</div></div></div>
-      <div class="faq-item"><button class="faq-q">How are strategies vetted?<span></span></button><div class="faq-a"><div class="faq-a-inner">Every strategy author is identity-verified and must provide proof of SEBI/SEC registration or 3+ years of audited trading track record. Strategies undergo 12 months of live paper trading on our platform before being published to the marketplace.</div></div></div>
-      <div class="faq-item"><button class="faq-q">Is there a minimum account size?<span></span></button><div class="faq-a"><div class="faq-a-inner">No minimum on our end. Your broker's minimums apply. Most strategies recommend at least ₹50,000 / $1,000 capital to handle position sizing and drawdowns comfortably.</div></div></div>
+      <div class="faq-item"><button class="faq-q">Can I use my existing broker?<span></span></button><div class="faq-a"><div class="faq-a-inner">Very likely yes — we support 179+ brokers including Interactive Brokers, Binance, Coinbase, OANDA, Charles Schwab, Saxo, eToro, Zerodha, Upstox, and many more. If your broker isn't listed, reach out and we'll prioritize it.</div></div></div>
+      <div class="faq-item"><button class="faq-q">How are strategies vetted?<span></span></button><div class="faq-a"><div class="faq-a-inner">Every strategy author is identity-verified and must provide proof of relevant regulatory licensing where applicable, or 3+ years of audited trading track record. Strategies undergo at least 12 months of live paper trading on our platform before being published to the marketplace.</div></div></div>
+      <div class="faq-item"><button class="faq-q">Is there a minimum account size?<span></span></button><div class="faq-a"><div class="faq-a-inner">No minimum on our end. Your broker's minimums apply. Most strategies recommend at least $1,000 / €1,000 equivalent capital to handle position sizing and drawdowns comfortably.</div></div></div>
+      <div class="faq-item"><button class="faq-q">Can I paper trade before going live?<span></span></button><div class="faq-a"><div class="faq-a-inner">Yes. Every setup can be validated in paper mode before live execution. We use paper runs to confirm strategy behavior, order flow, and risk controls so you can switch live only when you're comfortable.</div></div></div>
+      <div class="faq-item"><button class="faq-q">Do I get AI analysis and backtesting too, or only execution?<span></span></button><div class="faq-a"><div class="faq-a-inner">You get the full platform stack: AI trade analysis, historical backtesting, paper trading workflows, and live execution controls. The engine is one part of the platform, not the entire value.</div></div></div>
     </div>
   </div>
 </section>
@@ -1002,8 +1385,8 @@ img,svg{display:block;max-width:100%}
         <h2>Stop babysitting trades.<br><span style="background:linear-gradient(135deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Start trading smarter.</span></h2>
         <p>Join 28,400+ traders running their entire portfolio on TradingSmart.AI. 14-day free trial. No credit card required.</p>
         <div class="cta-ctas">
-          <a href="/request-access" class="btn btn-primary btn-lg" target="_top">Create free account →</a>
-          <!-- <a href="#preview" class="btn btn-ghost btn-lg">Book a demo</a> -->
+          <a href="onboarding.html" class="btn btn-primary btn-lg">Create free account →</a>
+          <a href="#" class="btn btn-ghost btn-lg">Book a demo</a>
         </div>
       </div>
     </div>
@@ -1015,11 +1398,11 @@ img,svg{display:block;max-width:100%}
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a href="#top" class="brand">
-          <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h7v7"/></svg></div>
+        <a href="#" class="brand">
+          <div class="brand-logo"><img src="/logo.png" alt="TradingSmart logo" class="brand-logo-img"></div>
           TRADINGSMART.AI
         </a>
-        <p>The unified multi-broker algo engine. Connect 179+ brokers. Deploy SEBI-registered strategies. Trade 24/7.</p>
+        <p>Done-for-you multi-broker algo setup with full platform access: AI analysis, backtesting, paper trading, and 24/7 live execution.</p>
         <div class="footer-socials" style="margin-top:20px">
           <a class="social" href="#" aria-label="Twitter"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
           <a class="social" href="#" aria-label="LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.881 3.87 6 2.5 6S.02 4.881.02 3.5C.02 2.12 1.13 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v12H.22V8zm7.2 0h4.37v1.64h.06c.61-1.16 2.1-2.38 4.32-2.38 4.62 0 5.47 3.04 5.47 7v6.73h-4.56v-5.97c0-1.42-.03-3.25-1.98-3.25-1.98 0-2.28 1.55-2.28 3.15V20H7.42V8z"/></svg></a>
@@ -1033,7 +1416,7 @@ img,svg{display:block;max-width:100%}
           <li><a href="#features">Features</a></li>
           <li><a href="#how">How it works</a></li>
           <li><a href="#pricing">Pricing</a></li>
-          <li><a href="/login" target="_top">Dashboard</a></li>
+          <li><a href="/login">Dashboard</a></li>
         </ul>
       </div>
       <div>
@@ -1052,17 +1435,17 @@ img,svg{display:block;max-width:100%}
           <li><a href="#">Terms of service</a></li>
           <li><a href="#">Privacy policy</a></li>
           <li><a href="#">Risk disclosure</a></li>
-          <li><a href="#">SEBI compliance</a></li>
+          <li><a href="#">Regulatory compliance</a></li>
           <li><a href="#">Security</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-disclaimer">
-      <strong>⚠️ Risk Disclaimer:</strong> Trading in financial markets involves substantial risk of loss and is not suitable for every investor. All strategies are provided by SEBI-registered Research Analysts or verified independent traders — TradingSmart.AI is a technology platform and does not provide financial advice. Past performance does not guarantee future results. Please read the full risk disclosure before investing.
+      <strong>⚠️ Risk Disclaimer:</strong> Trading in financial markets involves substantial risk of loss and is not suitable for every investor. All strategies are provided by verified strategy providers or independent traders — TradingSmart.AI is a technology platform and does not provide financial advice. Past performance does not guarantee future results. Please read the full risk disclosure before investing.
     </div>
     <div class="footer-bottom">
       <div class="footer-copy">© 2026 TradingSmart.AI · All rights reserved</div>
-      <div style="font-size:11px;color:var(--fg-3);font-family:'JetBrains Mono',monospace">v4.2.1 · Made with ❤ in Bengaluru & Singapore</div>
+      <div style="font-size:11px;color:var(--fg-3);font-family:'JetBrains Mono',monospace">v4.2.1 · Built by a distributed global team</div>
     </div>
   </div>
 </footer>
@@ -1088,95 +1471,232 @@ img,svg{display:block;max-width:100%}
       </div>
       <div class="signin-row">
         <label class="signin-remember"><input type="checkbox" name="remember" checked> Remember me</label>
-        <a href="/login" class="signin-forgot" target="_top">Forgot password?</a>
+        <a href="/login" class="signin-forgot">Forgot password?</a>
       </div>
       <button type="submit" class="signin-submit">Access Dashboard &rarr;</button>
     </form>
     <div class="signin-divider">New to TradingSmart</div>
     <div class="signin-foot">
-      Don't have an account? <a href="/request-access" target="_top">Request access</a>
+      Don't have an account? <a href="onboarding.html">Request access</a>
     </div>
   </div>
 </div>
 
 <script>
-// ═══ PARTICLE NETWORK ═══
+// Stock-line canvas backdrop removed by request.
+
+// ═══ MOVING GRID BACKGROUND (START-2-DAY-ACCESS STYLE) ═══
 (function(){
-  const c=document.getElementById('particleCanvas');
-  if(!c) return;
-  const ctx=c.getContext('2d');
-  let w,h,particles=[];
-  const PC=Math.min(80,Math.max(40,Math.floor(window.innerWidth/22)));
-  function resize(){w=c.width=window.innerWidth*devicePixelRatio;h=c.height=window.innerHeight*devicePixelRatio;c.style.width=window.innerWidth+'px';c.style.height=window.innerHeight+'px';ctx.scale(devicePixelRatio,devicePixelRatio)}
-  function init(){particles=[];for(let i=0;i<PC;i++){particles.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,r:Math.random()*1.5+0.5})}}
-  function draw(){
-    ctx.clearRect(0,0,w,h);
-    for(let p of particles){
-      p.x+=p.vx;p.y+=p.vy;
-      if(p.x<0||p.x>window.innerWidth)p.vx*=-1;
-      if(p.y<0||p.y>window.innerHeight)p.vy*=-1;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(56,189,248,0.35)';ctx.fill();
-    }
-    for(let i=0;i<particles.length;i++){
-      for(let j=i+1;j<particles.length;j++){
-        const dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;
-        const d=Math.sqrt(dx*dx+dy*dy);
-        if(d<120){
-          ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);
-          ctx.strokeStyle=`rgba(56,189,248,${0.15*(1-d/120)})`;ctx.lineWidth=0.6;ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(draw);
+  const squaresWrap=document.getElementById('gridSquares');
+  const dropsWrap=document.getElementById('gridDrops');
+  if(!squaresWrap||!dropsWrap) return;
+
+  const gridCell=80;
+  const squareCount=5;
+  const dropCount=3;
+
+  function maxCols(){return Math.max(1,Math.floor(window.innerWidth/gridCell));}
+  function maxRows(){return Math.max(1,Math.floor(window.innerHeight/gridCell));}
+  function randCell(cols){return Math.floor(Math.random()*cols)*gridCell;}
+  function randRow(rows){return Math.floor(Math.random()*rows)*gridCell;}
+
+  const squares=[];
+  for(let i=0;i<squareCount;i++){
+    const el=document.createElement('div');
+    el.className='grid-square';
+    squaresWrap.appendChild(el);
+    squares.push(el);
   }
-  resize();init();draw();
-  window.addEventListener('resize',()=>{resize();init()});
+
+  function placeSquares(){
+    const cols=maxCols();
+    const rows=maxRows();
+    for(const sq of squares){
+      sq.style.left=randCell(cols)+'px';
+      sq.style.top=randRow(rows)+'px';
+      sq.style.opacity=(0.35+Math.random()*0.55).toFixed(2);
+    }
+  }
+
+  function resetDrop(el){
+    const cols=maxCols();
+    const duration=(2+Math.random()*2).toFixed(2)+'s';
+    const delay=(Math.random()*2).toFixed(2)+'s';
+    el.style.left=randCell(cols)+'px';
+    el.style.animationDuration=duration;
+    el.style.animationDelay=delay;
+    el.style.animationName='none';
+    void el.offsetHeight;
+    el.style.animationName='gridDrop';
+  }
+
+  for(let i=0;i<dropCount;i++){
+    const el=document.createElement('div');
+    el.className='grid-drop';
+    el.addEventListener('animationend',()=>resetDrop(el));
+    dropsWrap.appendChild(el);
+    resetDrop(el);
+  }
+
+  placeSquares();
+  const interval=window.setInterval(placeSquares,2000);
+  window.addEventListener('resize',placeSquares,{passive:true});
+  window.addEventListener('beforeunload',()=>window.clearInterval(interval),{once:true});
 })();
 
 // ═══ TICKER ═══
 (function(){
-  const tickers=[
-    {s:'NIFTY 50',p:'24,418.25',c:'+0.42%',u:1},{s:'BANKNIFTY',p:'52,184.50',c:'+0.68%',u:1},
-    {s:'BTC/USDT',p:'94,218.50',c:'+2.14%',u:1},{s:'ETH/USDT',p:'3,284.12',c:'+1.87%',u:1},
-    {s:'SENSEX',p:'80,412.18',c:'+0.38%',u:1},{s:'S&P 500',p:'5,872.40',c:'+0.72%',u:1},
-    {s:'NASDAQ',p:'19,148.32',c:'+1.12%',u:1},{s:'EUR/USD',p:'1.0842',c:'-0.14%',u:0},
-    {s:'GBP/USD',p:'1.2648',c:'+0.22%',u:1},{s:'USD/JPY',p:'155.28',c:'-0.08%',u:0},
-    {s:'GOLD',p:'2,642.40',c:'+0.54%',u:1},{s:'SILVER',p:'30.18',c:'+1.24%',u:1},
-    {s:'CRUDE OIL',p:'72.84',c:'-0.42%',u:0},{s:'AAPL',p:'248.62',c:'+0.84%',u:1},
-    {s:'TSLA',p:'348.20',c:'+2.14%',u:1},{s:'RELIANCE',p:'1,284.50',c:'+0.62%',u:1},
-    {s:'HDFC BANK',p:'1,742.80',c:'+0.28%',u:1},{s:'INFY',p:'1,924.50',c:'-0.18%',u:0}
+  const symbolConfig=[
+    {symbol:'^GSPC',label:'S&P 500'},
+    {symbol:'^NDX',label:'NASDAQ 100'},
+    {symbol:'^GDAXI',label:'DAX 40'},
+    {symbol:'^FTSE',label:'FTSE 100'},
+    {symbol:'^N225',label:'NIKKEI 225'},
+    {symbol:'^HSI',label:'HANG SENG'},
+    {symbol:'BTC-USD',label:'BTC/USD'},
+    {symbol:'ETH-USD',label:'ETH/USD'},
+    {symbol:'EURUSD=X',label:'EUR/USD'},
+    {symbol:'GBPUSD=X',label:'GBP/USD'},
+    {symbol:'JPY=X',label:'USD/JPY'},
+    {symbol:'GC=F',label:'XAU/USD'},
+    {symbol:'SI=F',label:'XAG/USD'},
+    {symbol:'BZ=F',label:'BRENT'},
+    {symbol:'AAPL',label:'AAPL'},
+    {symbol:'TSLA',label:'TSLA'},
+    {symbol:'MSFT',label:'MSFT'},
+    {symbol:'NVDA',label:'NVDA'}
   ];
-  const html=tickers.map(t=>`<span class="ticker-item"><span class="ticker-dot"></span><strong>${t.s}</strong> ${t.p} <span class="${t.u?'ticker-up':'ticker-down'}">${t.u?'▲':'▼'} ${t.c}</span></span>`).join('');
-  document.getElementById('tickerTrack').innerHTML=html+html;
+
+  const fallbackTickers=[
+    {s:'S&P 500',p:'5,872.40',c:'+0.72%',u:1},{s:'NASDAQ 100',p:'19,148.32',c:'+1.12%',u:1},
+    {s:'DAX 40',p:'18,524.10',c:'+0.41%',u:1},{s:'FTSE 100',p:'8,184.70',c:'-0.16%',u:0},
+    {s:'NIKKEI 225',p:'39,442.60',c:'+0.58%',u:1},{s:'HANG SENG',p:'17,642.90',c:'-0.23%',u:0},
+    {s:'BTC/USD',p:'94,218.50',c:'+2.14%',u:1},{s:'ETH/USD',p:'3,284.12',c:'+1.87%',u:1},
+    {s:'EUR/USD',p:'1.0842',c:'-0.14%',u:0},{s:'GBP/USD',p:'1.2648',c:'+0.22%',u:1},
+    {s:'USD/JPY',p:'155.28',c:'-0.08%',u:0},{s:'XAU/USD',p:'2,642.40',c:'+0.54%',u:1},
+    {s:'XAG/USD',p:'30.18',c:'+1.24%',u:1},{s:'BRENT',p:'76.84',c:'-0.42%',u:0},
+    {s:'AAPL',p:'248.62',c:'+0.84%',u:1},{s:'TSLA',p:'348.20',c:'+2.14%',u:1},
+    {s:'MSFT',p:'428.70',c:'+0.46%',u:1},{s:'NVDA',p:'981.34',c:'+1.36%',u:1}
+  ];
+
+  function renderTickers(tickers){
+    const track=document.getElementById('tickerTrack');
+    if(!track) return;
+    const html=tickers.map((t)=>`<span class="ticker-item"><span class="ticker-dot"></span><strong>${t.s}</strong> ${t.p} <span class="${t.u?'ticker-up':'ticker-down'}">${t.u?'▲':'▼'} ${t.c}</span></span>`).join('');
+    track.innerHTML=html+html;
+  }
+
+  function formatPrice(value){
+    if(!Number.isFinite(value)) return '-';
+    const abs=Math.abs(value);
+    if(abs>=1000) return value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(abs>=100) return value.toFixed(2);
+    if(abs>=1) return value.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+    return value.toFixed(6).replace(/0+$/,'').replace(/\.$/,'');
+  }
+
+  async function loadLiveTickers(){
+    const symbols=symbolConfig.map((item)=>item.symbol).join(',');
+    const url=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}`;
+    const resp=await fetch(url,{cache:'no-store'});
+    if(!resp.ok) throw new Error(`Ticker API failed: ${resp.status}`);
+    const data=await resp.json();
+    const result=(data&&data.quoteResponse&&Array.isArray(data.quoteResponse.result))?data.quoteResponse.result:[];
+    if(!result.length) throw new Error('Ticker API returned no symbols');
+
+    const bySymbol=new Map(result.map((row)=>[row.symbol,row]));
+    const tickers=symbolConfig.map((cfg)=>{
+      const row=bySymbol.get(cfg.symbol) || {};
+      const price=Number(row.regularMarketPrice);
+      const pct=Number(row.regularMarketChangePercent);
+      const up=Number.isFinite(pct) ? pct>=0 : true;
+      const pctText=Number.isFinite(pct) ? `${pct>=0?'+':''}${pct.toFixed(2)}%` : '+0.00%';
+      return {
+        s:cfg.label,
+        p:formatPrice(price),
+        c:pctText,
+        u:up?1:0
+      };
+    });
+
+    renderTickers(tickers);
+  }
+
+  renderTickers(fallbackTickers);
+  loadLiveTickers().catch(()=>{});
+  window.setInterval(()=>{loadLiveTickers().catch(()=>{});},15000);
 })();
 
 // ═══ BROKER MARQUEE ═══
 (function(){
   const brokers1=[
-    {n:'Zerodha',m:'Z',c:'#f97316'},{n:'Binance',m:'B',c:'#f0b90b'},{n:'Coinbase',m:'C',c:'#0052ff'},
-    {n:'Interactive Brokers',m:'IB',c:'#dc2626'},{n:'Groww',m:'G',c:'#00d09c'},{n:'Robinhood',m:'RH',c:'#00c805'},
-    {n:'eToro',m:'eT',c:'#13c636'},{n:'Kraken',m:'KR',c:'#5741d9'},{n:'OANDA',m:'O',c:'#14b8a6'},
-    {n:'Upstox',m:'U',c:'#7c3aed'},{n:'Charles Schwab',m:'CS',c:'#0066b2'},{n:'Fidelity',m:'F',c:'#0a8a4f'},
-    {n:'Angel One',m:'A',c:'#3b82f6'},{n:'Saxo Bank',m:'SX',c:'#001f4d'},{n:'E*TRADE',m:'ET',c:'#6633cc'},
-    {n:'Webull',m:'WB',c:'#0080ff'},{n:'Bybit',m:'BB',c:'#f7a600'},{n:'IG Group',m:'IG',c:'#dc1e2c'},
-    {n:'ICICI Direct',m:'IC',c:'#f59e0b'}
+    {n:'Zerodha',m:'Z',c:'#f97316',logo:'assets/broker-logos/zerodha.png'},
+    {n:'Binance',m:'B',c:'#f0b90b',logo:'assets/broker-logos/binance.ico'},
+    {n:'Coinbase',m:'C',c:'#0052ff',logo:'assets/broker-logos/coinbase.png'},
+    {n:'Interactive Brokers',m:'IB',c:'#dc2626',logo:'assets/broker-logos/interactive-brokers.png'},
+    {n:'Groww',m:'G',c:'#00d09c',logo:'assets/broker-logos/groww.ico'},
+    {n:'Robinhood',m:'RH',c:'#00c805',logo:'assets/broker-logos/robinhood.png'},
+    {n:'eToro',m:'eT',c:'#13c636',logo:'assets/broker-logos/etoro.svg'},
+    {n:'Kraken',m:'KR',c:'#5741d9',logo:'assets/broker-logos/kraken.png'},
+    {n:'OANDA',m:'O',c:'#14b8a6',logo:'assets/broker-logos/oanda.ico'},
+    {n:'Upstox',m:'U',c:'#7c3aed',logo:'assets/broker-logos/upstox.png'},
+    {n:'Charles Schwab',m:'CS',c:'#0066b2',logo:'assets/broker-logos/charles-schwab.png'},
+    {n:'Fidelity',m:'F',c:'#0a8a4f',logo:'assets/broker-logos/fidelity.ico'},
+    {n:'Angel One',m:'A',c:'#3b82f6',logo:'assets/broker-logos/angel-one.ico'},
+    {n:'Saxo Bank',m:'SX',c:'#001f4d',logo:'assets/broker-logos/saxo-bank.png'},
+    {n:'E*TRADE',m:'ET',c:'#6633cc',logo:'assets/broker-logos/e-trade.png'},
+    {n:'Webull',m:'WB',c:'#0080ff',logo:'assets/broker-logos/webull.png'},
+    {n:'Bybit',m:'BB',c:'#f7a600',logo:'assets/broker-logos/bybit.ico'},
+    {n:'IG Group',m:'IG',c:'#dc1e2c',logo:'assets/broker-logos/ig-group.png'},
+    {n:'ICICI Direct',m:'IC',c:'#f59e0b',logo:'assets/broker-logos/icici-direct.ico'}
   ];
   const brokers2=[
-    {n:'Plus500',m:'P5',c:'#e60012'},{n:'OKX',m:'OK',c:'#1f2937'},{n:'HDFC Sec',m:'H',c:'#0c4a8b'},
-    {n:'TD Ameritrade',m:'TD',c:'#86bc25'},{n:'Kotak Sec',m:'K',c:'#dc2626'},{n:'Pepperstone',m:'PS',c:'#7e22ce'},
-    {n:'IC Markets',m:'IM',c:'#0070ba'},{n:'Exness',m:'E',c:'#fbbf24'},{n:'KuCoin',m:'KC',c:'#24ae8f'},
-    {n:'Dhan',m:'D',c:'#7e22ce'},{n:'Gemini',m:'GM',c:'#00dcfa'},{n:'Trade Republic',m:'TR',c:'#000000'},
-    {n:'CMC Markets',m:'CM',c:'#003366'},{n:'Tiger Brokers',m:'TG',c:'#fb923c'},{n:'5Paisa',m:'5P',c:'#1d4ed8'},
-    {n:'Motilal Oswal',m:'MO',c:'#0891b2'},{n:'FXCM',m:'FC',c:'#003366'},{n:'Moomoo',m:'MM',c:'#ffc000'},
-    {n:'Questrade',m:'QT',c:'#008060'},{n:'Wealthsimple',m:'WS',c:'#000000'}
+    {n:'Plus500',m:'P5',c:'#e60012',logo:'assets/broker-logos/plus500.ico'},
+    {n:'OKX',m:'OK',c:'#1f2937',logo:'assets/broker-logos/okx.png'},
+    {n:'HDFC Sec',m:'H',c:'#0c4a8b',logo:'assets/broker-logos/hdfc-sec.ico'},
+    {n:'TD Ameritrade',m:'TD',c:'#86bc25',logo:'assets/broker-logos/td-ameritrade.png'},
+    {n:'Kotak Sec',m:'K',c:'#dc2626',logo:'assets/broker-logos/kotak-sec.ico'},
+    {n:'Pepperstone',m:'PS',c:'#7e22ce',logo:'assets/broker-logos/pepperstone.ico'},
+    {n:'IC Markets',m:'IM',c:'#0070ba',logo:'assets/broker-logos/ic-markets.ico'},
+    {n:'Exness',m:'E',c:'#fbbf24',logo:'assets/broker-logos/exness.png'},
+    {n:'KuCoin',m:'KC',c:'#24ae8f',logo:'assets/broker-logos/kucoin.png'},
+    {n:'Dhan',m:'D',c:'#7e22ce',logo:'assets/broker-logos/dhan.png'},
+    {n:'Gemini',m:'GM',c:'#00dcfa',logo:'assets/broker-logos/gemini.ico'},
+    {n:'Trade Republic',m:'TR',c:'#000000',logo:'assets/broker-logos/trade-republic.ico'},
+    {n:'CMC Markets',m:'CM',c:'#003366',logo:'assets/broker-logos/cmc-markets.png'},
+    {n:'Tiger Brokers',m:'TG',c:'#fb923c',logo:'assets/broker-logos/tiger-brokers.ico'},
+    {n:'5Paisa',m:'5P',c:'#1d4ed8',logo:'assets/broker-logos/5paisa.png'},
+    {n:'Motilal Oswal',m:'MO',c:'#0891b2',logo:'assets/broker-logos/motilal-oswal.ico'},
+    {n:'FXCM',m:'FC',c:'#003366',logo:'assets/broker-logos/fxcm.ico'},
+    {n:'Moomoo',m:'MM',c:'#ffc000',logo:'assets/broker-logos/moomoo.ico'},
+    {n:'Questrade',m:'QT',c:'#008060',logo:'assets/broker-logos/questrade.ico'},
+    {n:'Wealthsimple',m:'WS',c:'#000000',logo:'assets/broker-logos/wealthsimple.png'}
   ];
   function isLight(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return(r*299+g*587+b*114)/1000>165}
   function darken(hex){const r=Math.max(0,parseInt(hex.slice(1,3),16)-30),g=Math.max(0,parseInt(hex.slice(3,5),16)-30),b=Math.max(0,parseInt(hex.slice(5,7),16)-30);return`rgb(${r},${g},${b})`}
-  function chip(b){const txt=isLight(b.c)?'#1e293b':'#fff';const fs=b.m.length>=3?'9px':b.m.length===2?'10px':'12px';return`<div class="m-chip"><div class="m-chip-logo" style="background:linear-gradient(135deg,${b.c},${darken(b.c)});color:${txt};font-size:${fs}">${b.m}</div><span class="m-chip-name">${b.n}</span></div>`}
+  function chip(b){
+    const txt=isLight(b.c)?'#1e293b':'#fff';
+    const fs=b.m.length>=3?'9px':b.m.length===2?'10px':'12px';
+    const fallback=`<span class="m-chip-logo-fallback" style="display:none;color:${txt};font-size:${fs}">${b.m}</span>`;
+    const logo=b.logo
+      ? `<div class="m-chip-logo img"><img class="m-chip-logo-img" src="${b.logo}" alt="${b.n} logo" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>${fallback}</div>`
+      : `<div class="m-chip-logo" style="background:linear-gradient(135deg,${b.c},${darken(b.c)});color:${txt};font-size:${fs}">${b.m}</div>`;
+    return `<div class="m-chip">${logo}<span class="m-chip-name">${b.n}</span></div>`;
+  }
   const h1=brokers1.map(chip).join('');
   const h2=brokers2.map(chip).join('');
   document.getElementById('marqueeTrack1').innerHTML=h1+h1;
   document.getElementById('marqueeTrack2').innerHTML=h2+h2;
+})();
+
+// ═══ SECTION ORDER TUNING ═══
+(function(){
+  const marquee=document.querySelector('.marquee-section');
+  const how=document.getElementById('how');
+  const platform=document.getElementById('platform-capabilities');
+  if(!marquee||!how||!platform) return;
+  marquee.insertAdjacentElement('afterend',how);
+  how.insertAdjacentElement('afterend',platform);
 })();
 
 // ═══ PREVIEW BARS ═══
@@ -1320,44 +1840,17 @@ img,svg{display:block;max-width:100%}
 // ═══ LIVE HERO COUNTERS (subtle jitter for realism) ═══
 (function(){
   let activeTrades=1247;
-  let pnl=47392.18;
+  let pnl=12777.00;
   setInterval(()=>{
     activeTrades+=Math.floor(Math.random()*5)-2;
+    if(activeTrades<1180) activeTrades=1180;
     const el1=document.getElementById('heroFloat1');
     if(el1) el1.textContent=activeTrades.toLocaleString();
-    pnl+=(Math.random()-0.3)*15;
+    pnl+=(Math.random()-0.48)*28;
+    if(pnl<12000) pnl=12000+Math.random()*120;
     const el2=document.getElementById('heroPnl');
     if(el2) el2.textContent='+$'+pnl.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   },2200);
-})();
-
-// ═══ HASH LINK SCROLL ═══
-(function(){
-  function scrollToHash(hash){
-    if(!hash || hash === '#') return;
-    const target=document.querySelector(hash);
-    if(!target) return;
-    const nav=document.getElementById('nav');
-    const navOffset=nav ? nav.getBoundingClientRect().height + 12 : 92;
-    const top=target.getBoundingClientRect().top + window.scrollY - navOffset;
-    window.scrollTo({top,behavior:'smooth'});
-  }
-
-  document.addEventListener('click',(e)=>{
-    const link=e.target.closest('a[href^="#"]');
-    if(!link) return;
-    const hash=link.getAttribute('href');
-    if(!hash || hash === '#') return;
-    const target=document.querySelector(hash);
-    if(!target) return;
-    e.preventDefault();
-    history.replaceState(null,'',hash);
-    scrollToHash(hash);
-  });
-
-  if(window.location.hash){
-    requestAnimationFrame(()=>scrollToHash(window.location.hash));
-  }
 })();
 
 /* ═══ SIGN-IN MODAL ═══ */
