@@ -307,6 +307,7 @@ export default function DashboardPage() {
   // INR-only mode for now.
   const currencyMode: "INR" = "INR";
   const [optBusy, setOptBusy] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ full_name?: string | null } | null>(null);
   const [optMsg, setOptMsg] = useState<string | null>(null);
 
   const useChartmate = Boolean(session?.access_token);
@@ -314,6 +315,19 @@ export default function DashboardPage() {
   const refresh = useCallback(async () => {
     if (!session?.access_token) return;
     setLoadErr(null);
+
+    // Fetch user profile name
+    if (user?.id) {
+      void supabase
+        .from("user_signup_profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setUserProfile(data);
+        });
+    }
+
     try {
       if (bffConfigured()) {
         let s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
@@ -1222,6 +1236,7 @@ export default function DashboardPage() {
         setCurrencyMode={null}
         optionsPanel={import.meta.env.VITE_OPTIONS_API_URL || bffConfigured() ? optionsPanel : null}
         onSignOut={() => void signOut()}
+        userName={userProfile?.full_name || null}
         sessionAccessToken={session.access_token ?? null}
         onCancelPendingForStrategy={onCancelPendingForStrategy}
         strategyDevRequests={strategyDevRequests}

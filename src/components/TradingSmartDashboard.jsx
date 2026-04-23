@@ -852,6 +852,7 @@ export default function TradingSmartDashboard(props = {}) {
     chartmateActions = null,
     optionsPanel = null,
     onSignOut = null,
+    userName = null,
     currencyMode = "INR",
     setCurrencyMode = null,
     sessionAccessToken = null,
@@ -1742,7 +1743,7 @@ export default function TradingSmartDashboard(props = {}) {
                     transition: "color 0.5s",
                   }}
                 >
-                  ROHIT'S TRADING ENGINE
+                  {userName ? `${userName.toUpperCase()}'S TRADING ENGINE` : "ROHIT'S TRADING ENGINE"}
                 </div>
                 <div
                   style={{
