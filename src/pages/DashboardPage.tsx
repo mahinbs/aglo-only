@@ -43,6 +43,7 @@ import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
 import { computeTradeAnalytics } from "../lib/tradePerformance";
+import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 type Summary = {
   configured?: boolean;
@@ -620,7 +621,7 @@ export default function DashboardPage() {
           );
         }
     } catch (e: unknown) {
-      setLoadErr(e instanceof Error ? e.message : "Failed to load dashboard");
+      setLoadErr(toUserFacingErrorMessage(e instanceof Error ? e.message : "Failed to load dashboard"));
     }
   }, [session?.access_token, user?.id, currencyMode]);
 
@@ -637,7 +638,7 @@ export default function DashboardPage() {
     try {
       await startZerodhaKiteConnect(summary?.broker ?? null);
     } catch (e: unknown) {
-      setLoadErr(e instanceof Error ? e.message : "Broker connect failed");
+      setLoadErr(toUserFacingErrorMessage(e instanceof Error ? e.message : "Broker connect failed"));
       setConnectBusy(false);
     }
   }, [session?.access_token, summary?.broker]);

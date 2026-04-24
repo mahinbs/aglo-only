@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { bffConfigured } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 /**
  * Saves broker session via BFF (no Supabase Edge) or legacy Edge when BFF unset.
@@ -20,7 +21,11 @@ export default function BrokerCallbackPage() {
 
     if (statusParam === "error" || !brokerToken?.trim()) {
       setStatus("error");
-      setMessage(errorParam ? decodeURIComponent(errorParam) : "Missing token. Try connecting again.");
+      setMessage(
+        toUserFacingErrorMessage(
+          errorParam ? decodeURIComponent(errorParam) : "Missing token. Try connecting again.",
+        ),
+      );
       return;
     }
 
@@ -43,7 +48,7 @@ export default function BrokerCallbackPage() {
           const d = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
           if (!res.ok || !d.success) {
             setStatus("error");
-            setMessage(d.error ?? "Failed to save broker session.");
+            setMessage(toUserFacingErrorMessage(d.error ?? "Failed to save broker session."));
             return;
           }
         } else {
@@ -54,7 +59,7 @@ export default function BrokerCallbackPage() {
           const d = res.data as { success?: boolean } | null;
           if (res.error || !d?.success) {
             setStatus("error");
-            setMessage(res.error?.message ?? "Failed to save broker session.");
+            setMessage(toUserFacingErrorMessage(res.error?.message ?? "Failed to save broker session."));
             return;
           }
         }
@@ -63,7 +68,7 @@ export default function BrokerCallbackPage() {
         setTimeout(() => navigate("/dashboard", { replace: true }), 1200);
       } catch (e: unknown) {
         setStatus("error");
-        setMessage(e instanceof Error ? e.message : "Unexpected error");
+        setMessage(toUserFacingErrorMessage(e instanceof Error ? e.message : "Unexpected error"));
       }
     })();
   }, [navigate]);

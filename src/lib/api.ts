@@ -1,3 +1,5 @@
+import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
+
 const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
 
 export function bffConfigured(): boolean {
@@ -5,7 +7,7 @@ export function bffConfigured(): boolean {
 }
 
 function bffBase(): string {
-  if (!bff) throw new Error("VITE_ALGO_ONLY_BFF_URL not set");
+  if (!bff) throw new Error(toUserFacingErrorMessage("VITE_ALGO_ONLY_BFF_URL not set"));
   return bff;
 }
 
@@ -15,7 +17,8 @@ async function parseRes<T>(res: Response): Promise<T> {
     const err =
       (data as { error?: string; detail?: unknown })?.error ??
       (data as { detail?: unknown })?.detail;
-    throw new Error(typeof err === "string" ? err : `HTTP ${res.status}`);
+    const raw = typeof err === "string" ? err : `HTTP ${res.status}`;
+    throw new Error(toUserFacingErrorMessage(raw));
   }
   return data;
 }

@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrokerIntegration } from "@/hooks/useBrokerIntegration";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
+import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 /** Standalone `/connect-broker` screen (optional). Home dashboard uses the header Connect broker control. */
 export default function BrokerConnectPage() {
@@ -25,7 +26,7 @@ export default function BrokerConnectPage() {
     try {
       await startZerodhaKiteConnect("zerodha");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Could not start broker login");
+      setErr(toUserFacingErrorMessage(e instanceof Error ? e.message : "Could not start broker login"));
       setBusy(false);
     }
   };

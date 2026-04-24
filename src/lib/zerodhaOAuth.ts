@@ -1,5 +1,6 @@
 import { bffConfigured, bffFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { brokerNotConfiguredMessage, toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 async function messageFromFunctionsHttpError(err: unknown): Promise<string | null> {
   if (!err || typeof err !== "object") return null;
@@ -26,7 +27,7 @@ function normalizeBroker(broker: string | null | undefined): string {
 export async function startZerodhaKiteConnect(assignedBroker?: string | null): Promise<void> {
   const broker = normalizeBroker(assignedBroker);
   if (!broker) {
-    throw new Error("Broker is not configured yet. Contact your admin.");
+    throw new Error(brokerNotConfiguredMessage());
   }
 
   const { data: { session } } = await supabase.auth.getSession();
@@ -43,20 +44,20 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
           ? "/api/broker/zerodha-login-url"
           : "";
     if (!path) {
-      throw new Error(`${broker.toUpperCase()} broker connect is not configured yet. Contact your admin.`);
+      throw new Error(brokerNotConfiguredMessage());
     }
     const data = await bffFetch<{ url?: string; login_url?: string; error?: string }>(
       `${path}?${q}`,
       { method: "GET" },
     );
     const url = data.url ?? data.login_url;
-    if (!url) throw new Error(data.error ?? "No login URL returned");
+    if (!url) throw new Error(toUserFacingErrorMessage(data.error ?? "No login URL returned"));
     window.location.href = url;
     return;
   }
 
   if (broker !== "zerodha") {
-    throw new Error(`${broker.toUpperCase()} broker connect is not configured yet. Contact your admin.`);
+    throw new Error(brokerNotConfiguredMessage());
   }
 
   const res = await supabase.functions.invoke("get-zerodha-login-url", {
@@ -69,10 +70,10 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
     window.location.href = url;
     return;
   }
-  if (payload.error) throw new Error(payload.error);
+  if (payload.error) throw new Error(toUserFacingErrorMessage(payload.error));
   if (res.error) {
     const fromBody = await messageFromFunctionsHttpError(res.error);
-    throw new Error(fromBody ?? res.error.message);
+    throw new Error(toUserFacingErrorMessage(fromBody ?? res.error.message));
   }
-  throw new Error("No login URL returned");
+  throw new Error(toUserFacingErrorMessage("No login URL returned"));
 }
