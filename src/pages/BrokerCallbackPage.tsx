@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { bffConfigured } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 /**
- * Same flow as chartmate-trading-widget BrokerCallbackPage — saves session via Edge then returns to algo dashboard.
+ * Saves broker session via BFF (no Supabase Edge) or legacy Edge when BFF unset.
  */
 export default function BrokerCallbackPage() {
   const navigate = useNavigate();
@@ -31,15 +32,31 @@ export default function BrokerCallbackPage() {
           setMessage("Session expired. Please log in and try again.");
           return;
         }
-        const res = await supabase.functions.invoke("sync-broker-session", {
-          body: { broker, auth_token: brokerToken.trim() },
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        const d = res.data as { success?: boolean } | null;
-        if (res.error || !d?.success) {
-          setStatus("error");
-          setMessage(res.error?.message ?? "Failed to save broker session.");
-          return;
+        if (bffConfigured()) {
+          const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
+          const res = await fetch(`${bff}/api/broker/sync-session`, {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ broker, auth_token: brokerToken.trim() }),
+          });
+          const d = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
+          if (!res.ok || !d.success) {
+            setStatus("error");
+            setMessage(d.error ?? "Failed to save broker session.");
+            return;
+          }
+        } else {
+          const res = await supabase.functions.invoke("sync-broker-session", {
+            body: { broker, auth_token: brokerToken.trim() },
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const d = res.data as { success?: boolean } | null;
+          if (res.error || !d?.success) {
+            setStatus("error");
+            setMessage(res.error?.message ?? "Failed to save broker session.");
+            return;
+          }
         }
         setStatus("done");
         setMessage("Broker connected! Returning to dashboard…");

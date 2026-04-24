@@ -50,11 +50,10 @@ export default function BrokerConnectPage() {
             <p className="broker-connect-copy" style={{ fontSize: 11, opacity: 0.85 }}>
               Last session valid until{" "}
               {new Date(tokenExpiresAt).toLocaleString(undefined, {
-                timeZone: "Asia/Kolkata",
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 dateStyle: "medium",
                 timeStyle: "short",
-              })}{" "}
-              IST
+              })}
             </p>
           )}
           {err && (
@@ -65,6 +64,11 @@ export default function BrokerConnectPage() {
           <button type="button" className="login-btn" onClick={() => void onConnect()} disabled={busy || brokerLoading}>
             {busy ? "Opening Kite…" : "CONNECT ZERODHA (KITE) →"}
           </button>
+          <p className="broker-connect-copy" style={{ marginTop: 16, fontSize: 11, opacity: 0.8 }}>
+            VAPT stack: up to <strong>4 brokers</strong> per account via BFF <code>/api/broker/connect</code> (Zerodha,
+            Fyers, Angel, Upstox). Register your static IP with <strong>/api/account/register-current-ip</strong> after
+            signing in.
+          </p>
           <p className="broker-connect-copy" style={{ marginTop: 20, fontSize: 12 }}>
             Already finished in another tab?{" "}
             <button

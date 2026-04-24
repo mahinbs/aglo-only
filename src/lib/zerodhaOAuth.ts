@@ -18,7 +18,7 @@ async function messageFromFunctionsHttpError(err: unknown): Promise<string | nul
   }
 }
 
-/** Start Zerodha Kite Connect via OpenAlgo platform (same Edge as chartmate-trading-widget). */
+/** Zerodha Kite Connect via OpenAlgo platform (BFF proxy, HttpOnly cookie). */
 export async function startZerodhaKiteConnect(): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
@@ -26,10 +26,10 @@ export async function startZerodhaKiteConnect(): Promise<void> {
   const return_url = `${window.location.origin}/broker-callback`;
 
   if (bffConfigured()) {
+    const q = new URLSearchParams({ return_url });
     const data = await bffFetch<{ url?: string; login_url?: string; error?: string }>(
-      "/api/broker/zerodha-login-url",
-      session.access_token,
-      { method: "POST", body: JSON.stringify({ return_url }) },
+      `/api/broker/zerodha-login-url?${q}`,
+      { method: "GET" },
     );
     const url = data.url ?? data.login_url;
     if (!url) throw new Error(data.error ?? "No login URL returned");

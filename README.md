@@ -1,6 +1,8 @@
 # ChartMate — Algo-only dashboard
- 
+
 Single-page **TradingSmart.AI** command center on its own subdomain, using the **same Supabase Auth + database** as [`chartmate-trading-widget`](../chartmate-trading-widget).
+
+**Security:** This app is aligned with the [`vapt-algo`](../vapt-algo) stack — in-memory Supabase storage (no JWT in `localStorage`), **HttpOnly BFF session**, TOTP gating, idle/EOD sign-out, and optional **admin** route. See [`SECURITY.md`](./SECURITY.md).
 ## TradingSmart Algo frontend bundle
 
 The repo [`tradingsmartalgo`](../tradingsmartalgo) is copied into **`public/tradingsmartalgo/`** (served as static files, same visual assets)
