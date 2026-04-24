@@ -1,4 +1,4 @@
-import { useSubscription as useAlgoOnlySubscription } from "@/hooks/useSubscription";
+import { useSubscription as useAlgoOnlySubscription } from "../hooks/useSubscription";
 
 /**
  * Compatibility shim for vendored ChartMate modules.
