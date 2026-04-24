@@ -1,7 +1,43 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import TradingSmartDashboard from "../components/TradingSmartDashboard.jsx";
 import { useAuth } from "@/hooks/useAuth";
+import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { bffConfigured, bffFetch } from "@/lib/api";
+
+/** Replaces Supabase `manage-strategy` Edge when `VITE_ALGO_ONLY_BFF_URL` is set. */
+async function manageStrategyInvoke(
+  accessToken: string | undefined,
+  body: Record<string, unknown>,
+): Promise<{ data: unknown; error: { message: string } | null }> {
+  if (bffConfigured()) {
+    try {
+      const data = await bffFetch<unknown>("/api/strategies/manage", {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      return { data, error: null };
+    } catch (e: unknown) {
+      return {
+        data: null,
+        error: { message: e instanceof Error ? e.message : "manage-strategy failed" },
+      };
+    }
+  }
+  if (!accessToken) {
+    return { data: null, error: { message: "Not signed in" } };
+  }
+  const res = await supabase.functions.invoke("manage-strategy", {
+    body,
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (res.error) {
+    return {
+      data: res.data ?? null,
+      error: { message: res.error.message ?? "manage-strategy failed" },
+    };
+  }
+  return { data: res.data ?? null, error: null };
+}
 import { isMarketClosedReason, normalizeLifecycleState } from "../lib/lifecycle";
 import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
@@ -143,8 +179,8 @@ function formatEntryTimeShort(entryTime: unknown): string {
   if (!raw) return "—";
   const ms = Date.parse(raw);
   if (!Number.isFinite(ms)) return raw.slice(0, 16);
-  return new Date(ms).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
+  return new Date(ms).toLocaleString(undefined, {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -300,6 +336,7 @@ function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
 
 export default function DashboardPage() {
   const { user, session, loading, signOut } = useAuth();
+  useSessionExpiry();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [strategyDevRequests, setStrategyDevRequests] = useState<StrategyDevRequestCard[]>([]);
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -330,19 +367,16 @@ export default function DashboardPage() {
 
     try {
       if (bffConfigured()) {
-        let s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
+        let s = await bffFetch<Summary>("/api/dashboard/summary");
         if (
           !s.broker_session_live &&
           (s.active_strategies_deployed ?? 0) > 0 &&
           session.access_token
         ) {
-          const pauseRes = await supabase.functions.invoke("manage-strategy", {
-            body: { action: "pause_all" },
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
+          const pauseRes = await manageStrategyInvoke(session.access_token, { action: "pause_all" });
           const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
           if (!pauseRes.error && !pauseErr) {
-            s = await bffFetch<Summary>("/api/dashboard/summary", session.access_token);
+            s = await bffFetch<Summary>("/api/dashboard/summary");
           }
         }
         const uidBff = user?.id;
@@ -435,10 +469,7 @@ export default function DashboardPage() {
         );
         let stratsData = (strats ?? []) as Record<string, unknown>[];
         if (!gate.live && stratsData.some((row) => Boolean(row.is_active))) {
-          const pauseRes = await supabase.functions.invoke("manage-strategy", {
-            body: { action: "pause_all" },
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
+          const pauseRes = await manageStrategyInvoke(session.access_token, { action: "pause_all" });
           const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
           if (!pauseRes.error && !pauseErr) {
             const { data: stratsFresh } = await supabase
@@ -625,31 +656,28 @@ export default function DashboardPage() {
       if (!Number.isFinite(tp) || tp <= 0) return "Invalid take profit %";
       const trading_mode = (stratForm.trading_mode || "LONG").toUpperCase();
       const is_intraday = stratForm.is_intraday !== "false";
-      const res = await supabase.functions.invoke("manage-strategy", {
-        body: {
-          action: "create",
-          name: stratForm.name.trim(),
-          description: (stratForm.description ?? "").trim() || "Created from TradingSmart algo-only",
-          trading_mode,
-          is_intraday,
-          start_time: stratForm.start_time || "09:15",
-          end_time: stratForm.end_time || "15:15",
-          squareoff_time: stratForm.squareoff_time || "15:15",
-          risk_per_trade_pct: risk,
-          stop_loss_pct: sl,
-          take_profit_pct: tp,
-          symbols,
-          paper_strategy_type: null,
-          market_type: "stocks",
-          entry_conditions: {
-            rawExpression: (stratForm.entry_rule ?? "").trim() || "true",
-          },
-          exit_conditions: {
-            rawExpression: (stratForm.exit_rule ?? "").trim() || "",
-            autoExitEnabled: true,
-          },
+      const res = await manageStrategyInvoke(session.access_token, {
+        action: "create",
+        name: stratForm.name.trim(),
+        description: (stratForm.description ?? "").trim() || "Created from TradingSmart algo-only",
+        trading_mode,
+        is_intraday,
+        start_time: stratForm.start_time || "09:15",
+        end_time: stratForm.end_time || "15:15",
+        squareoff_time: stratForm.squareoff_time || "15:15",
+        risk_per_trade_pct: risk,
+        stop_loss_pct: sl,
+        take_profit_pct: tp,
+        symbols,
+        paper_strategy_type: null,
+        market_type: "stocks",
+        entry_conditions: {
+          rawExpression: (stratForm.entry_rule ?? "").trim() || "true",
         },
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        exit_conditions: {
+          rawExpression: (stratForm.exit_rule ?? "").trim() || "",
+          autoExitEnabled: true,
+        },
       });
       const err = (res.data as { error?: string; error_code?: string } | null)?.error;
       if (res.error) return res.error.message;
@@ -708,7 +736,6 @@ export default function DashboardPage() {
             quote_ltp?: number | null;
           }>(
             `/api/account/preflight?strategy_id=${encodeURIComponent(strategyId)}&symbol=${encodeURIComponent(sym)}&exchange=${encodeURIComponent(ex)}&quantity=${encodeURIComponent(String(qty))}&product=${encodeURIComponent(product)}`,
-            session.access_token,
           );
           if (!pf.can_execute) {
             const reason = pf.reason ?? "Preflight blocked activation.";
@@ -826,14 +853,11 @@ export default function DashboardPage() {
       }
 
       try {
-        const up = await supabase.functions.invoke("manage-strategy", {
-          body: {
-            action: "update",
-            strategy_id: strategyId,
-            symbols: symbolsPayload,
-            position_config,
-          },
-          headers: { Authorization: `Bearer ${session.access_token}` },
+        const up = await manageStrategyInvoke(session.access_token, {
+          action: "update",
+          strategy_id: strategyId,
+          symbols: symbolsPayload,
+          position_config,
         });
         const upMsg = fnBodyError(up.data);
         const updateErr = upMsg ?? up.error?.message ?? null;
@@ -863,9 +887,9 @@ export default function DashboardPage() {
           return null;
         }
         if (updateErr) return updateErr ?? "manage-strategy update failed.";
-        const tog = await supabase.functions.invoke("manage-strategy", {
-          body: { action: "toggle", strategy_id: strategyId },
-          headers: { Authorization: `Bearer ${session.access_token}` },
+        const tog = await manageStrategyInvoke(session.access_token, {
+          action: "toggle",
+          strategy_id: strategyId,
         });
         const togMsg = fnBodyError(tog.data);
         if (tog.error) return togMsg ?? tog.error.message ?? "manage-strategy toggle failed.";
@@ -886,13 +910,10 @@ export default function DashboardPage() {
       if (!session?.access_token) return "Not signed in";
       const prevPc = positionConfigBase && typeof positionConfigBase === "object" ? { ...positionConfigBase } : {};
       delete (prevPc as Record<string, unknown>).activation_defaults;
-      const up = await supabase.functions.invoke("manage-strategy", {
-        body: {
-          action: "update",
-          strategy_id: strategyId,
-          position_config: prevPc,
-        },
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      const up = await manageStrategyInvoke(session.access_token, {
+        action: "update",
+        strategy_id: strategyId,
+        position_config: prevPc,
       });
       const upMsg = (up.data as { error?: string; message?: string } | null)?.error
         ?? (up.data as { error?: string; message?: string } | null)?.message
@@ -911,9 +932,9 @@ export default function DashboardPage() {
       if (deploying) {
         return "Use Activate strategy in the popup to set symbol and quantity.";
       }
-      const res = await supabase.functions.invoke("manage-strategy", {
-        body: { action: "toggle", strategy_id: strategyId },
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      const res = await manageStrategyInvoke(session.access_token, {
+        action: "toggle",
+        strategy_id: strategyId,
       });
       const err = (res.data as { error?: string } | null)?.error;
       if (res.error) return res.error.message;
@@ -926,9 +947,9 @@ export default function DashboardPage() {
   const onDeleteStrategy = useCallback(
     async (strategyId: string, _name: string) => {
       if (!session?.access_token) return "Not signed in";
-      const res = await supabase.functions.invoke("manage-strategy", {
-        body: { action: "delete", strategy_id: strategyId },
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      const res = await manageStrategyInvoke(session.access_token, {
+        action: "delete",
+        strategy_id: strategyId,
       });
       const err = (res.data as { error?: string } | null)?.error;
       if (res.error) return res.error.message;
@@ -1008,10 +1029,7 @@ export default function DashboardPage() {
 
   const onPauseAllStrategies = useCallback(async (): Promise<string | null> => {
     if (!session?.access_token) return "Not signed in";
-    const res = await supabase.functions.invoke("manage-strategy", {
-      body: { action: "pause_all" },
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    const res = await manageStrategyInvoke(session.access_token, { action: "pause_all" });
     const msg = (res.data as { error?: string } | null)?.error;
     if (res.error) return res.error.message;
     if (msg) return msg;
@@ -1029,10 +1047,7 @@ export default function DashboardPage() {
 
   const onEmergencyKill = useCallback(async (): Promise<string | null> => {
     if (!session?.access_token) return "Not signed in";
-    const pauseRes = await supabase.functions.invoke("manage-strategy", {
-      body: { action: "pause_all" },
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    const pauseRes = await manageStrategyInvoke(session.access_token, { action: "pause_all" });
     const pauseErr = (pauseRes.data as { error?: string } | null)?.error;
     if (pauseRes.error) return pauseRes.error.message;
     if (pauseErr) return pauseErr;
@@ -1106,7 +1121,6 @@ export default function DashboardPage() {
         try {
           const pf = await bffFetch<{ can_execute: boolean; reason?: string | null }>(
             "/api/account/preflight",
-            session.access_token,
           );
           if (!pf.can_execute) {
             setOptMsg(pf.reason ?? "Preflight blocked options execution.");
@@ -1125,9 +1139,9 @@ export default function DashboardPage() {
           const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
           const res = await fetch(`${bff}/api/options/strategies/execute?${q}`, {
             method: "POST",
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
             },
             body: JSON.stringify(body),
           });

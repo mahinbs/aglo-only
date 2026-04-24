@@ -1024,9 +1024,10 @@ export default function TradingSmartDashboard(props = {}) {
     });
   }, []);
 
+  // sessionStorage (tab-scoped) — not localStorage, to avoid long-lived data readable under XSS
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("algo-only-system-logs-v1");
+      const raw = sessionStorage.getItem("algo-only-system-logs-v1");
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) setLogs(parsed.slice(-500));
@@ -1071,7 +1072,7 @@ export default function TradingSmartDashboard(props = {}) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(
+      sessionStorage.setItem(
         "algo-only-system-logs-v1",
         JSON.stringify(logs.slice(-500)),
       );

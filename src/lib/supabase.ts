@@ -8,10 +8,25 @@ if (!url || !anon) {
   console.warn("VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing — login disabled until configured.");
 }
 
+/** VAPT: do not persist Supabase JWT in localStorage / sessionStorage */
+const memoryStorage = (() => {
+  const m = new Map<string, string>();
+  return {
+    getItem: (key: string) => m.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      m.set(key, value);
+    },
+    removeItem: (key: string) => {
+      m.delete(key);
+    },
+  };
+})();
+
 export const supabase = createClient(url ?? "", anon ?? "", {
   auth: {
-    storage: localStorage,
+    storage: memoryStorage,
     persistSession: true,
     autoRefreshToken: true,
+    flowType: "pkce",
   },
 });
