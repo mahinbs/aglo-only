@@ -37,7 +37,8 @@ export async function fetchBrokerGateState(userId: string): Promise<BrokerGateSt
       return { hasCredentials: false, live: false, tokenExpiresAt };
     }
     if (!tokenExpiresAt) {
-      return { hasCredentials: true, live: true, tokenExpiresAt: null };
+      // Daily broker auth was never completed in this session.
+      return { hasCredentials: true, live: false, tokenExpiresAt: null };
     }
     const exp = new Date(tokenExpiresAt);
     if (Number.isNaN(exp.getTime())) {
@@ -73,7 +74,8 @@ export async function fetchBrokerGateState(userId: string): Promise<BrokerGateSt
     return { hasCredentials: false, live: false, tokenExpiresAt };
   }
   if (!tokenExpiresAt) {
-    return { hasCredentials: true, live: true, tokenExpiresAt: null };
+    // Daily broker auth was never completed in this session.
+    return { hasCredentials: true, live: false, tokenExpiresAt: null };
   }
   const exp = new Date(tokenExpiresAt);
   if (Number.isNaN(exp.getTime())) {

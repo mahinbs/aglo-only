@@ -146,9 +146,9 @@ function brokerSessionLiveFromIntegration(integ: {
   const raw = integ.token_expires_at;
   const tokenExpiresAt = raw != null && String(raw).trim() ? String(raw).trim() : null;
   if (!hasCreds) return { live: false, hasCreds: false, tokenExpiresAt };
-  if (!tokenExpiresAt) return { live: true, hasCreds: true, tokenExpiresAt: null };
+  if (!tokenExpiresAt) return { live: false, hasCreds: true, tokenExpiresAt: null };
   const exp = new Date(tokenExpiresAt);
-  if (Number.isNaN(exp.getTime())) return { live: true, hasCreds: true, tokenExpiresAt };
+  if (Number.isNaN(exp.getTime())) return { live: false, hasCreds: true, tokenExpiresAt };
   return { live: exp.getTime() > Date.now(), hasCreds: true, tokenExpiresAt };
 }
 

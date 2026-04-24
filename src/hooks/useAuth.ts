@@ -10,6 +10,8 @@ async function syncBffCookie(accessToken: string | undefined) {
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn("BFF session exchange failed:", e);
+    // Prevent stale cookie from a previous user session.
+    await bffLogout();
   }
 }
 
@@ -37,6 +39,8 @@ export function useAuth() {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // Clear any old BFF cookie before switching accounts.
+    await bffLogout();
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (!error && data.session?.access_token) {
       await syncBffCookie(data.session.access_token);
