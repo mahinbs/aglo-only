@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/lib/supabase";
+import { bffConfigured, bffGet } from "@/lib/api";
 
 type Sub = {
   id?: string;
@@ -45,24 +46,44 @@ export function useSubscription() {
   const { user, loading: authLoading } = useAuth();
   const [subscription, setSub] = useState<Sub | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
+  const [expiredMessage, setExpiredMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setSub(null);
       setFetchLoading(false);
+      setExpiredMessage(null);
       return;
     }
     setFetchLoading(true);
-    supabase
-      .from("user_subscriptions")
-      .select("id, user_id, plan_id, status, current_period_end, cancel_at_period_end, payment_failed_at")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setSub(data ?? null);
-        setFetchLoading(false);
-      });
+    (async () => {
+      try {
+        if (bffConfigured()) {
+          const data = await bffGet<{
+            subscription?: Sub | null;
+            is_expired?: boolean;
+            message?: string | null;
+          }>("/api/auth/subscription");
+          setSub(data?.subscription ?? null);
+          setExpiredMessage(data?.is_expired ? (data?.message ?? "Subscription expired. Please renew first.") : null);
+          setFetchLoading(false);
+          return;
+        }
+      } catch {
+        // Fallback to direct Supabase read when BFF is unavailable.
+      }
+
+      supabase
+        .from("user_subscriptions")
+        .select("id, user_id, plan_id, status, current_period_end, cancel_at_period_end")
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          setSub(data ?? null);
+          setFetchLoading(false);
+        });
+    })();
   }, [user?.id, authLoading]);
 
   const loading = authLoading || (Boolean(user?.id) && fetchLoading);
@@ -74,5 +95,5 @@ export function useSubscription() {
     return !isPremium && (subscription.status === "past_due" || Boolean(subscription.payment_failed_at));
   }, [subscription, isPremium]);
 
-  return { subscription, loading, isPremium, hasAlgoAccess, hasBillingIssue };
+  return { subscription, loading, isPremium, hasAlgoAccess, hasBillingIssue, expiredMessage };
 }

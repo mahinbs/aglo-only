@@ -6,7 +6,7 @@ const MAIN_APP_URL = import.meta.env.VITE_MAIN_APP_URL ?? "https://tradingsmart.
 
 export function RequireSubscription({ children }: { children: ReactNode }) {
   const { loading: authLoading } = useAuth();
-  const { hasAlgoAccess, loading: subLoading } = useSubscription();
+  const { hasAlgoAccess, loading: subLoading, expiredMessage } = useSubscription();
 
   if (authLoading || subLoading) {
     return (
@@ -41,7 +41,7 @@ export function RequireSubscription({ children }: { children: ReactNode }) {
           </div>
           <h2 className="text-xl font-semibold text-slate-100">Subscription Required</h2>
           <p className="text-[13px] leading-relaxed text-[var(--text-muted)]">
-            An active TradingSmart plan is required to access the algo dashboard.
+            {expiredMessage ?? "An active TradingSmart plan is required to access the algo dashboard."}
           </p>
           <a
             href={`${MAIN_APP_URL}/pricing`}
