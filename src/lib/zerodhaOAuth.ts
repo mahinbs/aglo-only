@@ -18,8 +18,17 @@ async function messageFromFunctionsHttpError(err: unknown): Promise<string | nul
   }
 }
 
-/** Zerodha Kite Connect via OpenAlgo platform (BFF proxy, HttpOnly cookie). */
-export async function startZerodhaKiteConnect(): Promise<void> {
+function normalizeBroker(broker: string | null | undefined): string {
+  return String(broker ?? "").trim().toLowerCase();
+}
+
+/** Broker connect via BFF (broker-aware), with Zerodha fallback edge path. */
+export async function startZerodhaKiteConnect(assignedBroker?: string | null): Promise<void> {
+  const broker = normalizeBroker(assignedBroker);
+  if (!broker) {
+    throw new Error("Broker is not configured yet. Contact your admin.");
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not signed in");
 
@@ -27,14 +36,27 @@ export async function startZerodhaKiteConnect(): Promise<void> {
 
   if (bffConfigured()) {
     const q = new URLSearchParams({ return_url });
+    const path =
+      broker === "upstox"
+        ? "/api/broker/upstox-login-url"
+        : broker === "zerodha"
+          ? "/api/broker/zerodha-login-url"
+          : "";
+    if (!path) {
+      throw new Error(`${broker.toUpperCase()} broker connect is not configured yet. Contact your admin.`);
+    }
     const data = await bffFetch<{ url?: string; login_url?: string; error?: string }>(
-      `/api/broker/zerodha-login-url?${q}`,
+      `${path}?${q}`,
       { method: "GET" },
     );
     const url = data.url ?? data.login_url;
     if (!url) throw new Error(data.error ?? "No login URL returned");
     window.location.href = url;
     return;
+  }
+
+  if (broker !== "zerodha") {
+    throw new Error(`${broker.toUpperCase()} broker connect is not configured yet. Contact your admin.`);
   }
 
   const res = await supabase.functions.invoke("get-zerodha-login-url", {

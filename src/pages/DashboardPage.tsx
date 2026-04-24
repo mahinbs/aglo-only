@@ -635,12 +635,12 @@ export default function DashboardPage() {
     setLoadErr(null);
     setConnectBusy(true);
     try {
-      await startZerodhaKiteConnect();
+      await startZerodhaKiteConnect(summary?.broker ?? null);
     } catch (e: unknown) {
       setLoadErr(e instanceof Error ? e.message : "Broker connect failed");
       setConnectBusy(false);
     }
-  }, [session?.access_token]);
+  }, [session?.access_token, summary?.broker]);
 
   const onCreateStrategy = useCallback(
     async (stratForm: Record<string, string>) => {

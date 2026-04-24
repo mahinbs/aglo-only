@@ -23,7 +23,7 @@ export default function BrokerConnectPage() {
     setErr(null);
     setBusy(true);
     try {
-      await startZerodhaKiteConnect();
+      await startZerodhaKiteConnect("zerodha");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Could not start broker login");
       setBusy(false);

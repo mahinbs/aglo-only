@@ -1621,7 +1621,10 @@ export default function TradingSmartDashboard(props = {}) {
             </div>
             <div className="status-item">
               <div className={`status-dot ${useChartmate ? "live" : "live"}`} />
-              Zerodha Connected
+              {String(summary?.broker || "Broker")
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase())}{" "}
+              {summary?.broker_credentials_configured ? "Configured" : "Not configured"}
               {/* {useChartmate ? "ChartMate data" : "WebSocket Active"} */}
             </div>
             {positionsStreamStale && (
@@ -1653,7 +1656,13 @@ export default function TradingSmartDashboard(props = {}) {
                 disabled={chartmateActions.connectBusy}
                 onClick={() => void chartmateActions.onConnectBroker()}
               >
-                {sessLive ? "Reconnect broker" : "Connect broker"}
+                {sessLive
+                  ? `Reconnect ${String(summary?.broker || "broker")
+                      .replace(/_/g, " ")
+                      .toLowerCase()}`
+                  : `Connect ${String(summary?.broker || "broker")
+                      .replace(/_/g, " ")
+                      .toLowerCase()}`}
               </button>
             )}
             {setCurrencyMode ? (
