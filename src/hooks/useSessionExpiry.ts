@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { bffConfigured, bffLogout } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
-/** Daily session end ~15:30 IST + idle timeout (SEBI-oriented). */
+/** Session guard: idle timeout + backend session invalidation. */
 export function useSessionExpiry(idleMs = 30 * 60 * 1000) {
   const navigate = useNavigate();
 
@@ -21,24 +21,9 @@ export function useSessionExpiry(idleMs = 30 * 60 * 1000) {
     events.forEach((e) => window.addEventListener(e, resetIdle, { passive: true }));
     resetIdle();
 
-    const istInterval = setInterval(() => {
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const ist = new Date(utc + 5.5 * 60 * 60000);
-      const mins = ist.getHours() * 60 + ist.getMinutes();
-      if (mins >= 15 * 60 + 35) {
-        void (async () => {
-          await bffLogout();
-          await supabase.auth.signOut();
-          navigate("/login?reason=eod", { replace: true });
-        })();
-      }
-    }, 60_000);
-
     return () => {
       events.forEach((e) => window.removeEventListener(e, resetIdle));
       if (idleTimer) clearTimeout(idleTimer);
-      clearInterval(istInterval);
     };
   }, [idleMs, navigate]);
 

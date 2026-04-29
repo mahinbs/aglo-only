@@ -141,6 +141,18 @@ function defaultsGoLiveFromCard(s) {
 
 /** Symbol + exchange for BFF chart quote/history (same defaults as go-live). */
 function chartRoutingFromStrategyCard(s) {
+  const isOptions =
+    Boolean(s?.is_options) || strategyKindTag(s) === "options";
+  if (isOptions) {
+    const und = String(s?.underlying || "NIFTY")
+      .trim()
+      .toUpperCase();
+    const ex = String(s?.exchange || "NFO")
+      .trim()
+      .toUpperCase();
+    // For options live-view + condition rows, always route by underlying.
+    return { symbol: und, exchange: ex };
+  }
   const d = defaultsGoLiveFromCard(s);
   const symbol = String(d.symbol || firstSymbolFromPairs(s.pairs) || "RELIANCE")
     .trim()
@@ -169,9 +181,11 @@ function yahooSymbolFromStrategyCard(s) {
   if (clean === "BANKNIFTY") return "^NSEBANK";
   if (clean === "FINNIFTY") return "NIFTY_FIN_SERVICE.NS";
   if (clean === "SENSEX") return "^BSESN";
+  if (clean.startsWith("CRUDEOIL")) return "CL=F";
   const ex = String(exchange || "")
     .trim()
     .toUpperCase();
+  if (ex === "MCX" || ex === "NCDEX") return "CL=F";
   if (ex === "BSE" || ex === "BFO") return `${clean}.BO`;
   return `${clean}.NS`;
 }
