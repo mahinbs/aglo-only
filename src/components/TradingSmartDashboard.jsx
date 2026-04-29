@@ -33,6 +33,7 @@ import YahooChartPanel from "@/components/YahooChartPanel";
 import BffUnderlyingChart from "./BffUnderlyingChart";
 import { fetchLtp } from "@/lib/optionsApi";
 import { bffConfigured, bffFetch } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
 
@@ -304,6 +305,23 @@ function inferOptionsSignalRequestFromCard(s) {
     tp_pct: Number(exitRules.tp_pct ?? 50) || 50,
   };
   return { strategy_type: strategyType, params };
+}
+
+function deriveDirectOptionsApiBase() {
+  const explicit = String(import.meta.env?.VITE_OPTIONS_API_URL || "").trim().replace(/\/$/, "");
+  if (explicit) return explicit;
+  const bff = String(import.meta.env?.VITE_ALGO_ONLY_BFF_URL || "").trim().replace(/\/$/, "");
+  if (!bff) return "";
+  try {
+    const u = new URL(bff);
+    if (u.hostname.startsWith("algoapi.")) {
+      u.hostname = `options.${u.hostname.slice("algoapi.".length)}`;
+      return u.toString().replace(/\/$/, "");
+    }
+  } catch {
+    return "";
+  }
+  return "";
 }
 
 function brokerAllowedExchanges(brokerRaw) {
@@ -1059,6 +1077,7 @@ export default function TradingSmartDashboard(props = {}) {
     fetchedAt: null,
     error: "",
     available: false,
+    diagnostics: [],
   });
   const [liveViewQuoteAgeTick, setLiveViewQuoteAgeTick] = useState(0);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
@@ -1263,6 +1282,7 @@ export default function TradingSmartDashboard(props = {}) {
         fetchedAt: null,
         error: "",
         available: false,
+        diagnostics: [],
       });
       return;
     }
@@ -1278,6 +1298,7 @@ export default function TradingSmartDashboard(props = {}) {
         fetchedAt: null,
         error: "",
         available: false,
+        diagnostics: [],
       });
       return;
     }
@@ -1289,16 +1310,47 @@ export default function TradingSmartDashboard(props = {}) {
         fetchedAt: null,
         error: "",
         available: false,
+        diagnostics: [],
       });
       return;
     }
     let cancelled = false;
-    const tick = async () => {
+    const directOptionsBase = deriveDirectOptionsApiBase();
+    const callSignal = async () => {
       try {
-        const res = await bffFetch("/api/options/strategies/signal", {
+        return await bffFetch("/api/options/strategies/signal", {
           method: "POST",
           body: JSON.stringify(req),
         });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (!/not found/i.test(msg) || !directOptionsBase) throw e;
+        const { data } = await supabase.auth.getSession();
+        const token = data?.session?.access_token;
+        const r = await fetch(`${directOptionsBase}/api/options/strategies/signal`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(req),
+        });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          const detail =
+            typeof body?.detail === "string"
+              ? body.detail
+              : typeof body?.error === "string"
+                ? body.error
+                : `HTTP ${r.status}`;
+          throw new Error(detail);
+        }
+        return body;
+      }
+    };
+    const tick = async () => {
+      try {
+        const res = await callSignal();
         if (cancelled) return;
         setLiveOptionSignal({
           signal: Boolean(res?.signal),
@@ -1306,6 +1358,7 @@ export default function TradingSmartDashboard(props = {}) {
           fetchedAt: Date.now(),
           error: "",
           available: true,
+          diagnostics: Array.isArray(res?.diagnostics) ? res.diagnostics : [],
         });
       } catch (e) {
         if (cancelled) return;
@@ -1315,6 +1368,7 @@ export default function TradingSmartDashboard(props = {}) {
           fetchedAt: Date.now(),
           error: e instanceof Error ? e.message : String(e),
           available: true,
+          diagnostics: [],
         });
       }
     };
@@ -5277,6 +5331,34 @@ const isMcxUnderlying =
                         ) : liveOptionSignal.reason ? (
                           <div style={{ marginTop: 4, color: "var(--text-secondary)" }}>
                             {liveOptionSignal.reason}
+                          </div>
+                        ) : null}
+                        {!liveOptionSignal.error &&
+                        Array.isArray(liveOptionSignal.diagnostics) &&
+                        liveOptionSignal.diagnostics.length ? (
+                          <div style={{ marginTop: 6, color: "var(--text-muted)" }}>
+                            {liveOptionSignal.diagnostics
+                              .slice(0, 3)
+                              .map((d, i) => {
+                                const label =
+                                  d && typeof d === "object" && "label" in d
+                                    ? String(d.label ?? "")
+                                    : "";
+                                const passed =
+                                  d && typeof d === "object" && "passed" in d
+                                    ? Boolean(d.passed)
+                                    : null;
+                                const value =
+                                  d && typeof d === "object" && "value" in d
+                                    ? String(d.value ?? "")
+                                    : "";
+                                return (
+                                  <div key={`${label}-${i}`}>
+                                    {passed == null ? "•" : passed ? "✓" : "✕"}{" "}
+                                    {label || "condition"} {value ? `(${value})` : ""}
+                                  </div>
+                                );
+                              })}
                           </div>
                         ) : null}
                       </div>

@@ -232,14 +232,36 @@ export default function BffUnderlyingChart(props: {
     // If history request is slow/stuck, unblock the chart as soon as live ticks arrive.
     setLoading(false);
     setSilentRefresh(false);
+    setError(null);
 
     const lp = priceSerRef.current;
     const volSer = volumeSerRef.current;
     const last = lastCandleRef.current;
-    if (!lp || !last) return;
+    if (!lp) return;
 
     const nowSec = Math.floor(Date.now() / 1000);
     const bucket = Math.floor(nowSec / BAR_SEC) * BAR_SEC;
+    if (!last) {
+      const seed: CandlestickData = {
+        time: bucket as unknown as Time,
+        open: ltp,
+        high: ltp,
+        low: ltp,
+        close: ltp,
+      };
+      try {
+        lp.update(seed);
+        lastCandleRef.current = seed;
+        volSer?.update({
+          time: bucket as unknown as Time,
+          value: Math.max(1, Math.round(ltp / 80)),
+          color: VOLUME_UP,
+        } as HistogramData);
+      } catch {
+        /* noop */
+      }
+      return;
+    }
     const prevSec = timeToUnixSec(last.time);
 
     try {
