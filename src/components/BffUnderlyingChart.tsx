@@ -77,16 +77,36 @@ function normalizeHistoryPayload(raw: unknown): CandleRow[] {
   }
   const out: CandleRow[] = [];
   for (const row of list) {
-    if (!row || typeof row !== "object") continue;
-    const r = row as Record<string, unknown>;
-    const open = Number(r.open ?? r.o);
-    const high = Number(r.high ?? r.h);
-    const low = Number(r.low ?? r.l);
-    const close = Number(r.close ?? r.c);
+    let open = NaN;
+    let high = NaN;
+    let low = NaN;
+    let close = NaN;
+    let ts: unknown = null;
+    let volume: unknown = undefined;
+
+    if (Array.isArray(row)) {
+      // Common OpenAlgo/broker format: [timestamp, open, high, low, close, volume]
+      ts = row[0];
+      open = Number(row[1]);
+      high = Number(row[2]);
+      low = Number(row[3]);
+      close = Number(row[4]);
+      volume = row[5];
+    } else if (row && typeof row === "object") {
+      const r = row as Record<string, unknown>;
+      open = Number(r.open ?? r.o);
+      high = Number(r.high ?? r.h);
+      low = Number(r.low ?? r.l);
+      close = Number(r.close ?? r.c);
+      ts = r.timestamp ?? r.time ?? r.date ?? r.ts;
+      volume = r.volume != null ? r.volume : r.v;
+    } else {
+      continue;
+    }
+
     if (![open, high, low, close].every((n) => Number.isFinite(n))) continue;
 
     let tsec = 0;
-    const ts = r.timestamp ?? r.time ?? r.date ?? r.ts;
     if (typeof ts === "number") {
       tsec = ts > 1e12 ? Math.floor(ts / 1000) : Math.floor(ts);
     } else if (typeof ts === "string" && ts.length >= 10) {
@@ -104,7 +124,7 @@ function normalizeHistoryPayload(raw: unknown): CandleRow[] {
       high,
       low,
       close,
-      volume: r.volume != null ? Number(r.volume) : r.v != null ? Number(r.v) : undefined,
+      volume: volume != null ? Number(volume) : undefined,
     });
   }
   out.sort((a, b) => a.time - b.time);
