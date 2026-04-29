@@ -138,6 +138,7 @@ export default function BffUnderlyingChart(props: {
   const [loading, setLoading] = useState(true);
   const [silentRefresh, setSilentRefresh] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasRealHistory, setHasRealHistory] = useState(false);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [sessionRefOpen, setSessionRefOpen] = useState<number | null>(null);
   const [lastTickAt, setLastTickAt] = useState<number>(0);
@@ -175,7 +176,7 @@ export default function BffUnderlyingChart(props: {
       rightPriceScale: {
         borderColor: "rgba(255,255,255,0.08)",
         textColor: TEXT_COLOR,
-        scaleMargins: { top: 0.06, bottom: 0.2 },
+        scaleMargins: { top: 0.06, bottom: isOptionContract ? 0.06 : 0.2 },
       },
       timeScale: {
         borderColor: "rgba(255,255,255,0.08)",
@@ -195,11 +196,15 @@ export default function BffUnderlyingChart(props: {
       wickUpColor: UP_COLOR,
       wickDownColor: DOWN_COLOR,
     });
-    const volSer = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: "volume" },
-      priceScaleId: "volume",
-    });
-    chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    const volSer = isOptionContract
+      ? null
+      : chart.addSeries(HistogramSeries, {
+          priceFormat: { type: "volume" },
+          priceScaleId: "volume",
+        });
+    if (volSer) {
+      chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    }
 
     chartRef.current = chart;
     priceSerRef.current = priceSer;
@@ -222,7 +227,7 @@ export default function BffUnderlyingChart(props: {
       width: containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     });
-  }, []);
+  }, [isOptionContract]);
 
   const applyIncomingLtp = useCallback((ltp: number, source: "ws" | "poll") => {
     if (!Number.isFinite(ltp) || ltp <= 0) return;
@@ -307,7 +312,7 @@ export default function BffUnderlyingChart(props: {
     (bars: CandleRow[]) => {
       const priceSer = priceSerRef.current;
       const volSer = volumeSerRef.current;
-      if (!priceSer || !volSer || bars.length === 0) return;
+      if (!priceSer || bars.length === 0) return;
 
       const priceData: CandlestickData[] = [];
       const volData: HistogramData[] = [];
@@ -327,19 +332,23 @@ export default function BffUnderlyingChart(props: {
           c.volume != null && Number.isFinite(c.volume)
             ? c.volume
             : Math.round((c.high + c.low + c.close) / 30);
-        volData.push({
-          time: t,
-          value: Math.max(0, vol),
-          color: c.close >= c.open ? VOLUME_UP : VOLUME_DOWN,
-        });
+        if (volSer) {
+          volData.push({
+            time: t,
+            value: Math.max(0, vol),
+            color: c.close >= c.open ? VOLUME_UP : VOLUME_DOWN,
+          });
+        }
       }
       try {
         priceSer.setData(priceData);
-        volSer.setData(volData);
+        if (volSer) volSer.setData(volData);
         chartRef.current?.timeScale().fitContent();
       } catch {
         /* noop */
       }
+      setHasRealHistory(true);
+      setError(null);
       const last = bars[bars.length - 1]?.close ?? null;
       if (last != null && Number.isFinite(last)) setLivePrice(last);
       const lastBar = bars[bars.length - 1] ?? null;
@@ -420,9 +429,19 @@ export default function BffUnderlyingChart(props: {
   }, [loadHistory]);
 
   useEffect(() => {
+    setHasRealHistory(false);
+  }, [symbol, exchange]);
+
+  useEffect(() => {
     const id = window.setInterval(() => void loadHistory(true), 5 * 60_000);
     return () => window.clearInterval(id);
   }, [loadHistory]);
+
+  useEffect(() => {
+    if (hasRealHistory || !symbol || !exchange) return undefined;
+    const id = window.setInterval(() => void loadHistory(true), 15_000);
+    return () => window.clearInterval(id);
+  }, [hasRealHistory, symbol, exchange, loadHistory]);
 
   useEffect(() => {
     const id = window.setInterval(() => setClockTick((x) => x + 1), 4000);

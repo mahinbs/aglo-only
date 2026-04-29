@@ -5299,6 +5299,43 @@ const isMcxUnderlying =
                     );
                     const rangeCurrent = rangeMatch?.[1] ?? "";
                     const rangeExpected = rangeMatch?.[2] ?? "";
+                    const diagRows = Array.isArray(liveOptionSignal.diagnostics)
+                      ? liveOptionSignal.diagnostics
+                          .map((d) => {
+                            const row = d && typeof d === "object" ? d : {};
+                            const label = String(
+                              row.name ?? row.label ?? row.condition ?? "condition",
+                            );
+                            const passed =
+                              typeof row.matched === "boolean"
+                                ? Boolean(row.matched)
+                                : typeof row.passed === "boolean"
+                                  ? Boolean(row.passed)
+                                  : null;
+                            const lhs =
+                              row.lhs != null && row.lhs !== ""
+                                ? String(row.lhs)
+                                : row.value != null && row.value !== ""
+                                  ? String(row.value)
+                                  : "";
+                            const op = row.op != null && row.op !== "" ? String(row.op) : "";
+                            const rhs =
+                              row.rhs != null && row.rhs !== ""
+                                ? String(row.rhs)
+                                : row.expected != null && row.expected !== ""
+                                  ? String(row.expected)
+                                  : "";
+                            const value = lhs
+                              ? rhs
+                                ? `${lhs}${op ? ` ${op} ` : " "}${rhs}`
+                                : lhs
+                              : rhs;
+                            return { label, passed, value };
+                          })
+                          .filter((x) => x.label)
+                      : [];
+                    const matchedRows = diagRows.filter((x) => x.passed === true);
+                    const notMatchedRows = diagRows.filter((x) => x.passed === false);
                     return (
                       <div
                         style={{
@@ -5345,49 +5382,32 @@ const isMcxUnderlying =
                             <strong>{rangeExpected}</strong>
                           </div>
                         ) : null}
-                        {!liveOptionSignal.error &&
-                        Array.isArray(liveOptionSignal.diagnostics) &&
-                        liveOptionSignal.diagnostics.length ? (
-                          <div style={{ marginTop: 6, color: "var(--text-muted)" }}>
-                            {liveOptionSignal.diagnostics
-                              .slice(0, 3)
-                              .map((d, i) => {
-                                const row = d && typeof d === "object" ? d : {};
-                                const label = String(
-                                  row.name ?? row.label ?? row.condition ?? "condition",
-                                );
-                                const passed =
-                                  typeof row.matched === "boolean"
-                                    ? Boolean(row.matched)
-                                    : typeof row.passed === "boolean"
-                                      ? Boolean(row.passed)
-                                      : null;
-                                const lhs =
-                                  row.lhs != null && row.lhs !== ""
-                                    ? String(row.lhs)
-                                    : row.value != null && row.value !== ""
-                                      ? String(row.value)
-                                      : "";
-                                const op =
-                                  row.op != null && row.op !== "" ? String(row.op) : "";
-                                const rhs =
-                                  row.rhs != null && row.rhs !== ""
-                                    ? String(row.rhs)
-                                    : row.expected != null && row.expected !== ""
-                                      ? String(row.expected)
-                                      : "";
-                                const value = lhs
-                                  ? rhs
-                                    ? `${lhs}${op ? ` ${op} ` : " "}${rhs}`
-                                    : lhs
-                                  : rhs;
-                                return (
-                                  <div key={`${label}-${i}`}>
-                                    {passed == null ? "•" : passed ? "✓" : "✕"}{" "}
-                                    {label || "condition"} {value ? `(${value})` : ""}
-                                  </div>
-                                );
-                              })}
+                        {!liveOptionSignal.error && diagRows.length ? (
+                          <div style={{ marginTop: 8, color: "var(--text-muted)" }}>
+                            <div style={{ color: "var(--accent-green)" }}>
+                              Matching ({matchedRows.length})
+                            </div>
+                            {matchedRows.length ? (
+                              matchedRows.map((row, i) => (
+                                <div key={`m-${row.label}-${i}`}>
+                                  ✓ {row.label} {row.value ? `(${row.value})` : ""}
+                                </div>
+                              ))
+                            ) : (
+                              <div>— none</div>
+                            )}
+                            <div style={{ marginTop: 6, color: "var(--accent-orange)" }}>
+                              Not matching ({notMatchedRows.length})
+                            </div>
+                            {notMatchedRows.length ? (
+                              notMatchedRows.map((row, i) => (
+                                <div key={`n-${row.label}-${i}`}>
+                                  ✕ {row.label} {row.value ? `(${row.value})` : ""}
+                                </div>
+                              ))
+                            ) : (
+                              <div>— none</div>
+                            )}
                           </div>
                         ) : null}
                       </div>
