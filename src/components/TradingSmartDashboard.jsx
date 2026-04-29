@@ -5293,6 +5293,12 @@ const isMcxUnderlying =
                         : liveOptionSignal.signal
                           ? "MATCHED (entry allowed)"
                           : "NOT MATCHED";
+                    const reasonText = String(liveOptionSignal.reason || "").trim();
+                    const rangeMatch = reasonText.match(
+                      /confirmation range\s*([0-9.]+)\s*outside\s*([0-9.\-]+)/i,
+                    );
+                    const rangeCurrent = rangeMatch?.[1] ?? "";
+                    const rangeExpected = rangeMatch?.[2] ?? "";
                     return (
                       <div
                         style={{
@@ -5333,6 +5339,12 @@ const isMcxUnderlying =
                             {liveOptionSignal.reason}
                           </div>
                         ) : null}
+                        {!liveOptionSignal.error && rangeCurrent && rangeExpected ? (
+                          <div style={{ marginTop: 6, color: "var(--accent-cyan)" }}>
+                            Current range: <strong>{rangeCurrent}</strong> · Required:{" "}
+                            <strong>{rangeExpected}</strong>
+                          </div>
+                        ) : null}
                         {!liveOptionSignal.error &&
                         Array.isArray(liveOptionSignal.diagnostics) &&
                         liveOptionSignal.diagnostics.length ? (
@@ -5340,18 +5352,35 @@ const isMcxUnderlying =
                             {liveOptionSignal.diagnostics
                               .slice(0, 3)
                               .map((d, i) => {
-                                const label =
-                                  d && typeof d === "object" && "label" in d
-                                    ? String(d.label ?? "")
-                                    : "";
+                                const row = d && typeof d === "object" ? d : {};
+                                const label = String(
+                                  row.name ?? row.label ?? row.condition ?? "condition",
+                                );
                                 const passed =
-                                  d && typeof d === "object" && "passed" in d
-                                    ? Boolean(d.passed)
-                                    : null;
-                                const value =
-                                  d && typeof d === "object" && "value" in d
-                                    ? String(d.value ?? "")
-                                    : "";
+                                  typeof row.matched === "boolean"
+                                    ? Boolean(row.matched)
+                                    : typeof row.passed === "boolean"
+                                      ? Boolean(row.passed)
+                                      : null;
+                                const lhs =
+                                  row.lhs != null && row.lhs !== ""
+                                    ? String(row.lhs)
+                                    : row.value != null && row.value !== ""
+                                      ? String(row.value)
+                                      : "";
+                                const op =
+                                  row.op != null && row.op !== "" ? String(row.op) : "";
+                                const rhs =
+                                  row.rhs != null && row.rhs !== ""
+                                    ? String(row.rhs)
+                                    : row.expected != null && row.expected !== ""
+                                      ? String(row.expected)
+                                      : "";
+                                const value = lhs
+                                  ? rhs
+                                    ? `${lhs}${op ? ` ${op} ` : " "}${rhs}`
+                                    : lhs
+                                  : rhs;
                                 return (
                                   <div key={`${label}-${i}`}>
                                     {passed == null ? "•" : passed ? "✓" : "✕"}{" "}

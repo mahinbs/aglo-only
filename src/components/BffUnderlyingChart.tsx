@@ -242,21 +242,28 @@ export default function BffUnderlyingChart(props: {
     const nowSec = Math.floor(Date.now() / 1000);
     const bucket = Math.floor(nowSec / BAR_SEC) * BAR_SEC;
     if (!last) {
-      const seed: CandlestickData = {
-        time: bucket as unknown as Time,
-        open: ltp,
-        high: ltp,
-        low: ltp,
-        close: ltp,
-      };
       try {
-        lp.update(seed);
-        lastCandleRef.current = seed;
-        volSer?.update({
-          time: bucket as unknown as Time,
-          value: Math.max(1, Math.round(ltp / 80)),
-          color: VOLUME_UP,
-        } as HistogramData);
+        const seedBars: CandlestickData[] = [];
+        const seedVol: HistogramData[] = [];
+        for (let i = 23; i >= 0; i -= 1) {
+          const t = (bucket - i * BAR_SEC) as unknown as Time;
+          seedBars.push({
+            time: t,
+            open: ltp,
+            high: ltp,
+            low: ltp,
+            close: ltp,
+          });
+          seedVol.push({
+            time: t,
+            value: Math.max(1, Math.round(ltp / 80)),
+            color: VOLUME_UP,
+          } as HistogramData);
+        }
+        lp.setData(seedBars);
+        volSer?.setData(seedVol);
+        lastCandleRef.current = seedBars[seedBars.length - 1] ?? null;
+        chartRef.current?.timeScale().fitContent();
       } catch {
         /* noop */
       }
