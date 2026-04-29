@@ -236,7 +236,7 @@ export function StrategyConditionPanel(props: {
         </div>
       )}
 
-      {rows.length > 0 && (
+      {isLiveLifecycle && rows.length > 0 && (
         <div className="overflow-x-auto rounded border border-white/5">
           <table className="min-w-[520px] w-full border-collapse text-left">
             <thead>
@@ -278,7 +278,7 @@ export function StrategyConditionPanel(props: {
         </div>
       ) : null}
 
-      {event?.reasons && typeof event.reasons === "object" && (
+      {isLiveLifecycle && event?.reasons && typeof event.reasons === "object" && (
         <div className="text-[10px] text-muted-foreground/80 truncate" title={JSON.stringify(event.reasons)}>
           {formatEngineReasonLine(event.reasons)}
         </div>

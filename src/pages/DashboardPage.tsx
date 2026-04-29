@@ -990,9 +990,14 @@ export default function DashboardPage() {
     async (strategyId: string): Promise<string | null> => {
       const uid = session?.user?.id;
       if (!uid) return "Not signed in";
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from("options_strategies")
-        .update({ is_active: true })
+        .update({
+          is_active: true,
+          lifecycle_state: "ACTIVE",
+          lifecycle_updated_at: now,
+        })
         .eq("id", strategyId)
         .eq("user_id", uid);
       if (error) return error.message;
@@ -1006,9 +1011,14 @@ export default function DashboardPage() {
     async (strategyId: string): Promise<string | null> => {
       const uid = session?.user?.id;
       if (!uid) return "Not signed in";
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from("options_strategies")
-        .update({ is_active: false })
+        .update({
+          is_active: false,
+          lifecycle_state: "PAUSED",
+          lifecycle_updated_at: now,
+        })
         .eq("id", strategyId)
         .eq("user_id", uid);
       if (error) return error.message;

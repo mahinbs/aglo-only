@@ -30,6 +30,7 @@ import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";
 import YahooChartPanel from "@/components/YahooChartPanel";
+import { fetchLtp } from "@/lib/optionsApi";
 import { supabase } from "@/integrations/supabase/client";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
@@ -982,6 +983,10 @@ export default function TradingSmartDashboard(props = {}) {
   const [goLiveSearchBusy, setGoLiveSearchBusy] = useState(false);
   const [goLiveSearchError, setGoLiveSearchError] = useState("");
   const [liveViewTarget, setLiveViewTarget] = useState(null);
+  const [liveViewManualBoost, setLiveViewManualBoost] = useState(0);
+  /** Live option LTP while Live View modal open (deployment contract). */
+  const [liveOptionQuote, setLiveOptionQuote] = useState({ ltp: null, fetchedAt: null });
+  const [liveViewQuoteAgeTick, setLiveViewQuoteAgeTick] = useState(0);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
   const [liveModalStopBusy, setLiveModalStopBusy] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -1112,8 +1117,15 @@ export default function TradingSmartDashboard(props = {}) {
   useEffect(() => {
     const t = liveViewTarget;
     if (!t) return;
-    const isOptions = Boolean(t?.is_options) || strategyKindTag(t) === "options";
+    const isOptions =
+      Boolean(t?.is_options) ||
+      String(t?.market_type ?? t?.marketType ?? t?.type ?? "")
+        .toLowerCase()
+        .includes("option");
     if (!isOptions) return;
+    const lvLc = normalizeLifecycleState(t.lifecycle_state, Boolean(t.deployed));
+    const fastTick = lvLc === "ACTIVE" || lvLc === "TRIGGERED";
+    const intervalMs = fastTick ? 10_000 : 30_000;
     let cancelled = false;
     const tick = async () => {
       try {
@@ -1125,11 +1137,55 @@ export default function TradingSmartDashboard(props = {}) {
     void tick();
     const id = window.setInterval(() => {
       if (!cancelled) void tick();
-    }, 30_000);
+    }, intervalMs);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
+  }, [liveViewTarget, liveViewManualBoost]);
+
+  // Live option premium (LTP) for deployed contract — BFF `/api/options/quotes` via optionsApi.fetchLtp.
+  useEffect(() => {
+    const t = liveViewTarget;
+    if (!t) {
+      setLiveOptionQuote({ ltp: null, fetchedAt: null });
+      return;
+    }
+    const isOptions =
+      Boolean(t?.is_options) ||
+      String(t?.market_type ?? t?.marketType ?? t?.type ?? "")
+        .toLowerCase()
+        .includes("option");
+    if (!isOptions) return;
+    const dep = optionDeploymentInfoFromCard(t);
+    const sym = dep.optionSymbol;
+    const ex = (dep.exchange || "NFO").trim().toUpperCase() || "NFO";
+    if (!sym) {
+      setLiveOptionQuote({ ltp: null, fetchedAt: null });
+      return undefined;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      const ltp = await fetchLtp(sym, ex);
+      if (!cancelled) {
+        setLiveOptionQuote({ ltp: ltp != null && Number.isFinite(ltp) ? ltp : null, fetchedAt: Date.now() });
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => {
+      if (!cancelled) void tick();
+    }, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [liveViewTarget]);
+
+  // Tick every second while Live View open so "Updated Ns ago" refreshes without full rerender storm.
+  useEffect(() => {
+    if (!liveViewTarget) return undefined;
+    const id = window.setInterval(() => setLiveViewQuoteAgeTick((x) => x + 1), 1000);
+    return () => window.clearInterval(id);
   }, [liveViewTarget]);
 
   // Clock
@@ -4851,21 +4907,94 @@ export default function TradingSmartDashboard(props = {}) {
                       if (!isOptions) return null;
                       const dep = optionDeploymentInfoFromCard(liveViewTarget);
                       if (!dep.optionSymbol && !dep.quantity) return null;
+
+                      const qtyNum = Number(String(dep.quantity).replace(/,/g, "")) || 0;
+                      const { ltp, fetchedAt } = liveOptionQuote;
+                      const costNum =
+                        qtyNum > 0 && ltp != null && Number.isFinite(ltp)
+                          ? qtyNum * ltp
+                          : null;
+                      const updatedSec =
+                        fetchedAt != null && Number.isFinite(fetchedAt)
+                          ? Math.max(0, Math.round((Date.now() - fetchedAt) / 1000))
+                          : null;
+                      // Re-render anchor for relative "Ns ago" while modal is open (1s ticker).
+                      void liveViewQuoteAgeTick;
+
                       return (
-                        <p
-                          style={{
-                            fontSize: 10,
-                            color: "var(--accent-cyan)",
-                            marginTop: 4,
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          If signal matches: BUY {dep.optionSymbol || "selected option"}{" "}
-                          {dep.expiry ? `(expiry ${dep.expiry})` : ""} · Qty{" "}
-                          {dep.quantity || "—"} ({dep.lots || "—"} lot ×{" "}
-                          {dep.lotUnits || "—"}) · Indicative INR blocked at
-                          entry = Qty × option premium at trigger.
-                        </p>
+                        <div style={{ marginTop: 10 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              alignItems: "center",
+                              gap: 8,
+                              marginBottom: 6,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              className="action-btn"
+                              style={{
+                                fontSize: 11,
+                                padding: "4px 10px",
+                                minWidth: 0,
+                              }}
+                              title="Trigger an immediate options scanner pass (engine snapshots)"
+                              onClick={() => setLiveViewManualBoost((n) => n + 1)}
+                            >
+                              Refresh now
+                            </button>
+                          </div>
+                          <p
+                            style={{
+                              fontSize: 10,
+                              color: "var(--accent-cyan)",
+                              marginTop: 0,
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            <strong>Contract:</strong>{" "}
+                            {dep.optionSymbol || "selected option"}
+                            {dep.expiry ? (
+                              <>
+                                {" "}
+                                · <strong>Expiry:</strong> {dep.expiry}
+                              </>
+                            ) : null}
+                            {" "}
+                            · <strong>Qty:</strong> {dep.quantity || "—"} (
+                            {dep.lots || "—"} × {dep.lotUnits || "—"})
+                          </p>
+                          <p
+                            style={{
+                              fontSize: 10,
+                              color: "var(--text-secondary)",
+                              marginTop: 4,
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            <strong>Premium (LTP):</strong>{" "}
+                            {ltp != null && Number.isFinite(ltp)
+                              ? `₹${Number(ltp).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : "—"}{" "}
+                            · <strong>Indicative cost:</strong>{" "}
+                            {costNum != null && Number.isFinite(costNum)
+                              ? `₹${Number(costNum).toLocaleString("en-IN", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : qtyNum > 0
+                                ? "(need LTP)"
+                                : "—"}{" "}
+                            · <strong>Updated:</strong>{" "}
+                            {updatedSec != null ? `${updatedSec}s ago` : "—"}
+                          </p>
+                        </div>
                       );
                     })()}
                   </div>

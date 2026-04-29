@@ -370,6 +370,8 @@ export function OptionsStrategyActivateDialog({
         .update({
           is_active: true,
           is_paper_only: isPaper,
+          lifecycle_state: "ACTIVE",
+          lifecycle_updated_at: new Date().toISOString(),
           risk_config: rc,
           strategy_state: {
             ...prev,

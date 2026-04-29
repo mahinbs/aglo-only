@@ -30,6 +30,17 @@ function normalizeSym(v: unknown): string {
   return String(v || "").trim().toUpperCase();
 }
 
+function rowCreatedAtMs(row: StrategyConditionEventRow): number {
+  const raw = row?.created_at || row?.at || "";
+  const t = Date.parse(String(raw));
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function isRowAfterSessionStart(row: StrategyConditionEventRow, minCreatedAtMs: number): boolean {
+  if (minCreatedAtMs <= 0) return true;
+  return rowCreatedAtMs(row) >= minCreatedAtMs;
+}
+
 export function useConditionEvents(
   strategyId: string | null | undefined,
   opts?: { staleAfterMs?: number; symbol?: string | null; minCreatedAt?: string | null },
@@ -80,15 +91,16 @@ export function useConditionEvents(
 
       if (!cancelled && !error) {
         const rows = Array.isArray(data) ? (data as StrategyConditionEventRow[]) : [];
-        if (!rows.length) {
+        const filtered = rows.filter((r) => isRowAfterSessionStart(r, minCreatedAtMs));
+        if (!filtered.length) {
           setEvent(null);
           return;
         }
         if (!symbolFilter) {
-          setEvent(rows[0] ?? null);
+          setEvent(filtered[0] ?? null);
           return;
         }
-        const matched = rows.find((r) => normalizeSym(r.symbol) === symbolFilter) ?? null;
+        const matched = filtered.find((r) => normalizeSym(r.symbol) === symbolFilter) ?? null;
         setEvent(matched);
       }
     })();
