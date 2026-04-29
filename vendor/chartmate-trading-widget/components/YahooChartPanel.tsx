@@ -196,6 +196,13 @@ function isIntradayInterval(interval: string): boolean {
   return v === "1m" || v === "2m" || v === "5m" || v === "15m" || v === "30m" || v === "60m" || v === "1h";
 }
 
+function normalizeYahooSymbol(rawSymbol: string): string {
+  const clean = String(rawSymbol || "").trim().toUpperCase();
+  if (!clean) return "RELIANCE.NS";
+  if (clean.startsWith("CRUDEOIL")) return "CL=F";
+  return clean;
+}
+
 /* ─── Chart colours ────────────────────────────────────────────────────── */
 const CHART_BG      = "#0a0a0f";
 const GRID_COLOR    = "rgba(255,255,255,0.04)";
@@ -240,6 +247,7 @@ export default function YahooChartPanel({
   const [crosshairVal, setCrosshairVal] = useState<{
     price?: number; open?: number; high?: number; low?: number; vol?: number;
   } | null>(null);
+  const yahooSymbol = normalizeYahooSymbol(symbol);
 
   /* ── build / rebuild Lightweight Chart ─────────────────────────────── */
   const buildChart = useCallback(() => {
@@ -508,9 +516,9 @@ export default function YahooChartPanel({
     if (!symbol) return;
     setLivePrice(null); setLiveChange(null); setLivePct(null);
     buildChart();
-    fetchData(symbol, activeRange);
+    fetchData(yahooSymbol, activeRange);
     // Connect WebSocket for truly real-time price streaming
-    connectWS(symbol);
+    connectWS(yahooSymbol);
 
     return () => {
       if (wsRef.current)    { wsRef.current.close(1000, "symbol-change"); wsRef.current = null; }
@@ -600,11 +608,11 @@ export default function YahooChartPanel({
             </button>
           ))}
           <div className="w-px h-4 bg-white/10 mx-0.5" />
-          <button onClick={() => { fetchData(symbol, activeRange); connectWS(symbol); }}
+          <button onClick={() => { fetchData(yahooSymbol, activeRange); connectWS(yahooSymbol); }}
             title="Refresh" className="p-1 rounded text-zinc-600 hover:text-zinc-300 transition-colors">
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
-          <a href={`https://finance.yahoo.com/chart/${encodeURIComponent(symbol)}`}
+          <a href={`https://finance.yahoo.com/chart/${encodeURIComponent(yahooSymbol)}`}
             target="_blank" rel="noopener noreferrer" title="Open on Yahoo Finance"
             className="p-1 rounded text-zinc-600 hover:text-zinc-300 transition-colors">
             <ExternalLink className="h-3.5 w-3.5" />
@@ -631,16 +639,16 @@ export default function YahooChartPanel({
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0f]/80 z-10 gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm text-zinc-400">Loading {symbol}…</span>
+            <span className="text-sm text-zinc-400">Loading {yahooSymbol}…</span>
           </div>
         )}
 
         {!loading && error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-3 px-6 text-center">
             <p className="text-sm text-zinc-500">{error}</p>
-            <a href={`https://finance.yahoo.com/chart/${encodeURIComponent(symbol)}`}
+            <a href={`https://finance.yahoo.com/chart/${encodeURIComponent(yahooSymbol)}`}
               target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
-              Open {symbol} on Yahoo Finance ↗
+              Open {yahooSymbol} on Yahoo Finance ↗
             </a>
           </div>
         )}
