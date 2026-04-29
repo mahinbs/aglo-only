@@ -249,6 +249,63 @@ function optionDeploymentInfoFromCard(s) {
   return { optionSymbol, expiry, lotUnits, lots, quantity, exchange };
 }
 
+function inferOptionsSignalRequestFromCard(s) {
+  const raw = s && typeof s._raw === "object" ? s._raw : s;
+  if (!raw || typeof raw !== "object") return null;
+  const dep = optionDeploymentInfoFromCard(raw);
+  const style = String(raw.strategy_style ?? raw.strategy_type ?? "").trim().toLowerCase();
+  const name = String(raw.name ?? "").trim().toLowerCase();
+  let strategyType = "";
+  if (style) strategyType = style;
+  if (!strategyType && /9[\s\-]*20|ema/.test(name)) strategyType = "ema_9_20_setup";
+  else if (!strategyType && /\borb\b/.test(name)) strategyType = "orb_buying";
+  else if (!strategyType && /iron\s*condor/.test(name)) strategyType = "iron_condor";
+  else if (!strategyType && /strangle/.test(name)) strategyType = "strangle";
+  if (!strategyType) return null;
+  if (strategyType === "buying" || strategyType === "selling") {
+    strategyType = /9[\s\-]*20|ema/.test(name) ? "ema_9_20_setup" : "orb_buying";
+  }
+  const exch = String(raw.exchange ?? dep.exchange ?? "NFO")
+    .trim()
+    .toUpperCase();
+  const underlying = String(raw.underlying ?? raw.symbol ?? s?.pairs ?? "NIFTY")
+    .trim()
+    .toUpperCase();
+  const strikeSelection = String(raw.strike_selection ?? "ATM")
+    .trim()
+    .toUpperCase();
+  const expiryType = String(raw.expiry_type ?? "weekly").trim().toLowerCase();
+  const tradeDirection = String(raw.trade_direction ?? "both").trim().toLowerCase();
+  const orbCfg =
+    raw.orb_config && typeof raw.orb_config === "object" ? raw.orb_config : {};
+  const riskCfg =
+    raw.risk_config && typeof raw.risk_config === "object" ? raw.risk_config : {};
+  const exitRules =
+    raw.exit_rules && typeof raw.exit_rules === "object" ? raw.exit_rules : {};
+  const lots = Number(dep.lots || raw.lots || 1);
+  const lotSize = Number(dep.lotUnits || riskCfg.lot_size || 1);
+  const params = {
+    underlying,
+    exchange_underlying: exch,
+    exchange_options: exch,
+    expiry_type: expiryType,
+    expiry_date: dep.expiry || null,
+    strike_offset: strikeSelection || "ATM",
+    lots: Number.isFinite(lots) && lots > 0 ? Math.floor(lots) : 1,
+    lot_size: Number.isFinite(lotSize) && lotSize > 0 ? Math.floor(lotSize) : 1,
+    trade_direction: ["bullish", "bearish", "both"].includes(tradeDirection)
+      ? tradeDirection
+      : "both",
+    orb_duration_mins: Number(orbCfg.orb_duration_mins ?? 15) || 15,
+    min_range_pct: Number(orbCfg.min_range_pct ?? 0.2) || 0.2,
+    max_range_pct: Number(orbCfg.max_range_pct ?? 1.0) || 1.0,
+    momentum_bars: Number(orbCfg.momentum_bars ?? 3) || 3,
+    sl_pct: Number(exitRules.sl_pct ?? 30) || 30,
+    tp_pct: Number(exitRules.tp_pct ?? 50) || 50,
+  };
+  return { strategy_type: strategyType, params };
+}
+
 function brokerAllowedExchanges(brokerRaw) {
   const broker = String(brokerRaw || "")
     .trim()
@@ -1224,10 +1281,8 @@ export default function TradingSmartDashboard(props = {}) {
       });
       return;
     }
-    const raw = t && typeof t._raw === "object" ? t._raw : t;
-    const strategyType = String(raw?.strategy_type ?? "").trim();
-    const params = raw?.params && typeof raw.params === "object" ? raw.params : null;
-    if (!strategyType || !params) {
+    const req = inferOptionsSignalRequestFromCard(t);
+    if (!req) {
       setLiveOptionSignal({
         signal: null,
         reason: "",
@@ -1242,7 +1297,7 @@ export default function TradingSmartDashboard(props = {}) {
       try {
         const res = await bffFetch("/api/options/strategies/signal", {
           method: "POST",
-          body: JSON.stringify({ strategy_type: strategyType, params }),
+          body: JSON.stringify(req),
         });
         if (cancelled) return;
         setLiveOptionSignal({
@@ -5145,17 +5200,30 @@ const isMcxUnderlying =
                       );
                     })()}
                   </div>
-                  <StrategyConditionPanel
-                    strategyId={liveViewTarget.id}
-                    strategyName={liveViewTarget.name}
-                    symbol={null}
-                    brokerLive={sessLive}
-                    streamStale={positionsStreamStale}
-                    lifecycleState={lvLc}
-                    lifecycleReason={liveViewTarget.lifecycle_reason ?? null}
-                    lifecycleUpdatedAt={liveViewTarget.lifecycle_updated_at ?? null}
-                    showStrategyTitle={false}
-                  />
+                  {isOptionsStrategy ? (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontSize: 10,
+                        color: "var(--text-muted)",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Live condition status below is from options-api signal evaluation (not equity engine snapshots).
+                    </div>
+                  ) : (
+                    <StrategyConditionPanel
+                      strategyId={liveViewTarget.id}
+                      strategyName={liveViewTarget.name}
+                      symbol={null}
+                      brokerLive={sessLive}
+                      streamStale={positionsStreamStale}
+                      lifecycleState={lvLc}
+                      lifecycleReason={liveViewTarget.lifecycle_reason ?? null}
+                      lifecycleUpdatedAt={liveViewTarget.lifecycle_updated_at ?? null}
+                      showStrategyTitle={false}
+                    />
+                  )}
                   {(() => {
                     const isOptions =
                       Boolean(liveViewTarget?.is_options) ||

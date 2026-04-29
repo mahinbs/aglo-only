@@ -229,6 +229,9 @@ export default function BffUnderlyingChart(props: {
     setLivePrice(ltp);
     setLastTickAt(Date.now());
     setTransport(source);
+    // If history request is slow/stuck, unblock the chart as soon as live ticks arrive.
+    setLoading(false);
+    setSilentRefresh(false);
 
     const lp = priceSerRef.current;
     const volSer = volumeSerRef.current;
@@ -345,7 +348,7 @@ export default function BffUnderlyingChart(props: {
         const startDt = new Date(Date.now() - lookbackDays * 86400000);
         const start = istCalendarDate(startDt);
 
-        const raw = await bffFetch<unknown>("/api/options/history", {
+        const historyReq = bffFetch<unknown>("/api/options/history", {
           method: "POST",
           body: JSON.stringify({
             symbol,
@@ -355,6 +358,10 @@ export default function BffUnderlyingChart(props: {
             end_date: end,
           }),
         });
+        const timeoutReq = new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error("History timeout (using live ticks).")), 12000);
+        });
+        const raw = await Promise.race([historyReq, timeoutReq]);
 
         let bars = normalizeHistoryPayload(raw);
         if (
@@ -398,9 +405,9 @@ export default function BffUnderlyingChart(props: {
 
     let cancelled = false;
     let ws: WebSocket | null = null;
-    let pollId: ReturnType<typeof setInterval> | null = null;
-    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-    let wsConnectSlowTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollId: number | null = null;
+    let reconnectTimer: number | null = null;
+    let wsConnectSlowTimer: number | null = null;
 
     const clearPoll = () => {
       if (pollId != null) {
