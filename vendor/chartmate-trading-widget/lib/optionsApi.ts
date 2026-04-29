@@ -503,7 +503,7 @@ export async function fetchExpiryDates(params: {
       if (result.expiries.length === 0) {
         throw new Error(
           friendlyBrokerMarketDataError(
-            "No expiry dates returned from broker. Market may be closed or your OpenAlgo API key / broker session needs refreshing.",
+              `No expiry dates returned from broker for ${sym} (${ex}). This symbol may be unavailable for your broker or currently not tradable.`,
           ),
         );
       }
