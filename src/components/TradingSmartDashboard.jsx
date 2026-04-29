@@ -219,12 +219,22 @@ function optionDeploymentInfoFromCard(s) {
   const optionSymbol = String(dep.options_symbol ?? "").trim().toUpperCase();
   const expiry = String(dep.expiry_iso ?? "").trim();
   const lotUnitsNum = Number(dep.lot_units ?? 0);
+  const lotsNum = Number(dep.lots ?? 0);
   const lotUnits =
     Number.isFinite(lotUnitsNum) && lotUnitsNum > 0
       ? String(Math.floor(lotUnitsNum))
       : "";
+  const lots = Number.isFinite(lotsNum) && lotsNum > 0 ? String(Math.floor(lotsNum)) : "";
+  const qtyNum =
+    Number.isFinite(lotsNum) &&
+    lotsNum > 0 &&
+    Number.isFinite(lotUnitsNum) &&
+    lotUnitsNum > 0
+      ? Math.floor(lotsNum) * Math.floor(lotUnitsNum)
+      : 0;
+  const quantity = qtyNum > 0 ? String(qtyNum) : "";
   const exchange = String(dep.exchange ?? raw?.exchange ?? "").trim().toUpperCase();
-  return { optionSymbol, expiry, lotUnits, exchange };
+  return { optionSymbol, expiry, lotUnits, lots, quantity, exchange };
 }
 
 function brokerAllowedExchanges(brokerRaw) {
@@ -4785,9 +4795,11 @@ export default function TradingSmartDashboard(props = {}) {
           liveViewTarget ? `Live view — ${liveViewTarget.name}` : "Live view"
         }
         onClose={() => setLiveViewTarget(null)}
+        panelClassName="w-[min(98vw,1700px)] sm:w-[min(98vw,1700px)] max-h-[94vh]"
+        bodyClassName="px-3 sm:px-4"
       >
         {liveViewTarget ? (
-          <div className="strategy-form w-full max-w-[760px]">
+          <div className="strategy-form w-full max-w-none">
             <p
               style={{
                 fontSize: 12,
@@ -4832,6 +4844,30 @@ export default function TradingSmartDashboard(props = {}) {
                       USD; execution still uses your broker option symbol and
                       INR premiums.
                     </p>
+                    {(() => {
+                      const isOptions =
+                        Boolean(liveViewTarget?.is_options) ||
+                        strategyKindTag(liveViewTarget) === "options";
+                      if (!isOptions) return null;
+                      const dep = optionDeploymentInfoFromCard(liveViewTarget);
+                      if (!dep.optionSymbol && !dep.quantity) return null;
+                      return (
+                        <p
+                          style={{
+                            fontSize: 10,
+                            color: "var(--accent-cyan)",
+                            marginTop: 4,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          If signal matches: BUY {dep.optionSymbol || "selected option"}{" "}
+                          {dep.expiry ? `(expiry ${dep.expiry})` : ""} · Qty{" "}
+                          {dep.quantity || "—"} ({dep.lots || "—"} lot ×{" "}
+                          {dep.lotUnits || "—"}) · Indicative INR blocked at
+                          entry = Qty × option premium at trigger.
+                        </p>
+                      );
+                    })()}
                   </div>
                   <StrategyConditionPanel
                     strategyId={liveViewTarget.id}
@@ -4841,6 +4877,7 @@ export default function TradingSmartDashboard(props = {}) {
                     streamStale={positionsStreamStale}
                     lifecycleState={lvLc}
                     lifecycleReason={liveViewTarget.lifecycle_reason ?? null}
+                    lifecycleUpdatedAt={liveViewTarget.lifecycle_updated_at ?? null}
                     showStrategyTitle={false}
                   />
                 </>

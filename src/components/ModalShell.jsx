@@ -1,7 +1,14 @@
 /**
  * Lightweight modal (algo-only has no Radix/shadcn). Click backdrop to close.
  */
-export function ModalShell({ open, title, onClose, children }) {
+export function ModalShell({
+  open,
+  title,
+  onClose,
+  children,
+  panelClassName = "",
+  bodyClassName = "",
+}) {
   if (!open) return null;
   return (
     <div
@@ -15,7 +22,7 @@ export function ModalShell({ open, title, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="ts-modal-title"
-        className="max-h-[88vh] w-[min(560px,calc(100vw-24px))] overflow-auto rounded-2xl border border-cyan-400/25 bg-[linear-gradient(165deg,rgba(12,17,28,0.98),rgba(6,8,13,0.99))] shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_40px_rgba(56,189,248,0.06)] sm:w-[min(560px,calc(100vw-32px))]"
+        className={`max-h-[88vh] w-[min(560px,calc(100vw-24px))] overflow-auto rounded-2xl border border-cyan-400/25 bg-[linear-gradient(165deg,rgba(12,17,28,0.98),rgba(6,8,13,0.99))] shadow-[0_24px_80px_rgba(0,0,0,0.65),0_0_40px_rgba(56,189,248,0.06)] sm:w-[min(560px,calc(100vw-32px))] ${panelClassName}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div
@@ -37,7 +44,7 @@ export function ModalShell({ open, title, onClose, children }) {
             ×
           </button>
         </div>
-        <div className="px-4 pb-5 pt-4 sm:px-5 sm:pb-[22px] sm:pt-[18px]">{children}</div>
+        <div className={`px-4 pb-5 pt-4 sm:px-5 sm:pb-[22px] sm:pt-[18px] ${bodyClassName}`}>{children}</div>
       </div>
     </div>
   );

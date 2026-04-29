@@ -73,6 +73,7 @@ export function StrategyConditionPanel(props: {
   brokerLive: boolean;
   streamStale?: boolean;
   lifecycleState?: LifecycleState;
+  lifecycleUpdatedAt?: string | null;
   /** When false, hides the title row (e.g. live modal already shows strategy name). */
   showStrategyTitle?: boolean;
   staleAfterMs?: number;
@@ -85,6 +86,7 @@ export function StrategyConditionPanel(props: {
     brokerLive,
     streamStale,
     lifecycleState,
+    lifecycleUpdatedAt,
     showStrategyTitle = true,
     staleAfterMs,
     lifecycleReason,
@@ -101,6 +103,7 @@ export function StrategyConditionPanel(props: {
   const { event, stale, staleAfterMs: effectiveStaleMs } = useConditionEvents(strategyId, {
     staleAfterMs,
     symbol,
+    minCreatedAt: lifecycleUpdatedAt,
   });
   const staleLabelSec = Math.max(3, Math.round(effectiveStaleMs / 1000));
 

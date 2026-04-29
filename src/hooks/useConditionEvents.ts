@@ -32,7 +32,7 @@ function normalizeSym(v: unknown): string {
 
 export function useConditionEvents(
   strategyId: string | null | undefined,
-  opts?: { staleAfterMs?: number; symbol?: string | null },
+  opts?: { staleAfterMs?: number; symbol?: string | null; minCreatedAt?: string | null },
 ) {
   const staleAfterMs =
     typeof opts?.staleAfterMs === "number" && Number.isFinite(opts.staleAfterMs) && opts.staleAfterMs >= 3000
@@ -43,6 +43,12 @@ export function useConditionEvents(
 
   const sid = (strategyId || "").trim();
   const symbolFilter = normalizeSym(opts?.symbol);
+  const minCreatedAtMs = useMemo(() => {
+    const raw = String(opts?.minCreatedAt ?? "").trim();
+    if (!raw) return 0;
+    const t = Date.parse(raw);
+    return Number.isNaN(t) ? 0 : t;
+  }, [opts?.minCreatedAt]);
 
   useEffect(() => {
     const t = window.setInterval(() => setNowTick(Date.now()), 1000);
@@ -64,6 +70,10 @@ export function useConditionEvents(
           "id,strategy_id,symbol,matched,all_matched,ready_count,total_count,conditions,reasons,at,created_at",
         )
         .eq("strategy_id", sid)
+        .gte(
+          "created_at",
+          minCreatedAtMs > 0 ? new Date(minCreatedAtMs).toISOString() : "1970-01-01T00:00:00.000Z",
+        )
         .order("created_at", { ascending: false })
         .limit(30);
       const { data, error } = await q;
@@ -102,6 +112,9 @@ export function useConditionEvents(
         (payload) => {
           const row = payload.new as StrategyConditionEventRow;
           if (symbolFilter && normalizeSym(row.symbol) !== symbolFilter) return;
+          const rowTsRaw = row?.created_at || row?.at || "";
+          const rowTs = Date.parse(String(rowTsRaw || ""));
+          if (minCreatedAtMs > 0 && !Number.isNaN(rowTs) && rowTs < minCreatedAtMs) return;
           setEvent(row);
         },
       )
@@ -111,7 +124,7 @@ export function useConditionEvents(
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [sid, symbolFilter]);
+  }, [sid, symbolFilter, minCreatedAtMs]);
 
   const stale = useMemo(() => {
     if (!sid) return true;
