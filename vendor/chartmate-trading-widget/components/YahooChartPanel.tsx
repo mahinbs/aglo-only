@@ -244,10 +244,26 @@ export default function YahooChartPanel({
   const [liveChange, setLiveChange]   = useState<number | null>(null);
   const [livePct, setLivePct]         = useState<number | null>(null);
   const [wsStatus, setWsStatus]       = useState<"connecting" | "live" | "off">("off");
+  const [lastDataTs, setLastDataTs]   = useState<number>(0);
+  const [clockTs, setClockTs]         = useState<number>(Date.now());
   const [crosshairVal, setCrosshairVal] = useState<{
     price?: number; open?: number; high?: number; low?: number; vol?: number;
   } | null>(null);
   const yahooSymbol = normalizeYahooSymbol(symbol);
+  const hasFreshData = lastDataTs > 0 && (clockTs - lastDataTs) <= 25_000;
+  const feedStatus: "connecting" | "live" | "polling" | "off" =
+    wsStatus === "live"
+      ? "live"
+      : wsStatus === "connecting"
+      ? "connecting"
+      : hasFreshData
+      ? "polling"
+      : "off";
+
+  useEffect(() => {
+    const id = window.setInterval(() => setClockTs(Date.now()), 5_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   /* ── build / rebuild Lightweight Chart ─────────────────────────────── */
   const buildChart = useCallback(() => {
@@ -406,9 +422,11 @@ export default function YahooChartPanel({
       onCandlesLoaded?.(candles);
       setMeta(data?.meta ?? null);
       applyCandles(candles);
-      if (!livePrice && data?.meta?.regularMarketPrice) {
-        setLivePrice(data.meta.regularMarketPrice);
-        onLivePrice?.(data.meta.regularMarketPrice);
+      setLastDataTs(Date.now());
+      const mkt = toFiniteNumber(data?.meta?.regularMarketPrice);
+      if (mkt != null && mkt > 0) {
+        setLivePrice(mkt);
+        onLivePrice?.(mkt);
       }
     } catch (e: any) {
       setError(e?.message || "Failed to load chart data");
@@ -438,6 +456,7 @@ export default function YahooChartPanel({
         const pNum = toFiniteNumber(msg.price);
         if (pNum != null && pNum > 0) {
           const p = pNum;
+          setLastDataTs(Date.now());
           setLivePrice(p);
           onLivePrice?.(p);
           const ch = toFiniteNumber(msg.change);
@@ -593,11 +612,19 @@ export default function YahooChartPanel({
           )}
           {/* Live indicator */}
           <span className={`flex items-center gap-1 text-[10px] font-medium ${
-            wsStatus === "live" ? "text-emerald-400" : wsStatus === "connecting" ? "text-yellow-400" : "text-zinc-600"
+            feedStatus === "live"
+              ? "text-emerald-400"
+              : feedStatus === "polling"
+              ? "text-cyan-400"
+              : feedStatus === "connecting"
+              ? "text-yellow-400"
+              : "text-zinc-600"
           }`}>
-            {wsStatus === "live"
+            {feedStatus === "live"
               ? <><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />Live</>
-              : wsStatus === "connecting"
+              : feedStatus === "polling"
+              ? <><span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />Live (polling)</>
+              : feedStatus === "connecting"
               ? <><span className="h-1.5 w-1.5 rounded-full bg-yellow-400 animate-pulse" />Connecting…</>
               : <><WifiOff className="h-3 w-3" />Offline</>
             }
@@ -665,8 +692,10 @@ export default function YahooChartPanel({
       <div className="px-3 py-1 border-t border-white/5 text-[10px] text-zinc-600 flex items-center justify-between">
         <span>Data: Yahoo Finance</span>
         <span className="flex items-center gap-1">
-          {wsStatus === "live"
+          {feedStatus === "live"
             ? <><Wifi className="h-3 w-3 text-emerald-500" /> Streaming</>
+            : feedStatus === "polling"
+            ? <><Wifi className="h-3 w-3 text-cyan-400" /> Polling</>
             : "Scroll to zoom · Drag to pan"
           }
         </span>
