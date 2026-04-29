@@ -91,9 +91,22 @@ export default function BrokerCallbackPage() {
         {status === "error" && (
           <>
             <p style={{ fontSize: 14, color: "#f43f5e", marginBottom: 16 }}>{message}</p>
-            <button type="button" onClick={() => navigate("/connect-broker", { replace: true })} style={{ color: "#38bdf8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
-              Back to broker connect
-            </button>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard", { replace: true })}
+                style={{ color: "#38bdf8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+              >
+                Back to dashboard
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/connect-broker", { replace: true })}
+                style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+              >
+                Try broker connect again
+              </button>
+            </div>
           </>
         )}
       </div>

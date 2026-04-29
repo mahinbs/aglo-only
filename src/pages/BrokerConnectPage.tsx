@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useBrokerIntegration } from "@/hooks/useBrokerIntegration";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
 import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
+import { supabase } from "@/lib/supabase";
+
+function normalizeBroker(value: unknown): "fyers" | "zerodha" | "upstox" | "angel" | null {
+  const raw = String(value ?? "").trim().toLowerCase().replace(/_/g, " ");
+  if (!raw || raw === "other" || raw === "others") return null;
+  if (raw.includes("fyers") || raw.includes("fayer")) return "fyers";
+  if (raw.includes("upstox")) return "upstox";
+  if (raw.includes("angel")) return "angel";
+  if (raw.includes("zerodha") || raw.includes("kite")) return "zerodha";
+  return null;
+}
 
 /** Standalone `/connect-broker` screen (optional). Home dashboard uses the header Connect broker control. */
 export default function BrokerConnectPage() {
@@ -11,8 +22,39 @@ export default function BrokerConnectPage() {
   const { brokerReady, brokerLoading, refreshBroker, tokenExpiresAt, hasBrokerCredentials } = useBrokerIntegration(user?.id);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const broker = "zerodha";
-  const brokerLabel = "Zerodha (Kite)";
+  const [broker, setBroker] = useState<"fyers" | "zerodha" | "upstox" | "angel">("zerodha");
+  const brokerLabel =
+    broker === "fyers"
+      ? "Fyers"
+      : broker === "upstox"
+        ? "Upstox"
+        : broker === "angel"
+          ? "Angel One"
+          : "Zerodha (Kite)";
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void (async () => {
+      const { data: intg } = await (supabase as any)
+        .from("user_trading_integration")
+        .select("broker")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      const b1 = normalizeBroker(intg?.broker);
+      if (b1) {
+        setBroker(b1);
+        return;
+      }
+      const { data: ob } = await (supabase as any)
+        .from("algo_onboarding")
+        .select("broker,broker_client_id,notes")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const b2 = normalizeBroker(ob?.broker) || normalizeBroker(ob?.broker_client_id) || normalizeBroker(ob?.notes);
+      if (b2) setBroker(b2);
+    })();
+  }, [user?.id]);
 
   if (!authLoading && !user) {
     return <Navigate to="/login" replace />;
