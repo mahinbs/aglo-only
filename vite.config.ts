@@ -24,6 +24,7 @@ export default defineConfig({
       { find: /^@\/lib\/zerodhaOAuth$/, replacement: path.resolve(algoOnly, "lib/zerodhaOAuth.ts") },
       { find: /^@\/lib\/brokerIntegration$/, replacement: path.resolve(algoOnly, "lib/brokerIntegration.ts") },
       { find: /^@\/lib\/api$/, replacement: path.resolve(algoOnly, "lib/api.ts") },
+      { find: /^@\/lib\/userFacingErrors$/, replacement: path.resolve(algoOnly, "lib/userFacingErrors.ts") },
       { find: /^@\/integrations\/supabase\/client$/, replacement: path.resolve(algoOnly, "lib/supabase.ts") },
       { find: /^@\/styles\/(.*)$/, replacement: path.resolve(algoOnly, "styles/$1") },
 
