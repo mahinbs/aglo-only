@@ -123,8 +123,13 @@ function buildExecuteParams(s: OptionsStrategy): Record<string, unknown> {
   const ec = (s.entry_conditions ?? {}) as Record<string, unknown>;
   const er = (s.exit_rules ?? {}) as Record<string, unknown>;
   const rc = (s.risk_config ?? {}) as Record<string, unknown>;
+  const stateObj = (s.strategy_state ?? {}) as Record<string, unknown>;
+  const deploy = ((stateObj.deployment ?? {}) as Record<string, unknown>);
   const lots = Math.max(1, Number(rc.lot_size ?? 1));
-  const lotUnits = lotUnitsForUnderlying(s.underlying);
+  const lotUnits = Math.max(
+    1,
+    Number(deploy.lot_units ?? lotUnitsForUnderlying(s.underlying))
+  );
   const explicitExpiry = typeof rc.explicit_expiry_iso === "string" ? rc.explicit_expiry_iso : undefined;
   const common = {
     underlying: s.underlying,

@@ -40,6 +40,7 @@ import type { OptionsStrategy } from "@/pages/OptionsStrategyPage";
 import {
   fetchExpiryDates,
   fetchLtp,
+  fetchOptionSymbolLotSize,
   fetchOptionChain,
   getIstDateKey,
   instrumentTypeForUnderlying,
@@ -105,10 +106,11 @@ export function OptionsStrategyActivateDialog({
     ? prefetchedExpiries
     : EMPTY_EXPIRIES;
 
-  const lotUnits = useMemo(
+  const lotUnitsDefault = useMemo(
     () => (strategy ? lotUnitsForUnderlying(strategy.underlying) : 75),
     [strategy],
   );
+  const [lotUnits, setLotUnits] = useState<number>(lotUnitsDefault);
   const assetCurrency = useMemo<FiatCurrency>(() => "INR", []);
 
   const reset = useCallback(() => {
@@ -124,8 +126,13 @@ export function OptionsStrategyActivateDialog({
     setLtpLoading(false);
     setInvestmentAmount("");
     setInvestmentCurrency("INR");
+    setLotUnits(strategy ? lotUnitsForUnderlying(strategy.underlying) : 75);
     if (ltpTimerRef.current) { clearInterval(ltpTimerRef.current); ltpTimerRef.current = null; }
-  }, []);
+  }, [strategy]);
+
+  useEffect(() => {
+    setLotUnits(lotUnitsDefault);
+  }, [lotUnitsDefault]);
 
   // ── Live LTP polling (every 5 s while dialog open and symbol selected) ──
   useEffect(() => {
@@ -281,6 +288,25 @@ export function OptionsStrategyActivateDialog({
     })();
     return () => { cancelled = true; };
   }, [open, strategy, expiryIso]);
+
+  // Resolve contract lot size from selected symbol metadata.
+  useEffect(() => {
+    if (!open || !strategy) return;
+    if (!symbol) {
+      setLotUnits(lotUnitsDefault);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const resolved = await fetchOptionSymbolLotSize(symbol, strategy.exchange);
+      if (!cancelled && resolved && resolved > 0) {
+        setLotUnits(resolved);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, symbol, strategy, lotUnitsDefault]);
 
   useEffect(() => {
     if (!rows.length) { setSymbol(""); return; }

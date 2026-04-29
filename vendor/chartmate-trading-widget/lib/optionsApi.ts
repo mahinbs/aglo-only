@@ -626,6 +626,26 @@ export async function fetchLtp(
   }
 }
 
+/** Resolve exact contract lot size from broker/search metadata. */
+export async function fetchOptionSymbolLotSize(
+  symbol: string,
+  exchange: string
+): Promise<number | null> {
+  if (!API_BASE || !symbol?.trim()) return null;
+  try {
+    const raw = await apiFetch<Record<string, unknown>>("/api/options/symbol-meta", {
+      method: "POST",
+      body: JSON.stringify({ symbol, exchange }),
+    });
+    if (raw?.status === "error" || raw?.status === "failed") return null;
+    const data = (raw?.data ?? raw) as Record<string, unknown>;
+    const lot = Number(data?.lotsize ?? 0);
+    return Number.isFinite(lot) && lot > 0 ? Math.floor(lot) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchVix(): Promise<number> {
   const res = await apiFetch<{ vix: number }>("/api/options/vix");
   return res.vix;
