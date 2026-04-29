@@ -141,12 +141,30 @@ function defaultsGoLiveFromCard(s) {
 
 /** Symbol + exchange for BFF chart quote/history (same defaults as go-live). */
 function chartRoutingFromStrategyCard(s) {
+  const inferUnderlying = () => {
+    const raw =
+      s?.underlying ??
+      s?._raw?.underlying ??
+      s?.pairs ??
+      s?._raw?.pairs ??
+      "";
+    const direct = String(raw || "")
+      .trim()
+      .toUpperCase()
+      .split(",")[0]
+      ?.trim();
+    if (direct) return direct;
+    const nm = String(s?.name || "").toUpperCase();
+    if (nm.includes("CRUDE")) return "CRUDEOIL";
+    if (nm.includes("BANKNIFTY")) return "BANKNIFTY";
+    if (nm.includes("FINNIFTY")) return "FINNIFTY";
+    if (nm.includes("NIFTY")) return "NIFTY";
+    return "NIFTY";
+  };
   const isOptions =
     Boolean(s?.is_options) || strategyKindTag(s) === "options";
   if (isOptions) {
-    const und = String(s?.underlying || "NIFTY")
-      .trim()
-      .toUpperCase();
+    const und = inferUnderlying();
     const ex = String(s?.exchange || "NFO")
       .trim()
       .toUpperCase();

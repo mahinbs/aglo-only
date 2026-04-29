@@ -304,17 +304,39 @@ function symbolsFromPairs(pairs: string) {
 }
 
 function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
+  const inferUnderlying = (row: Record<string, unknown>) => {
+    const direct = [
+      row.underlying,
+      row.symbol,
+      row.instrument_symbol,
+      row.pairs,
+    ]
+      .map((v) => String(v ?? "").trim().toUpperCase())
+      .find((v) => Boolean(v));
+    if (direct) {
+      return direct.split(",")[0]?.trim() || "NIFTY";
+    }
+    const name = String(row.name ?? "").toUpperCase();
+    if (name.includes("CRUDE")) return "CRUDEOIL";
+    if (name.includes("BANKNIFTY")) return "BANKNIFTY";
+    if (name.includes("FINNIFTY")) return "FINNIFTY";
+    if (name.includes("NIFTY")) return "NIFTY";
+    return "NIFTY";
+  };
+
   return rows.map((s) => {
     const exitRules =
       s.exit_rules && typeof s.exit_rules === "object"
         ? (s.exit_rules as Record<string, unknown>)
         : {};
     const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
+    const und = inferUnderlying(s);
     return {
       id: String(s.id ?? ""),
       name: String(s.name ?? "Options Strategy"),
       type: "OPTIONS",
-      pairs: String(s.underlying ?? "NIFTY").toUpperCase(),
+      pairs: und,
+      underlying: und,
       timeframe: "5m",
       riskPerTrade: "1%",
       stopLoss: `${Number(exitRules.sl_pct ?? 30)}%`,
