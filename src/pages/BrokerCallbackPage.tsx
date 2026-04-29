@@ -42,14 +42,29 @@ export default function BrokerCallbackPage() {
           const res = await fetch(`${bff}/api/broker/sync-session`, {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
             body: JSON.stringify({ broker, auth_token: brokerToken.trim() }),
           });
           const d = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
           if (!res.ok || !d.success) {
-            setStatus("error");
-            setMessage(toUserFacingErrorMessage(d.error ?? "Failed to save broker session."));
-            return;
+            // Fallback: some deployments miss BFF auth cookie on callback redirects.
+            const edgeRes = await supabase.functions.invoke("sync-broker-session", {
+              body: { broker, auth_token: brokerToken.trim() },
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            const edgeData = edgeRes.data as { success?: boolean } | null;
+            if (edgeRes.error || !edgeData?.success) {
+              setStatus("error");
+              setMessage(
+                toUserFacingErrorMessage(
+                  d.error ?? edgeRes.error?.message ?? "Failed to save broker session.",
+                ),
+              );
+              return;
+            }
           }
         } else {
           const res = await supabase.functions.invoke("sync-broker-session", {
