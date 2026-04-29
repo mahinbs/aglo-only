@@ -1189,6 +1189,22 @@ export default function TradingSmartDashboard(props = {}) {
     };
   }, [liveViewTarget]);
 
+  // Kick an immediate scanner pass when Live View opens for an active options strategy.
+  useEffect(() => {
+    const t = liveViewTarget;
+    if (!t) return;
+    const isOptions =
+      Boolean(t?.is_options) ||
+      String(t?.market_type ?? t?.marketType ?? t?.type ?? "")
+        .toLowerCase()
+        .includes("option");
+    const lc = normalizeLifecycleState(t.lifecycle_state, Boolean(t.deployed));
+    const activeLike = lc === "ACTIVE" || lc === "TRIGGERED" || lc === "WAITING_MARKET_OPEN";
+    if (isOptions && activeLike) {
+      void invokeOptionsStrategyEntryBoost();
+    }
+  }, [liveViewTarget]);
+
   // Tick every second while Live View open so "Updated Ns ago" refreshes without full rerender storm.
   useEffect(() => {
     if (!liveViewTarget) return undefined;
@@ -4888,12 +4904,22 @@ export default function TradingSmartDashboard(props = {}) {
             </p>
             {(() => {
               const ch = chartRoutingFromStrategyCard(liveViewTarget);
+              const isOptionsStrategy =
+                Boolean(liveViewTarget?.is_options) ||
+                strategyKindTag(liveViewTarget) === "options";
+              const depInfo = isOptionsStrategy
+                ? optionDeploymentInfoFromCard(liveViewTarget)
+                : null;
 const isMcxUnderlying =
                 ch.exchange === "MCX" ||
                 ch.exchange === "NCDEX" ||
                 String(ch.symbol || "")
                   .toUpperCase()
                   .startsWith("CRUDE");
+              const chartSymbol =
+                isMcxUnderlying && depInfo?.optionSymbol
+                  ? String(depInfo.optionSymbol).trim().toUpperCase()
+                  : ch.symbol;
               const lvLc = normalizeLifecycleState(
                 liveViewTarget.lifecycle_state,
                 Boolean(liveViewTarget.deployed),
@@ -4904,7 +4930,7 @@ const isMcxUnderlying =
                     <div style={{ height: 320 }}>
                       {isMcxUnderlying ? (
                         <BffUnderlyingChart
-                          symbol={ch.symbol}
+                          symbol={chartSymbol}
                           exchange={ch.exchange}
                           displayName={ch.symbol}
                         />
@@ -4939,11 +4965,8 @@ const isMcxUnderlying =
                       )}
                     </p>
                     {(() => {
-                      const isOptions =
-                        Boolean(liveViewTarget?.is_options) ||
-                        strategyKindTag(liveViewTarget) === "options";
-                      if (!isOptions) return null;
-                      const dep = optionDeploymentInfoFromCard(liveViewTarget);
+                      if (!isOptionsStrategy) return null;
+                      const dep = depInfo;
                       if (!dep.optionSymbol && !dep.quantity) return null;
 
                       const qtyNum = Number(String(dep.quantity).replace(/,/g, "")) || 0;
@@ -5041,7 +5064,7 @@ const isMcxUnderlying =
                   <StrategyConditionPanel
                     strategyId={liveViewTarget.id}
                     strategyName={liveViewTarget.name}
-                    symbol={ch.symbol}
+                    symbol={null}
                     brokerLive={sessLive}
                     streamStale={positionsStreamStale}
                     lifecycleState={lvLc}

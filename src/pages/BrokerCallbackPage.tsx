@@ -10,7 +10,7 @@ import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 export default function BrokerCallbackPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<"saving" | "done" | "error">("saving");
-  const [message, setMessage] = useState("Connecting your broker…");
+  const [message, setMessage] = useState("Connecting broker and downloading option contracts…");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search.slice(1) || window.location.hash.slice(1));
@@ -46,6 +46,7 @@ export default function BrokerCallbackPage() {
           );
           return;
         }
+        setMessage("Downloading option contracts for your broker… this can take up to a minute.");
         await bffFetch("/api/broker/sync-session", {
           method: "POST",
           body: JSON.stringify({ broker, auth_token: brokerToken.trim() }),
