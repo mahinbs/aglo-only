@@ -526,7 +526,14 @@ export default function YahooChartPanel({
     };
   }, [symbol, activeRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // No periodic polling here. Price movement is stream-driven by Yahoo WebSocket.
+  // Keep candles moving even when Yahoo WS goes temporarily offline for some symbols.
+  useEffect(() => {
+    if (!symbol) return;
+    const id = window.setInterval(() => {
+      void fetchData(yahooSymbol, activeRange, true);
+    }, 15_000);
+    return () => window.clearInterval(id);
+  }, [symbol, yahooSymbol, activeRange, fetchData]);
 
   /* ── cleanup on unmount ─────────────────────────────────────────────── */
   useEffect(() => {

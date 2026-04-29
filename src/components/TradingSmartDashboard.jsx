@@ -1078,6 +1078,31 @@ export default function TradingSmartDashboard(props = {}) {
     setOrders(orderFeed.length ? orderFeed : []);
   }, [useChartmate, orderFeed]);
 
+  // Live-view booster: trigger options scanner while modal is open so
+  // condition snapshots keep updating even if pg_cron is delayed/misconfigured.
+  useEffect(() => {
+    const t = liveViewTarget;
+    if (!t) return;
+    const isOptions = Boolean(t?.is_options) || strategyKindTag(t) === "options";
+    if (!isOptions) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        await supabase.functions.invoke("options-strategy-entry", { body: {} });
+      } catch {
+        // Silent: panel will continue showing latest available snapshot/reason.
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => {
+      if (!cancelled) void tick();
+    }, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [liveViewTarget]);
+
   // Clock
   useEffect(() => {
     const id = setInterval(() => {
