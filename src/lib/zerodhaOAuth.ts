@@ -42,6 +42,8 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
         ? "/api/broker/upstox-login-url"
         : broker === "zerodha"
           ? "/api/broker/zerodha-login-url"
+          : broker === "fyers"
+            ? "/api/broker/fyers-login-url"
           : "";
     if (!path) {
       throw new Error(brokerNotConfiguredMessage());
@@ -56,11 +58,12 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
     return;
   }
 
-  if (broker !== "zerodha") {
+  const fallbackFn = broker === "fyers" ? "get-fyers-login-url" : broker === "zerodha" ? "get-zerodha-login-url" : "";
+  if (!fallbackFn) {
     throw new Error(brokerNotConfiguredMessage());
   }
 
-  const res = await supabase.functions.invoke("get-zerodha-login-url", {
+  const res = await supabase.functions.invoke(fallbackFn, {
     body: { return_url },
     headers: { Authorization: `Bearer ${session.access_token}` },
   });

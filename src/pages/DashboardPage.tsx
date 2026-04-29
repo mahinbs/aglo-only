@@ -636,7 +636,11 @@ export default function DashboardPage() {
     setLoadErr(null);
     setConnectBusy(true);
     try {
-      await startZerodhaKiteConnect(summary?.broker ?? null);
+      const requestedBroker = String(summary?.broker ?? "").trim().toLowerCase();
+      const broker = ["zerodha", "upstox", "fyers", "angel"].includes(requestedBroker)
+        ? requestedBroker
+        : "zerodha";
+      await startZerodhaKiteConnect(broker);
     } catch (e: unknown) {
       setLoadErr(toUserFacingErrorMessage(e instanceof Error ? e.message : "Broker connect failed"));
       setConnectBusy(false);

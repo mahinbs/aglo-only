@@ -11,6 +11,8 @@ export default function BrokerConnectPage() {
   const { brokerReady, brokerLoading, refreshBroker, tokenExpiresAt, hasBrokerCredentials } = useBrokerIntegration(user?.id);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const broker = "zerodha";
+  const brokerLabel = "Zerodha (Kite)";
 
   if (!authLoading && !user) {
     return <Navigate to="/login" replace />;
@@ -24,7 +26,7 @@ export default function BrokerConnectPage() {
     setErr(null);
     setBusy(true);
     try {
-      await startZerodhaKiteConnect("zerodha");
+      await startZerodhaKiteConnect(broker);
     } catch (e: unknown) {
       setErr(toUserFacingErrorMessage(e instanceof Error ? e.message : "Could not start broker login"));
       setBusy(false);
@@ -44,7 +46,7 @@ export default function BrokerConnectPage() {
         <div className="login-card">
           <div className="broker-connect-title">Connect your broker</div>
           <p className="broker-connect-copy">
-            Link Zerodha via Kite Connect (same OpenAlgo flow as ChartMate). After you authorize, you&apos;ll return here
+            Link {brokerLabel} via OAuth (same OpenAlgo flow as ChartMate). After you authorize, you&apos;ll return here
             and the dashboard will open automatically. Broker day tokens expire at midnight IST — reconnect each trading day.
           </p>
           {hasBrokerCredentials && tokenExpiresAt && (
@@ -63,7 +65,7 @@ export default function BrokerConnectPage() {
             </div>
           )}
           <button type="button" className="login-btn" onClick={() => void onConnect()} disabled={busy || brokerLoading}>
-            {busy ? "Opening Kite…" : "CONNECT ZERODHA (KITE) →"}
+            {busy ? `Opening ${brokerLabel}…` : `CONNECT ${brokerLabel.toUpperCase()} →`}
           </button>
           <p className="broker-connect-copy" style={{ marginTop: 16, fontSize: 11, opacity: 0.8 }}>
             VAPT stack: up to <strong>4 brokers</strong> per account via BFF <code>/api/broker/connect</code> (Zerodha,
