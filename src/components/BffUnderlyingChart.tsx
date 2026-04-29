@@ -133,7 +133,8 @@ export default function BffUnderlyingChart(props: {
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [sessionRefOpen, setSessionRefOpen] = useState<number | null>(null);
   const [lastTickAt, setLastTickAt] = useState<number>(0);
-  const [, setClockTick] = useState(0);
+  /** Bumped on an interval so "Stale" updates when ticks stop without a redraw. */
+  const [clockTick, setClockTick] = useState(0);
   const [transport, setTransport] = useState<"ws" | "poll" | "none">("none");
 
   const buildChart = useCallback(() => {

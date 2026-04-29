@@ -32,9 +32,19 @@ import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrat
 import YahooChartPanel from "@/components/YahooChartPanel";
 import BffUnderlyingChart from "./BffUnderlyingChart";
 import { fetchLtp } from "@/lib/optionsApi";
-import { supabase } from "@/integrations/supabase/client";
+import { bffConfigured, bffFetch } from "@/lib/api";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
+
+/** Triggers options scanner boost via BFF only (Edge is invoked server-side). */
+async function invokeOptionsStrategyEntryBoost() {
+  if (!bffConfigured()) return;
+  try {
+    await bffFetch("/api/options/strategy-entry/boost", { method: "POST", body: "{}" });
+  } catch {
+    /* silent */
+  }
+}
 
 /** ChartMate active trades are INR-denominated for Indian brokers; USD view uses optional FX hint. */
 const DEFAULT_USD_PER_INR = 1 / 83;
@@ -1130,11 +1140,7 @@ export default function TradingSmartDashboard(props = {}) {
     if (!hasActiveOptions) return undefined;
     let cancelled = false;
     const tick = async () => {
-      try {
-        await supabase.functions.invoke("options-strategy-entry", { body: {} });
-      } catch {
-        /* silent */
-      }
+      await invokeOptionsStrategyEntryBoost();
     };
     void tick();
     const id = window.setInterval(() => {
@@ -1391,6 +1397,12 @@ export default function TradingSmartDashboard(props = {}) {
   const runGoLiveSymbolSearch = useCallback(
     async (rawQuery) => {
       const q = String(rawQuery || "").trim();
+      if (!bffConfigured()) {
+        setGoLiveSearchResults([]);
+        setGoLiveSearchOpen(false);
+        setGoLiveSearchError("Set VITE_ALGO_ONLY_BFF_URL for symbol search.");
+        return;
+      }
       if (!q || q.length < 1) {
         setGoLiveSearchResults([]);
         setGoLiveSearchOpen(false);
@@ -1400,10 +1412,11 @@ export default function TradingSmartDashboard(props = {}) {
       setGoLiveSearchBusy(true);
       setGoLiveSearchError("");
       try {
-        const res = await supabase.functions.invoke("search-symbols", {
-          body: { q },
+        const data = await bffFetch("/api/market/search-symbols", {
+          method: "POST",
+          body: JSON.stringify({ q }),
         });
-        const rows = Array.isArray(res.data) ? res.data : [];
+        const rows = Array.isArray(data) ? data : [];
         const filtered = rows
           .map((item) => ({
             ...item,
@@ -4968,14 +4981,7 @@ const isMcxUnderlying =
                               }}
                               title="Trigger an immediate options scanner pass (engine snapshots)"
                               onClick={async () => {
-                                try {
-                                  await supabase.functions.invoke(
-                                    "options-strategy-entry",
-                                    { body: {} },
-                                  );
-                                } catch {
-                                  /* noop */
-                                }
+                                await invokeOptionsStrategyEntryBoost();
                               }}
                             >
                               Refresh now

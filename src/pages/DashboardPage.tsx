@@ -3,47 +3,37 @@ import TradingSmartDashboard from "../components/TradingSmartDashboard.jsx";
 import { useAuth } from "@/hooks/useAuth";
 import { useSessionExpiry } from "@/hooks/useSessionExpiry";
 import { bffConfigured, bffFetch } from "@/lib/api";
-
-/** Replaces Supabase `manage-strategy` Edge when `VITE_ALGO_ONLY_BFF_URL` is set. */
-async function manageStrategyInvoke(
-  accessToken: string | undefined,
-  body: Record<string, unknown>,
-): Promise<{ data: unknown; error: { message: string } | null }> {
-  if (bffConfigured()) {
-    try {
-      const data = await bffFetch<unknown>("/api/strategies/manage", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-      return { data, error: null };
-    } catch (e: unknown) {
-      return {
-        data: null,
-        error: { message: e instanceof Error ? e.message : "manage-strategy failed" },
-      };
-    }
-  }
-  if (!accessToken) {
-    return { data: null, error: { message: "Not signed in" } };
-  }
-  const res = await supabase.functions.invoke("manage-strategy", {
-    body,
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  if (res.error) {
-    return {
-      data: res.data ?? null,
-      error: { message: res.error.message ?? "manage-strategy failed" },
-    };
-  }
-  return { data: res.data ?? null, error: null };
-}
 import { isMarketClosedReason, normalizeLifecycleState } from "../lib/lifecycle";
 import { useOptionsPositionsStream } from "../hooks/useRealtimeStrategy";
 import { supabase } from "@/lib/supabase";
 import { startZerodhaKiteConnect } from "@/lib/zerodhaOAuth";
 import { computeTradeAnalytics } from "../lib/tradePerformance";
 import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
+
+/** Algo dashboard requires BFF — strategy mutations never call Supabase Edge from the browser. */
+async function manageStrategyInvoke(
+  _accessToken: string | undefined,
+  body: Record<string, unknown>,
+): Promise<{ data: unknown; error: { message: string } | null }> {
+  if (!bffConfigured()) {
+    return {
+      data: null,
+      error: { message: "Set VITE_ALGO_ONLY_BFF_URL — algo BFF is required for strategy actions." },
+    };
+  }
+  try {
+    const data = await bffFetch<unknown>("/api/strategies/manage", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return { data, error: null };
+  } catch (e: unknown) {
+    return {
+      data: null,
+      error: { message: e instanceof Error ? e.message : "manage-strategy failed" },
+    };
+  }
+}
 
 type Summary = {
   configured?: boolean;
@@ -1104,10 +1094,18 @@ export default function DashboardPage() {
         .eq("user_id", uid)
         .eq("is_active", true);
     }
-    await supabase.functions.invoke("broker-order-action", {
-      body: { action: "cancel_all" },
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    if (!bffConfigured()) {
+      await refresh();
+      return "Set VITE_ALGO_ONLY_BFF_URL to cancel broker orders from the dashboard.";
+    }
+    try {
+      await bffFetch("/api/broker/order-action", {
+        method: "POST",
+        body: JSON.stringify({ action: "cancel_all" }),
+      });
+    } catch (e: unknown) {
+      return e instanceof Error ? e.message : "Broker order action failed";
+    }
     await refresh();
     return null;
   }, [session?.access_token, session?.user?.id, refresh]);
@@ -1135,19 +1133,21 @@ export default function DashboardPage() {
         if (up.error) return up.error.message;
         document_object_path = objectPath;
       }
-      const res = await supabase.functions.invoke("submit-strategy-dev-request", {
-        body: {
+      if (!bffConfigured()) {
+        return "Set VITE_ALGO_ONLY_BFF_URL — dev request submission requires the algo BFF.";
+      }
+      const resData = await bffFetch<unknown>("/api/strategies/dev-request", {
+        method: "POST",
+        body: JSON.stringify({
           strategy_name: payload.strategy_name,
           description: payload.description || null,
           market: payload.market || null,
           priority: payload.priority,
           contact_email: payload.contact_email || null,
           document_object_path,
-        },
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
       });
-      const msg = (res.data as { error?: string } | null)?.error;
-      if (res.error) return res.error.message;
+      const msg = (resData as { error?: string } | null)?.error;
       if (msg) return msg;
       await refresh();
       return null;

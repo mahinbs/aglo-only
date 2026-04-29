@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaArrowLeft, FaArrowRight, FaCheck, FaRobot, FaRocket, FaUser } from "react-icons/fa6";
-import { supabase } from "@/lib/supabase";
+import { bffConfigured, bffPostPublic } from "@/lib/api";
 import "@/styles/onboarding-access.css";
 
 const STEP_NAMES = [
@@ -102,6 +102,10 @@ export default function AccessRequestPage() {
     setBusy(true);
     setErr(null);
     try {
+      if (!bffConfigured()) {
+        setErr("Set VITE_ALGO_ONLY_BFF_URL so this form can reach the backend.");
+        return;
+      }
       const payload = {
         kyc: {
           idType: form.idType,
@@ -128,17 +132,14 @@ export default function AccessRequestPage() {
         },
         consent: { c1: form.c1, c2: form.c2, c3: form.c3, c4: form.c4 },
       };
-      const { error } = await supabase.functions.invoke("submit-algo-access-request", {
-        body: {
-          full_name: form.fullName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          country: form.country.trim() || null,
-          city: form.city.trim() || null,
-          payload,
-        },
+      await bffPostPublic("/api/access/algo-request", {
+        full_name: form.fullName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        country: form.country.trim() || null,
+        city: form.city.trim() || null,
+        payload,
       });
-      if (error) throw new Error(error.message);
       setDone(true);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Submit failed");

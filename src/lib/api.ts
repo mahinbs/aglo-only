@@ -72,3 +72,14 @@ export async function bffFetch<T>(path: string, init: RequestInit = {}): Promise
   });
   return parseRes<T>(res);
 }
+
+/** POST onboarding-style payloads — BFF validates service-side; cookie optional. */
+export async function bffPostPublic<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${bffBase()}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return parseRes<T>(res);
+}

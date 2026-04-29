@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { bffConfigured } from "@/lib/api";
+import { bffConfigured, bffFetch } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
 /**
- * Saves broker session via BFF (no Supabase Edge) or legacy Edge when BFF unset.
+ * Saves broker session via BFF (Supabase Edge invoked server-side only).
  */
 export default function BrokerCallbackPage() {
   const navigate = useNavigate();
@@ -31,53 +31,25 @@ export default function BrokerCallbackPage() {
 
     void (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (!session) {
           setStatus("error");
           setMessage("Session expired. Please log in and try again.");
           return;
         }
-        if (bffConfigured()) {
-          const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
-          const res = await fetch(`${bff}/api/broker/sync-session`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ broker, auth_token: brokerToken.trim() }),
-          });
-          const d = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string };
-          if (!res.ok || !d.success) {
-            // Fallback: some deployments miss BFF auth cookie on callback redirects.
-            const edgeRes = await supabase.functions.invoke("sync-broker-session", {
-              body: { broker, auth_token: brokerToken.trim() },
-              headers: { Authorization: `Bearer ${session.access_token}` },
-            });
-            const edgeData = edgeRes.data as { success?: boolean } | null;
-            if (edgeRes.error || !edgeData?.success) {
-              setStatus("error");
-              setMessage(
-                toUserFacingErrorMessage(
-                  d.error ?? edgeRes.error?.message ?? "Failed to save broker session.",
-                ),
-              );
-              return;
-            }
-          }
-        } else {
-          const res = await supabase.functions.invoke("sync-broker-session", {
-            body: { broker, auth_token: brokerToken.trim() },
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          const d = res.data as { success?: boolean } | null;
-          if (res.error || !d?.success) {
-            setStatus("error");
-            setMessage(toUserFacingErrorMessage(res.error?.message ?? "Failed to save broker session."));
-            return;
-          }
+        if (!bffConfigured()) {
+          setStatus("error");
+          setMessage(
+            "Algo backend URL missing (set VITE_ALGO_ONLY_BFF_URL). Broker session cannot be saved from this deployment.",
+          );
+          return;
         }
+        await bffFetch("/api/broker/sync-session", {
+          method: "POST",
+          body: JSON.stringify({ broker, auth_token: brokerToken.trim() }),
+        });
         setStatus("done");
         setMessage("Broker connected! Returning to dashboard…");
         setTimeout(() => navigate("/dashboard", { replace: true }), 1200);
@@ -110,14 +82,26 @@ export default function BrokerCallbackPage() {
               <button
                 type="button"
                 onClick={() => navigate("/dashboard", { replace: true })}
-                style={{ color: "#38bdf8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                style={{
+                  color: "#38bdf8",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
               >
                 Back to dashboard
               </button>
               <button
                 type="button"
                 onClick={() => navigate("/connect-broker", { replace: true })}
-                style={{ color: "#94a3b8", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+                style={{
+                  color: "#94a3b8",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
               >
                 Try broker connect again
               </button>
