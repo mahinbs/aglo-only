@@ -30,6 +30,7 @@ import AlgoStrategyBuilder from "@/components/trading/AlgoStrategyBuilder";
 import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrategyBuilderDialog";
 import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";
 import YahooChartPanel from "@/components/YahooChartPanel";
+import BffUnderlyingChart from "./BffUnderlyingChart";
 import { fetchLtp } from "@/lib/optionsApi";
 import { supabase } from "@/integrations/supabase/client";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
@@ -983,7 +984,6 @@ export default function TradingSmartDashboard(props = {}) {
   const [goLiveSearchBusy, setGoLiveSearchBusy] = useState(false);
   const [goLiveSearchError, setGoLiveSearchError] = useState("");
   const [liveViewTarget, setLiveViewTarget] = useState(null);
-  const [liveViewManualBoost, setLiveViewManualBoost] = useState(0);
   /** Live option LTP while Live View modal open (deployment contract). */
   const [liveOptionQuote, setLiveOptionQuote] = useState({ ltp: null, fetchedAt: null });
   const [liveViewQuoteAgeTick, setLiveViewQuoteAgeTick] = useState(0);
@@ -1112,37 +1112,39 @@ export default function TradingSmartDashboard(props = {}) {
     setOrders(orderFeed.length ? orderFeed : []);
   }, [useChartmate, orderFeed]);
 
-  // Live-view booster: trigger options scanner while modal is open so
-  // condition snapshots keep updating even if pg_cron is delayed/misconfigured.
+  // Boost options-strategy-entry whenever the dashboard has running options strategies,
+  // independent of the Live View modal (cron still runs; this helps lagging snapshots).
   useEffect(() => {
-    const t = liveViewTarget;
-    if (!t) return;
-    const isOptions =
-      Boolean(t?.is_options) ||
-      String(t?.market_type ?? t?.marketType ?? t?.type ?? "")
-        .toLowerCase()
-        .includes("option");
-    if (!isOptions) return;
-    const lvLc = normalizeLifecycleState(t.lifecycle_state, Boolean(t.deployed));
-    const fastTick = lvLc === "ACTIVE" || lvLc === "TRIGGERED";
-    const intervalMs = fastTick ? 10_000 : 30_000;
+    const hasActiveOptions = myStrategies.some((s) => {
+      const isOpts =
+        Boolean(s?.is_options) ||
+        String(s?.market_type ?? s?.marketType ?? s?.type ?? "")
+          .toLowerCase()
+          .includes("option");
+      const lc = normalizeLifecycleState(s.lifecycle_state, Boolean(s.deployed));
+      return (
+        isOpts &&
+        (lc === "ACTIVE" || lc === "TRIGGERED" || lc === "WAITING_MARKET_OPEN")
+      );
+    });
+    if (!hasActiveOptions) return undefined;
     let cancelled = false;
     const tick = async () => {
       try {
         await supabase.functions.invoke("options-strategy-entry", { body: {} });
       } catch {
-        // Silent: panel will continue showing latest available snapshot/reason.
+        /* silent */
       }
     };
     void tick();
     const id = window.setInterval(() => {
       if (!cancelled) void tick();
-    }, intervalMs);
+    }, 30_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [liveViewTarget, liveViewManualBoost]);
+  }, [myStrategies]);
 
   // Live option premium (LTP) for deployed contract — BFF `/api/options/quotes` via optionsApi.fetchLtp.
   useEffect(() => {
@@ -4873,6 +4875,8 @@ export default function TradingSmartDashboard(props = {}) {
             </p>
             {(() => {
               const ch = chartRoutingFromStrategyCard(liveViewTarget);
+              const isMcxUnderlying =
+                ch.exchange === "MCX" || ch.exchange === "NCDEX";
               const lvLc = normalizeLifecycleState(
                 liveViewTarget.lifecycle_state,
                 Boolean(liveViewTarget.deployed),
@@ -4881,10 +4885,18 @@ export default function TradingSmartDashboard(props = {}) {
                 <>
                   <div style={{ marginBottom: 12 }}>
                     <div style={{ height: 320 }}>
-                      <YahooChartPanel
-                        symbol={yahooSymbolFromStrategyCard(liveViewTarget)}
-                        displayName={ch.symbol}
-                      />
+                      {isMcxUnderlying ? (
+                        <BffUnderlyingChart
+                          symbol={ch.symbol}
+                          exchange={ch.exchange}
+                          displayName={ch.symbol}
+                        />
+                      ) : (
+                        <YahooChartPanel
+                          symbol={yahooSymbolFromStrategyCard(liveViewTarget)}
+                          displayName={ch.symbol}
+                        />
+                      )}
                     </div>
                     <p
                       style={{
@@ -4894,11 +4906,20 @@ export default function TradingSmartDashboard(props = {}) {
                         lineHeight: 1.45,
                       }}
                     >
-                      Yahoo Finance chart streams live ticks; Condition
-                      &quot;Live&quot; column is last engine pass for this
-                      strategy symbol. For CRUDEOIL, Yahoo shows CL=F proxy in
-                      USD; execution still uses your broker option symbol and
-                      INR premiums.
+                      {isMcxUnderlying ? (
+                        <>
+                          Chart data from your broker via OpenAlgo (MCX/NCDEX) in
+                          INR — same feed used when orders execute. Condition &quot;
+                          Live&quot; column is last engine pass for{" "}
+                          <strong>{ch.symbol}</strong>.
+                        </>
+                      ) : (
+                        <>
+                          Yahoo Finance chart streams live ticks; Condition
+                          &quot;Live&quot; column is last engine pass for this
+                          strategy symbol.
+                        </>
+                      )}
                     </p>
                     {(() => {
                       const isOptions =
@@ -4942,7 +4963,16 @@ export default function TradingSmartDashboard(props = {}) {
                                 minWidth: 0,
                               }}
                               title="Trigger an immediate options scanner pass (engine snapshots)"
-                              onClick={() => setLiveViewManualBoost((n) => n + 1)}
+                              onClick={async () => {
+                                try {
+                                  await supabase.functions.invoke(
+                                    "options-strategy-entry",
+                                    { body: {} },
+                                  );
+                                } catch {
+                                  /* noop */
+                                }
+                              }}
                             >
                               Refresh now
                             </button>
