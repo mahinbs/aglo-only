@@ -208,6 +208,25 @@ function yahooSymbolFromStrategyCard(s) {
   return `${clean}.NS`;
 }
 
+function optionDeploymentInfoFromCard(s) {
+  const raw =
+    s && typeof s === "object" && s._raw && typeof s._raw === "object"
+      ? s._raw
+      : s;
+  const state =
+    raw && typeof raw.strategy_state === "object" ? raw.strategy_state : {};
+  const dep = state && typeof state.deployment === "object" ? state.deployment : {};
+  const optionSymbol = String(dep.options_symbol ?? "").trim().toUpperCase();
+  const expiry = String(dep.expiry_iso ?? "").trim();
+  const lotUnitsNum = Number(dep.lot_units ?? 0);
+  const lotUnits =
+    Number.isFinite(lotUnitsNum) && lotUnitsNum > 0
+      ? String(Math.floor(lotUnitsNum))
+      : "";
+  const exchange = String(dep.exchange ?? raw?.exchange ?? "").trim().toUpperCase();
+  return { optionSymbol, expiry, lotUnits, exchange };
+}
+
 function brokerAllowedExchanges(brokerRaw) {
   const broker = String(brokerRaw || "")
     .trim()
@@ -2358,6 +2377,33 @@ export default function TradingSmartDashboard(props = {}) {
                                   s.pairs || symHint || "—",
                                 ).toUpperCase()}
                               </span>
+                              {(() => {
+                                const isOptions =
+                                  Boolean(s?.is_options) ||
+                                  strategyKindTag(s) === "options";
+                                if (!isOptions) return null;
+                                const dep = optionDeploymentInfoFromCard(s);
+                                const detail = [dep.optionSymbol, dep.expiry]
+                                  .filter(Boolean)
+                                  .join(" • ");
+                                if (!detail) return null;
+                                return (
+                                  <span
+                                    style={{
+                                      fontFamily: "'JetBrains Mono',monospace",
+                                      fontSize: 10,
+                                      padding: "2px 8px",
+                                      borderRadius: 6,
+                                      border: "1px solid rgba(56,189,248,0.14)",
+                                      color: "var(--accent-cyan)",
+                                      background: "rgba(8,16,34,0.65)",
+                                    }}
+                                    title="Selected broker option symbol and expiry"
+                                  >
+                                    {detail}
+                                  </span>
+                                );
+                              })()}
                               <span
                                 style={{
                                   fontFamily: "'JetBrains Mono',monospace",
@@ -3366,6 +3412,8 @@ export default function TradingSmartDashboard(props = {}) {
                         lifecycle === "WAITING_MARKET_OPEN" ||
                         lifecycle === "TRIGGERED";
                       const strategyType = strategyKindTag(s);
+                      const isOptions =
+                        Boolean(s?.is_options) || strategyType === "options";
                       const strategyTypeClass =
                         strategyType === "options"
                           ? "type-meanrev"
@@ -3400,6 +3448,20 @@ export default function TradingSmartDashboard(props = {}) {
                           </div>
 
                           <div className="my-strat-flat-meta">
+                            {isOptions ? (
+                              <div className="my-strat-flat-meta-item">
+                                <span style={{ opacity: 0.8 }}>Contract </span>
+                                <span style={{ color: "var(--accent-cyan)" }}>
+                                  {(() => {
+                                    const dep = optionDeploymentInfoFromCard(s);
+                                    const txt = [dep.optionSymbol, dep.expiry]
+                                      .filter(Boolean)
+                                      .join(" • ");
+                                    return txt || "Not selected";
+                                  })()}
+                                </span>
+                              </div>
+                            ) : null}
                             <div className="my-strat-flat-meta-item">
                               <span style={{ opacity: 0.8 }}>Broker </span>
                               <span style={{ color: "var(--accent-cyan)" }}>
@@ -3476,7 +3538,9 @@ export default function TradingSmartDashboard(props = {}) {
                               <>
                                 <button
                                   type="button"
-                                  className={`strat-action-btn ${isLive ? "strat-btn-stop" : "strat-btn-deploy"}`}
+                                  className={`strat-action-btn ${
+                                    isOptions ? "strat-btn-deploy" : isLive ? "strat-btn-stop" : "strat-btn-deploy"
+                                  }`}
                                   style={{
                                     borderRadius: 999,
                                     padding: "4px 10px",
@@ -3485,29 +3549,41 @@ export default function TradingSmartDashboard(props = {}) {
                                       : {}),
                                   }}
                                   title={
-                                    isLive
+                                    isOptions && isLive
+                                      ? "Already active"
+                                      : isLive
                                       ? "Stop this live strategy"
                                       : !sessLive
                                         ? "Connect broker (live session) to activate"
                                         : "Deploy this strategy live"
                                   }
                                   onClick={() => {
+                                    if (isOptions && isLive) {
+                                      toast.info(
+                                        "This options strategy is already active. Use Assigned Strategies > Stop to deactivate.",
+                                      );
+                                      return;
+                                    }
                                     if (isLive) {
-                                      setMyStrategies((prev) =>
-                                        prev.map((x) =>
-                                          x.id === s.id
-                                            ? {
-                                                ...x,
-                                                deployed: false,
-                                                lifecycle_state: "PAUSED",
-                                              }
-                                            : x,
-                                        ),
-                                      );
-                                      addLog(
-                                        "warn",
-                                        `Strategy "${s.name}" stopped`,
-                                      );
+                                      void (async () => {
+                                        const err = isOptions
+                                          ? await chartmateActions?.onPauseOptionsStrategy?.(
+                                              s.id,
+                                            )
+                                          : await chartmateActions?.onToggleDeploy?.(
+                                              s.id,
+                                              false,
+                                            );
+                                        if (err) {
+                                          toast.error("Could not stop strategy", {
+                                            description: String(err),
+                                          });
+                                          addLog("error", String(err));
+                                          return;
+                                        }
+                                        addLog("warn", `Strategy "${s.name}" stopped`);
+                                        chartmateActions?.onRefresh?.();
+                                      })();
                                       return;
                                     }
 
@@ -3525,9 +3601,6 @@ export default function TradingSmartDashboard(props = {}) {
                                       );
                                       return;
                                     }
-                                    const isOptions =
-                                      Boolean(s?.is_options) ||
-                                      strategyKindTag(s) === "options";
                                     if (isOptions) {
                                       setActivateOptionsTarget(s._raw ?? s);
                                       return;
@@ -3549,7 +3622,7 @@ export default function TradingSmartDashboard(props = {}) {
                                     );
                                   }}
                                 >
-                                  {isLive ? "Stop" : "Deploy"}
+                                  {isOptions ? "Deploy" : isLive ? "Stop" : "Deploy"}
                                 </button>
                                 <button
                                   type="button"
@@ -4755,7 +4828,9 @@ export default function TradingSmartDashboard(props = {}) {
                     >
                       Yahoo Finance chart streams live ticks; Condition
                       &quot;Live&quot; column is last engine pass for this
-                      strategy symbol.
+                      strategy symbol. For CRUDEOIL, Yahoo shows CL=F proxy in
+                      USD; execution still uses your broker option symbol and
+                      INR premiums.
                     </p>
                   </div>
                   <StrategyConditionPanel
@@ -4781,7 +4856,8 @@ export default function TradingSmartDashboard(props = {}) {
             >
               {useChartmate &&
               liveViewTarget.deployed &&
-              chartmateActions?.onToggleDeploy ? (
+              (chartmateActions?.onToggleDeploy ||
+                chartmateActions?.onPauseOptionsStrategy) ? (
                 <button
                   type="button"
                   className="action-btn btn-warning"
@@ -4794,14 +4870,21 @@ export default function TradingSmartDashboard(props = {}) {
                   title="Turn off scanning for this strategy (same as Stop on the card)"
                   onClick={() => {
                     void (async () => {
-                      if (!liveViewTarget || !chartmateActions?.onToggleDeploy)
+                      if (!liveViewTarget)
                         return;
+                      const isOptions =
+                        Boolean(liveViewTarget?.is_options) ||
+                        strategyKindTag(liveViewTarget) === "options";
                       setLiveModalStopBusy(true);
                       try {
-                        const err = await chartmateActions.onToggleDeploy(
-                          liveViewTarget.id,
-                          false,
-                        );
+                        const err = isOptions
+                          ? await chartmateActions?.onPauseOptionsStrategy?.(
+                              liveViewTarget.id,
+                            )
+                          : await chartmateActions?.onToggleDeploy?.(
+                              liveViewTarget.id,
+                              false,
+                            );
                         if (err) {
                           const msg =
                             typeof err === "string" ? err : String(err);
@@ -4895,13 +4978,17 @@ export default function TradingSmartDashboard(props = {}) {
                       try {
                         const err = await onCancelPendingForStrategy(id);
                         if (err) {
-                          const msg =
-                            typeof err === "string" ? err : String(err);
-                          toast.error("Could not cancel pending orders", {
-                            description: msg,
-                            duration: 10_000,
-                          });
-                          addLog("error", msg);
+                          const msg = typeof err === "string" ? err : String(err);
+                          if (/no pending conditional orders/i.test(msg)) {
+                            toast.info(msg);
+                            addLog("info", msg);
+                          } else {
+                            toast.error("Could not cancel pending orders", {
+                              description: msg,
+                              duration: 10_000,
+                            });
+                            addLog("error", msg);
+                          }
                           return;
                         }
                         toast.success("Pending orders cancelled");

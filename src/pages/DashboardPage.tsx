@@ -1038,16 +1038,20 @@ export default function DashboardPage() {
     async (strategyId: string): Promise<string | null> => {
       const uid = session?.user?.id;
       if (!uid) return "Not signed in";
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("pending_conditional_orders")
         .update({
           status: "cancelled",
           error_message: "Cancelled from algo dashboard",
         })
+        .select("id")
         .eq("strategy_id", strategyId)
         .eq("user_id", uid)
         .in("status", ["pending", "scheduled"]);
       if (error) return error.message;
+      if (!Array.isArray(data) || data.length === 0) {
+        return "No pending conditional orders found for this strategy.";
+      }
       void refresh();
       return null;
     },
