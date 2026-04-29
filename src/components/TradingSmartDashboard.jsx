@@ -1001,6 +1001,7 @@ export default function TradingSmartDashboard(props = {}) {
     reason: "",
     fetchedAt: null,
     error: "",
+    available: false,
   });
   const [liveViewQuoteAgeTick, setLiveViewQuoteAgeTick] = useState(0);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
@@ -1199,7 +1200,13 @@ export default function TradingSmartDashboard(props = {}) {
   useEffect(() => {
     const t = liveViewTarget;
     if (!t) {
-      setLiveOptionSignal({ signal: null, reason: "", fetchedAt: null, error: "" });
+      setLiveOptionSignal({
+        signal: null,
+        reason: "",
+        fetchedAt: null,
+        error: "",
+        available: false,
+      });
       return;
     }
     const isOptions =
@@ -1208,7 +1215,13 @@ export default function TradingSmartDashboard(props = {}) {
         .toLowerCase()
         .includes("option");
     if (!isOptions) {
-      setLiveOptionSignal({ signal: null, reason: "", fetchedAt: null, error: "" });
+      setLiveOptionSignal({
+        signal: null,
+        reason: "",
+        fetchedAt: null,
+        error: "",
+        available: false,
+      });
       return;
     }
     const raw = t && typeof t._raw === "object" ? t._raw : t;
@@ -1218,8 +1231,9 @@ export default function TradingSmartDashboard(props = {}) {
       setLiveOptionSignal({
         signal: null,
         reason: "",
-        fetchedAt: Date.now(),
-        error: "Signal payload missing (strategy_type/params).",
+        fetchedAt: null,
+        error: "",
+        available: false,
       });
       return;
     }
@@ -1236,6 +1250,7 @@ export default function TradingSmartDashboard(props = {}) {
           reason: String(res?.reason ?? ""),
           fetchedAt: Date.now(),
           error: "",
+          available: true,
         });
       } catch (e) {
         if (cancelled) return;
@@ -1244,6 +1259,7 @@ export default function TradingSmartDashboard(props = {}) {
           reason: "",
           fetchedAt: Date.now(),
           error: e instanceof Error ? e.message : String(e),
+          available: true,
         });
       }
     };
@@ -5144,7 +5160,7 @@ const isMcxUnderlying =
                     const isOptions =
                       Boolean(liveViewTarget?.is_options) ||
                       strategyKindTag(liveViewTarget) === "options";
-                    if (!isOptions) return null;
+                    if (!isOptions || !liveOptionSignal.available) return null;
                     const updSec =
                       liveOptionSignal.fetchedAt != null
                         ? Math.max(0, Math.round((Date.now() - liveOptionSignal.fetchedAt) / 1000))

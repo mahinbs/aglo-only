@@ -46,6 +46,13 @@ function istCalendarDate(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
 }
 
+function isOptionContractSymbol(sym: string): boolean {
+  const s = String(sym || "").trim().toUpperCase();
+  if (!s) return false;
+  if (!/(CE|PE)$/.test(s)) return false;
+  return /\d/.test(s);
+}
+
 function timeToUnixSec(t: Time): number {
   if (typeof t === "number") return t;
   if (typeof t === "string") {
@@ -119,6 +126,7 @@ export default function BffUnderlyingChart(props: {
   const { symbol: rawSym, exchange: rawEx } = props;
   const symbol = String(rawSym || "").trim().toUpperCase();
   const exchange = String(rawEx || "").trim().toUpperCase();
+  const isOptionContract = isOptionContractSymbol(symbol);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -302,7 +310,11 @@ export default function BffUnderlyingChart(props: {
       }
       const last = bars[bars.length - 1]?.close ?? null;
       if (last != null && Number.isFinite(last)) setLivePrice(last);
-      const first = bars[0]?.open ?? null;
+      const lastBar = bars[bars.length - 1] ?? null;
+      const targetDate = lastBar ? istCalendarDate(new Date(lastBar.time * 1000)) : "";
+      const firstSessionBar =
+        bars.find((b) => istCalendarDate(new Date(b.time * 1000)) === targetDate) ?? bars[0];
+      const first = firstSessionBar?.open ?? null;
       if (first != null && Number.isFinite(first)) setSessionRefOpen(first);
     },
     [],
@@ -329,7 +341,8 @@ export default function BffUnderlyingChart(props: {
       setError(null);
       try {
         const end = istCalendarDate(new Date());
-        const startDt = new Date(Date.now() - 7 * 86400000);
+        const lookbackDays = isOptionContract ? 1 : 7;
+        const startDt = new Date(Date.now() - lookbackDays * 86400000);
         const start = istCalendarDate(startDt);
 
         const raw = await bffFetch<unknown>("/api/options/history", {
@@ -363,7 +376,7 @@ export default function BffUnderlyingChart(props: {
         setSilentRefresh(false);
       }
     },
-    [symbol, exchange, applyBars],
+    [symbol, exchange, applyBars, isOptionContract],
   );
 
   useEffect(() => {
