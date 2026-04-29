@@ -553,7 +553,7 @@ export function OptionsStrategyActivateDialog({
                     {ltp != null ? `${assetCurrency === "USD" ? "$" : "₹"}${ltp.toFixed(2)}` : "—"}
                   </span>
                   {ltp == null && !ltpLoading && (
-                    <span className="text-[10px] text-muted-foreground">(market closed)</span>
+                    <span className="text-[10px] text-muted-foreground">(LTP unavailable)</span>
                   )}
                 </div>
                 <span className="text-[11px] text-muted-foreground pb-0.5">per unit</span>
