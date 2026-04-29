@@ -6,10 +6,12 @@ import {
   createChart,
   CandlestickSeries,
   HistogramSeries,
+  LineSeries,
   type IChartApi,
   type ISeriesApi,
   type CandlestickData,
   type HistogramData,
+  type LineData,
   type Time,
   CrosshairMode,
   LineStyle,
@@ -44,6 +46,16 @@ interface CandleRow {
 
 function istCalendarDate(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+}
+
+function calcEma(closes: number[], period: number): number[] {
+  if (!closes.length) return [];
+  const k = 2 / (period + 1);
+  const out: number[] = [closes[0]];
+  for (let i = 1; i < closes.length; i++) {
+    out.push(closes[i] * k + out[i - 1] * (1 - k));
+  }
+  return out;
 }
 
 function isOptionContractSymbol(sym: string): boolean {
@@ -152,6 +164,10 @@ export default function BffUnderlyingChart(props: {
   const chartRef = useRef<IChartApi | null>(null);
   const priceSerRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSerRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const ema9SerRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const ema20SerRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const lastEma9Ref = useRef<number>(0);
+  const lastEma20Ref = useRef<number>(0);
   const lastCandleRef = useRef<CandlestickData | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
 
@@ -226,9 +242,28 @@ export default function BffUnderlyingChart(props: {
       chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
     }
 
+    const ema9Ser = chart.addSeries(LineSeries, {
+      color: "#22d3ee",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      crosshairMarkerVisible: false,
+      title: "EMA9",
+    });
+    const ema20Ser = chart.addSeries(LineSeries, {
+      color: "#fb923c",
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      crosshairMarkerVisible: false,
+      title: "EMA20",
+    });
+
     chartRef.current = chart;
     priceSerRef.current = priceSer;
     volumeSerRef.current = volSer;
+    ema9SerRef.current = ema9Ser;
+    ema20SerRef.current = ema20Ser;
 
     const ro = new ResizeObserver(() => {
       if (!containerRef.current || chartRef.current !== chart) return;
@@ -323,6 +358,21 @@ export default function BffUnderlyingChart(props: {
         lp.update(nw);
         lastCandleRef.current = nw;
       }
+
+      // Update live EMA values
+      if (lastEma9Ref.current > 0) {
+        const k9 = 2 / (9 + 1);
+        const k20 = 2 / (20 + 1);
+        const liveEma9 = ltp * k9 + lastEma9Ref.current * (1 - k9);
+        const liveEma20 = ltp * k20 + lastEma20Ref.current * (1 - k20);
+        const t = (bucket > prevSec ? bucket : timeToUnixSec(last.time)) as unknown as Time;
+        try {
+          ema9SerRef.current?.update({ time: t, value: liveEma9 });
+          ema20SerRef.current?.update({ time: t, value: liveEma20 });
+        } catch {
+          /* noop */
+        }
+      }
     } catch {
       /* noop */
     }
@@ -363,6 +413,23 @@ export default function BffUnderlyingChart(props: {
       try {
         priceSer.setData(priceData);
         if (volSer) volSer.setData(volData);
+
+        const closes = bars.map((b) => b.close);
+        const ema9Vals = calcEma(closes, 9);
+        const ema20Vals = calcEma(closes, 20);
+        const ema9Data: LineData[] = bars.map((b, i) => ({
+          time: b.time as unknown as Time,
+          value: ema9Vals[i],
+        }));
+        const ema20Data: LineData[] = bars.map((b, i) => ({
+          time: b.time as unknown as Time,
+          value: ema20Vals[i],
+        }));
+        ema9SerRef.current?.setData(ema9Data);
+        ema20SerRef.current?.setData(ema20Data);
+        lastEma9Ref.current = ema9Vals[ema9Vals.length - 1] ?? 0;
+        lastEma20Ref.current = ema20Vals[ema20Vals.length - 1] ?? 0;
+
         chartRef.current?.timeScale().fitContent();
       } catch {
         /* noop */
@@ -387,6 +454,8 @@ export default function BffUnderlyingChart(props: {
       roRef.current?.disconnect();
       chartRef.current?.remove();
       chartRef.current = null;
+      ema9SerRef.current = null;
+      ema20SerRef.current = null;
     };
   }, [buildChart]);
 

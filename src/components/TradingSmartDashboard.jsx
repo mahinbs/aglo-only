@@ -5109,10 +5109,7 @@ const isMcxUnderlying =
                 String(ch.symbol || "")
                   .toUpperCase()
                   .startsWith("CRUDE");
-              const chartSymbol =
-                isMcxUnderlying && depInfo?.optionSymbol
-                  ? String(depInfo.optionSymbol).trim().toUpperCase()
-                  : ch.symbol;
+              const chartSymbol = ch.symbol;
               const lvLc = normalizeLifecycleState(
                 liveViewTarget.lifecycle_state,
                 Boolean(liveViewTarget.deployed),
