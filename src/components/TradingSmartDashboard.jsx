@@ -1369,12 +1369,10 @@ export default function TradingSmartDashboard(props = {}) {
   );
   const heroOpenMarkets = Number.isFinite(heroMarketOpenRaw)
     ? Math.max(0, Math.round(heroMarketOpenRaw))
-    : sessLive
-      ? 2
-      : 0;
+    : 0;
   const heroTotalMarkets = Number.isFinite(heroMarketTotalRaw)
     ? Math.max(1, Math.round(heroMarketTotalRaw))
-    : 4;
+    : 0;
   const heroBrokerLabel = String(summary?.broker || "Zerodha").trim();
   const pctMtm =
     sessLive && typeof summary?.open_positions_pct_mtm === "number"
