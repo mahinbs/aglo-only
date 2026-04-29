@@ -23,6 +23,11 @@ function normalizeBroker(broker: string | null | undefined): string {
   return String(broker ?? "").trim().toLowerCase();
 }
 
+function isZerodhaLoginUrl(url: string): boolean {
+  const u = String(url || "").toLowerCase();
+  return u.includes("kite.zerodha.com/connect/login") || u.includes("kite.trade/connect/login");
+}
+
 /** Broker connect via BFF (broker-aware), with Zerodha fallback edge path. */
 export async function startZerodhaKiteConnect(assignedBroker?: string | null): Promise<void> {
   const broker = normalizeBroker(assignedBroker);
@@ -56,13 +61,17 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
       );
       const url = data.url ?? data.login_url;
       if (!url) throw new Error(toUserFacingErrorMessage(data.error ?? "No login URL returned"));
+      if (broker === "fyers" && isZerodhaLoginUrl(url)) {
+        throw new Error("BFF returned Zerodha URL for Fyers request");
+      }
       window.location.href = url;
       return;
     } catch (e: unknown) {
       const msg = String((e as Error)?.message ?? "").toLowerCase();
       const routeMissing = msg.includes("not found") || msg.includes("404");
+      const wrongBrokerUrl = msg.includes("zerodha url for fyers");
       // If deployed BFF doesn't have this broker route yet, fallback to Supabase edge.
-      if (!(routeMissing && fallbackFn)) {
+      if (!((routeMissing || wrongBrokerUrl) && fallbackFn)) {
         throw e;
       }
     }
@@ -79,6 +88,9 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
   const payload = (res.data ?? {}) as { url?: string; login_url?: string; error?: string };
   const url = payload.url ?? payload.login_url;
   if (url) {
+    if (broker === "fyers" && isZerodhaLoginUrl(url)) {
+      throw new Error(toUserFacingErrorMessage("Fyers connect is misconfigured on backend (received Zerodha login URL)."));
+    }
     window.location.href = url;
     return;
   }
