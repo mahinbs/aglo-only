@@ -996,6 +996,12 @@ export default function TradingSmartDashboard(props = {}) {
   const [liveViewTarget, setLiveViewTarget] = useState(null);
   /** Live option LTP while Live View modal open (deployment contract). */
   const [liveOptionQuote, setLiveOptionQuote] = useState({ ltp: null, fetchedAt: null });
+  const [liveOptionSignal, setLiveOptionSignal] = useState({
+    signal: null,
+    reason: "",
+    fetchedAt: null,
+    error: "",
+  });
   const [liveViewQuoteAgeTick, setLiveViewQuoteAgeTick] = useState(0);
   const [cancelPendingBusyId, setCancelPendingBusyId] = useState(null);
   const [liveModalStopBusy, setLiveModalStopBusy] = useState(false);
@@ -1183,6 +1189,68 @@ export default function TradingSmartDashboard(props = {}) {
     const id = window.setInterval(() => {
       if (!cancelled) void tick();
     }, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [liveViewTarget]);
+
+  // Realtime options condition status from options-api signal endpoint.
+  useEffect(() => {
+    const t = liveViewTarget;
+    if (!t) {
+      setLiveOptionSignal({ signal: null, reason: "", fetchedAt: null, error: "" });
+      return;
+    }
+    const isOptions =
+      Boolean(t?.is_options) ||
+      String(t?.market_type ?? t?.marketType ?? t?.type ?? "")
+        .toLowerCase()
+        .includes("option");
+    if (!isOptions) {
+      setLiveOptionSignal({ signal: null, reason: "", fetchedAt: null, error: "" });
+      return;
+    }
+    const raw = t && typeof t._raw === "object" ? t._raw : t;
+    const strategyType = String(raw?.strategy_type ?? "").trim();
+    const params = raw?.params && typeof raw.params === "object" ? raw.params : null;
+    if (!strategyType || !params) {
+      setLiveOptionSignal({
+        signal: null,
+        reason: "",
+        fetchedAt: Date.now(),
+        error: "Signal payload missing (strategy_type/params).",
+      });
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await bffFetch("/api/options/strategies/signal", {
+          method: "POST",
+          body: JSON.stringify({ strategy_type: strategyType, params }),
+        });
+        if (cancelled) return;
+        setLiveOptionSignal({
+          signal: Boolean(res?.signal),
+          reason: String(res?.reason ?? ""),
+          fetchedAt: Date.now(),
+          error: "",
+        });
+      } catch (e) {
+        if (cancelled) return;
+        setLiveOptionSignal({
+          signal: null,
+          reason: "",
+          fetchedAt: Date.now(),
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => {
+      if (!cancelled) void tick();
+    }, 3000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -5072,6 +5140,64 @@ const isMcxUnderlying =
                     lifecycleUpdatedAt={liveViewTarget.lifecycle_updated_at ?? null}
                     showStrategyTitle={false}
                   />
+                  {(() => {
+                    const isOptions =
+                      Boolean(liveViewTarget?.is_options) ||
+                      strategyKindTag(liveViewTarget) === "options";
+                    if (!isOptions) return null;
+                    const updSec =
+                      liveOptionSignal.fetchedAt != null
+                        ? Math.max(0, Math.round((Date.now() - liveOptionSignal.fetchedAt) / 1000))
+                        : null;
+                    const matched =
+                      liveOptionSignal.signal == null
+                        ? "Checking…"
+                        : liveOptionSignal.signal
+                          ? "MATCHED (entry allowed)"
+                          : "NOT MATCHED";
+                    return (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          border: "1px solid rgba(56,189,248,0.22)",
+                          borderRadius: 8,
+                          padding: "8px 10px",
+                          fontSize: 11,
+                          background: "rgba(8,12,22,0.65)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                          <span style={{ color: "var(--text-primary)" }}>
+                            Options signal:{" "}
+                            <strong
+                              style={{
+                                color:
+                                  liveOptionSignal.signal == null
+                                    ? "var(--accent-cyan)"
+                                    : liveOptionSignal.signal
+                                      ? "var(--accent-green)"
+                                      : "var(--accent-orange)",
+                              }}
+                            >
+                              {matched}
+                            </strong>
+                          </span>
+                          <span style={{ color: "var(--text-muted)" }}>
+                            Updated: {updSec != null ? `${updSec}s ago` : "—"}
+                          </span>
+                        </div>
+                        {liveOptionSignal.error ? (
+                          <div style={{ marginTop: 4, color: "var(--accent-red)" }}>
+                            {liveOptionSignal.error}
+                          </div>
+                        ) : liveOptionSignal.reason ? (
+                          <div style={{ marginTop: 4, color: "var(--text-secondary)" }}>
+                            {liveOptionSignal.reason}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
                 </>
               );
             })()}
