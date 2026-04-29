@@ -1,6 +1,5 @@
 /**
- * Broker-backed INR chart for MCX/NCDEX underliers (OpenAlgo history + live LTP).
- * Prefer this over Yahoo (CL=F USD) when trading Indian commodities.
+ * Broker-backed INR chart for MCX/NCDEX underliers (OpenAlgo history + WS LTP stream).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -17,8 +16,10 @@ import {
   ColorType,
 } from "lightweight-charts";
 import { Loader2, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { bffConfigured, bffFetch } from "@/lib/api";
 import { fetchLtp } from "@/lib/optionsApi";
+import { buildOptionsWebSocketUrl } from "@/hooks/useRealtimeStrategy";
 
 const CHART_BG = "#0a0a0f";
 const GRID_COLOR = "rgba(255,255,255,0.04)";
@@ -28,6 +29,9 @@ const DOWN_COLOR = "#e03a3e";
 const VOLUME_UP = "rgba(0,176,155,0.35)";
 const VOLUME_DOWN = "rgba(224,58,62,0.35)";
 const CROSSHAIR_CLR = "rgba(255,255,255,0.3)";
+
+/** 5-minute bars (must match REST history interval). */
+const BAR_SEC = 300;
 
 interface CandleRow {
   time: number;
@@ -40,6 +44,18 @@ interface CandleRow {
 
 function istCalendarDate(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
+}
+
+function timeToUnixSec(t: Time): number {
+  if (typeof t === "number") return t;
+  if (typeof t === "string") {
+    try {
+      return Math.floor(new Date(t).getTime() / 1000);
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
 }
 
 function normalizeHistoryPayload(raw: unknown): CandleRow[] {
@@ -85,7 +101,6 @@ function normalizeHistoryPayload(raw: unknown): CandleRow[] {
     });
   }
   out.sort((a, b) => a.time - b.time);
-  // De-dupe by time (keep last)
   const merged: CandleRow[] = [];
   let prevT = -1;
   for (const c of out) {
@@ -116,10 +131,10 @@ export default function BffUnderlyingChart(props: {
   const [silentRefresh, setSilentRefresh] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [livePrice, setLivePrice] = useState<number | null>(null);
-  /** First candle open after load — for day change % vs LTP close. */
   const [sessionRefOpen, setSessionRefOpen] = useState<number | null>(null);
-  const [lastLtpPoll, setLastLtpPoll] = useState<number>(0);
+  const [lastTickAt, setLastTickAt] = useState<number>(0);
   const [, setClockTick] = useState(0);
+  const [transport, setTransport] = useState<"ws" | "poll" | "none">("none");
 
   const buildChart = useCallback(() => {
     if (!containerRef.current) return;
@@ -200,47 +215,97 @@ export default function BffUnderlyingChart(props: {
     });
   }, []);
 
-  const applyBars = useCallback((bars: CandleRow[]) => {
-    const priceSer = priceSerRef.current;
+  const applyIncomingLtp = useCallback((ltp: number, source: "ws" | "poll") => {
+    if (!Number.isFinite(ltp) || ltp <= 0) return;
+    setLivePrice(ltp);
+    setLastTickAt(Date.now());
+    setTransport(source);
+
+    const lp = priceSerRef.current;
     const volSer = volumeSerRef.current;
-    if (!priceSer || !volSer || bars.length === 0) return;
+    const last = lastCandleRef.current;
+    if (!lp || !last) return;
 
-    const priceData: CandlestickData[] = [];
-    const volData: HistogramData[] = [];
+    const nowSec = Math.floor(Date.now() / 1000);
+    const bucket = Math.floor(nowSec / BAR_SEC) * BAR_SEC;
+    const prevSec = timeToUnixSec(last.time);
 
-    for (const c of bars) {
-      const t = c.time as unknown as Time;
-      const cd: CandlestickData = {
-        time: t,
-        open: c.open,
-        high: c.high,
-        low: c.low,
-        close: c.close,
-      };
-      priceData.push(cd);
-      lastCandleRef.current = cd;
-      const vol =
-        c.volume != null && Number.isFinite(c.volume)
-          ? c.volume
-          : Math.round((c.high + c.low + c.close) / 30);
-      volData.push({
-        time: t,
-        value: Math.max(0, vol),
-        color: c.close >= c.open ? VOLUME_UP : VOLUME_DOWN,
-      });
-    }
     try {
-      priceSer.setData(priceData);
-      volSer.setData(volData);
-      chartRef.current?.timeScale().fitContent();
+      if (bucket > prevSec) {
+        const nw: CandlestickData = {
+          time: bucket as unknown as Time,
+          open: ltp,
+          high: ltp,
+          low: ltp,
+          close: ltp,
+        };
+        lp.update(nw);
+        lastCandleRef.current = nw;
+        volSer?.update({
+          time: bucket as unknown as Time,
+          value: Math.max(1, Math.round(ltp / 80)),
+          color: VOLUME_UP,
+        } as HistogramData);
+      } else {
+        const nw: CandlestickData = {
+          time: last.time,
+          open: last.open,
+          high: Math.max(last.high, ltp),
+          low: Math.min(last.low, ltp),
+          close: ltp,
+        };
+        lp.update(nw);
+        lastCandleRef.current = nw;
+      }
     } catch {
       /* noop */
     }
-    const last = bars[bars.length - 1]?.close ?? null;
-    if (last != null && Number.isFinite(last)) setLivePrice(last);
-    const first = bars[0]?.open ?? null;
-    if (first != null && Number.isFinite(first)) setSessionRefOpen(first);
   }, []);
+
+  const applyBars = useCallback(
+    (bars: CandleRow[]) => {
+      const priceSer = priceSerRef.current;
+      const volSer = volumeSerRef.current;
+      if (!priceSer || !volSer || bars.length === 0) return;
+
+      const priceData: CandlestickData[] = [];
+      const volData: HistogramData[] = [];
+
+      for (const c of bars) {
+        const t = c.time as unknown as Time;
+        const cd: CandlestickData = {
+          time: t,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        };
+        priceData.push(cd);
+        lastCandleRef.current = cd;
+        const vol =
+          c.volume != null && Number.isFinite(c.volume)
+            ? c.volume
+            : Math.round((c.high + c.low + c.close) / 30);
+        volData.push({
+          time: t,
+          value: Math.max(0, vol),
+          color: c.close >= c.open ? VOLUME_UP : VOLUME_DOWN,
+        });
+      }
+      try {
+        priceSer.setData(priceData);
+        volSer.setData(volData);
+        chartRef.current?.timeScale().fitContent();
+      } catch {
+        /* noop */
+      }
+      const last = bars[bars.length - 1]?.close ?? null;
+      if (last != null && Number.isFinite(last)) setLivePrice(last);
+      const first = bars[0]?.open ?? null;
+      if (first != null && Number.isFinite(first)) setSessionRefOpen(first);
+    },
+    [],
+  );
 
   useEffect(() => {
     buildChart();
@@ -289,6 +354,7 @@ export default function BffUnderlyingChart(props: {
         if (!bars.length) {
           throw new Error("No candles returned — check broker session and symbol.");
         }
+        applyBars(bars);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -315,40 +381,109 @@ export default function BffUnderlyingChart(props: {
 
   useEffect(() => {
     if (!symbol || !exchange) return;
-    let cancelled = false;
 
-    const tick = async () => {
-      const ltp = await fetchLtp(symbol, exchange);
-      if (cancelled) return;
-      setLastLtpPoll(Date.now());
-      if (ltp != null && Number.isFinite(ltp)) {
-        setLivePrice(ltp);
-        const lp = priceSerRef.current;
-        const last = lastCandleRef.current;
-        if (lp && last && typeof last.time !== "undefined") {
-          try {
-            const next: CandlestickData = {
-              time: last.time,
-              open: last.open,
-              high: Math.max(last.high, ltp),
-              low: Math.min(last.low, ltp),
-              close: ltp,
-            };
-            lp.update(next);
-            lastCandleRef.current = next;
-          } catch {
-            /* noop */
-          }
-        }
+    let cancelled = false;
+    let ws: WebSocket | null = null;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let wsConnectSlowTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearPoll = () => {
+      if (pollId != null) {
+        window.clearInterval(pollId);
+        pollId = null;
       }
     };
-    void tick();
-    const id = window.setInterval(() => void tick(), 5000);
+
+    const startPolling = () => {
+      clearPoll();
+      pollId = window.setInterval(async () => {
+        if (cancelled) return;
+        const ltp = await fetchLtp(symbol, exchange);
+        if (cancelled || ltp == null || !Number.isFinite(ltp)) return;
+        applyIncomingLtp(ltp, "poll");
+      }, 5000);
+    };
+
+    const connectWs = async () => {
+      if (cancelled) return;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const path =
+        `/ws/options/ltp?token=${encodeURIComponent(token ?? "")}` +
+        `&symbol=${encodeURIComponent(symbol)}&exchange=${encodeURIComponent(exchange)}`;
+      const url = buildOptionsWebSocketUrl(path);
+      if (!token || !url) {
+        setTransport("poll");
+        startPolling();
+        return;
+      }
+
+      try {
+        ws = new WebSocket(url);
+      } catch {
+        setTransport("poll");
+        startPolling();
+        return;
+      }
+
+      wsConnectSlowTimer = window.setTimeout(() => {
+        if (cancelled || !ws || ws.readyState === WebSocket.OPEN) return;
+        startPolling();
+      }, 10_000);
+
+      ws.onopen = () => {
+        if (wsConnectSlowTimer != null) window.clearTimeout(wsConnectSlowTimer);
+        wsConnectSlowTimer = null;
+        clearPoll();
+        setTransport("ws");
+      };
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(String(ev.data)) as {
+            type?: string;
+            ltp?: number | null;
+          };
+          if (msg.type === "ltp" && msg.ltp != null && Number.isFinite(Number(msg.ltp))) {
+            applyIncomingLtp(Number(msg.ltp), "ws");
+          }
+        } catch {
+          /* ignore */
+        }
+      };
+      ws.onerror = () => {
+        try {
+          ws?.close();
+        } catch {
+          /* noop */
+        }
+      };
+      ws.onclose = (ev) => {
+        if (cancelled) return;
+        setTransport("poll");
+        startPolling();
+        if (ev.code === 4003 || ev.code === 4001) return;
+        reconnectTimer = window.setTimeout(() => void connectWs(), 4000);
+      };
+    };
+
+    void connectWs();
+
     return () => {
       cancelled = true;
-      window.clearInterval(id);
+      clearPoll();
+      if (reconnectTimer != null) window.clearTimeout(reconnectTimer);
+      if (wsConnectSlowTimer != null) window.clearTimeout(wsConnectSlowTimer);
+      try {
+        ws?.close();
+      } catch {
+        /* noop */
+      }
+      setTransport("none");
     };
-  }, [symbol, exchange]);
+  }, [symbol, exchange, applyIncomingLtp]);
 
   const pct =
     livePrice != null && sessionRefOpen != null && sessionRefOpen > 0
@@ -356,7 +491,15 @@ export default function BffUnderlyingChart(props: {
       : null;
 
   const display = props.displayName?.trim() || symbol;
-  const feedFresh = lastLtpPoll > 0 && Date.now() - lastLtpPoll <= 35_000;
+  const feedFresh =
+    clockTick >= 0 && lastTickAt > 0 && Date.now() - lastTickAt <= 35_000;
+
+  const feedLabel = (() => {
+    if (!feedFresh) return "Stale";
+    if (transport === "ws") return "Live (WS)";
+    if (transport === "poll") return "Live (polling)";
+    return "—";
+  })();
 
   return (
     <div className="rounded-lg border border-white/10 bg-[#07070d] overflow-hidden">
@@ -398,7 +541,7 @@ export default function BffUnderlyingChart(props: {
             }
           >
             <span className={`h-1.5 w-1.5 rounded-full ${feedFresh ? "bg-emerald-400 animate-pulse" : "bg-slate-500"}`} />
-            {feedFresh ? "Live (polling)" : "Stale"}
+            {feedLabel}
           </span>
           <button
             type="button"
@@ -432,7 +575,7 @@ export default function BffUnderlyingChart(props: {
         ) : null}
       </div>
       <p className="px-2 py-1 text-[10px] text-muted-foreground border-t border-white/[0.05]">
-        Data: broker / OpenAlgo (5m candles, INR).
+        Historical: broker / OpenAlgo (5m INR). Live: WS LTP from options API — falls back to broker quotes poll if unavailable.
       </p>
     </div>
   );

@@ -45,6 +45,14 @@ function optionsWsBase(): string {
   return deriveOptionsWsFromBff();
 }
 
+/** e.g. `"/ws/options/ltp?token=…&symbol=X&exchange=Y"` — returns empty string if options API host not configured. */
+export function buildOptionsWebSocketUrl(pathAndQuery: string): string {
+  const base = optionsWsBase();
+  if (!base) return "";
+  const pq = pathAndQuery.startsWith("/") ? pathAndQuery : `/${pathAndQuery}`;
+  return `${httpBaseToWs(base)}${pq}`;
+}
+
 export type OptionsPositionsFrame = {
   type?: string;
   stale?: boolean;

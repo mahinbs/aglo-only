@@ -331,6 +331,9 @@ function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
         : {};
     const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
     const und = inferUnderlying(s);
+    const exRaw = String((s.exchange as string | undefined) ?? "").trim().toUpperCase();
+    const exchange =
+      exRaw || (und === "CRUDEOIL" || und.startsWith("CRUDE") ? "MCX" : "NSE");
     return {
       id: String(s.id ?? ""),
       name: String(s.name ?? "Options Strategy"),
@@ -352,6 +355,7 @@ function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
         typeof s.lifecycle_updated_at === "string" ? s.lifecycle_updated_at : null,
       market_type: "options",
       is_options: true,
+      exchange,
       _raw: s,
     };
   });

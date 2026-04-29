@@ -4875,8 +4875,12 @@ export default function TradingSmartDashboard(props = {}) {
             </p>
             {(() => {
               const ch = chartRoutingFromStrategyCard(liveViewTarget);
-              const isMcxUnderlying =
-                ch.exchange === "MCX" || ch.exchange === "NCDEX";
+const isMcxUnderlying =
+                ch.exchange === "MCX" ||
+                ch.exchange === "NCDEX" ||
+                String(ch.symbol || "")
+                  .toUpperCase()
+                  .startsWith("CRUDE");
               const lvLc = normalizeLifecycleState(
                 liveViewTarget.lifecycle_state,
                 Boolean(liveViewTarget.deployed),
