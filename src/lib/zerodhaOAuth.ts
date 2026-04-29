@@ -34,6 +34,7 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
   if (!session?.access_token) throw new Error("Not signed in");
 
   const return_url = `${window.location.origin}/broker-callback`;
+  const fallbackFn = broker === "fyers" ? "get-fyers-login-url" : broker === "zerodha" ? "get-zerodha-login-url" : "";
 
   if (bffConfigured()) {
     const q = new URLSearchParams({ return_url });
@@ -48,17 +49,25 @@ export async function startZerodhaKiteConnect(assignedBroker?: string | null): P
     if (!path) {
       throw new Error(brokerNotConfiguredMessage());
     }
-    const data = await bffFetch<{ url?: string; login_url?: string; error?: string }>(
-      `${path}?${q}`,
-      { method: "GET" },
-    );
-    const url = data.url ?? data.login_url;
-    if (!url) throw new Error(toUserFacingErrorMessage(data.error ?? "No login URL returned"));
-    window.location.href = url;
-    return;
+    try {
+      const data = await bffFetch<{ url?: string; login_url?: string; error?: string }>(
+        `${path}?${q}`,
+        { method: "GET" },
+      );
+      const url = data.url ?? data.login_url;
+      if (!url) throw new Error(toUserFacingErrorMessage(data.error ?? "No login URL returned"));
+      window.location.href = url;
+      return;
+    } catch (e: unknown) {
+      const msg = String((e as Error)?.message ?? "").toLowerCase();
+      const routeMissing = msg.includes("not found") || msg.includes("404");
+      // If deployed BFF doesn't have this broker route yet, fallback to Supabase edge.
+      if (!(routeMissing && fallbackFn)) {
+        throw e;
+      }
+    }
   }
 
-  const fallbackFn = broker === "fyers" ? "get-fyers-login-url" : broker === "zerodha" ? "get-zerodha-login-url" : "";
   if (!fallbackFn) {
     throw new Error(brokerNotConfiguredMessage());
   }
