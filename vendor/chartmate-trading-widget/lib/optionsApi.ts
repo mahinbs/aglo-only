@@ -260,7 +260,7 @@ function toISTDateKey(d: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
 }
 
-function isIstMarketOpenNow(d: Date = new Date()): boolean {
+function isIstMarketOpenNow(exchange?: string, d: Date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Kolkata",
     hour: "2-digit",
@@ -273,10 +273,20 @@ function isIstMarketOpenNow(d: Date = new Date()): boolean {
   const wd = (parts.find((p) => p.type === "weekday")?.value ?? "").toLowerCase();
   if (wd.startsWith("sat") || wd.startsWith("sun")) return false;
   const minutes = hh * 60 + mm;
+  const ex = String(exchange ?? "").toUpperCase();
+  // Indian commodity sessions run into the evening.
+  if (ex === "MCX" || ex === "NCDEX") {
+    return minutes >= (9 * 60) && minutes <= (23 * 60 + 30);
+  }
+  // NSE/BSE/NFO/BFO/CDS normal day session.
   return minutes >= (9 * 60 + 15) && minutes <= (15 * 60 + 30);
 }
 
-function marketClosedMessage(): string {
+function marketClosedMessage(exchange?: string): string {
+  const ex = String(exchange ?? "").toUpperCase();
+  if (ex === "MCX" || ex === "NCDEX") {
+    return "Market is closed now. Commodity options data refresh is available during market hours (09:00-23:30 IST).";
+  }
   return "Market is closed now. Options data refresh is available during market hours (09:15-15:30 IST).";
 }
 
@@ -453,8 +463,8 @@ export async function fetchOptionChain(params: {
       }
       return normalizeOptionChainPayload(raw, sym, ex, params.expiry_date);
     } catch (e) {
-      if (!isIstMarketOpenNow()) {
-        throw new Error(marketClosedMessage());
+      if (!isIstMarketOpenNow(ex)) {
+        throw new Error(marketClosedMessage(ex));
       }
       throw e;
     }
@@ -537,8 +547,8 @@ export async function fetchExpiryDates(params: {
         });
         return result;
       } catch {
-        if (!isIstMarketOpenNow()) {
-          throw new Error(marketClosedMessage());
+        if (!isIstMarketOpenNow(ex)) {
+          throw new Error(marketClosedMessage(ex));
         }
         // FastAPI path failed or timed out — fall back to Supabase Edge route.
       }
@@ -556,14 +566,14 @@ export async function fetchExpiryDates(params: {
       error: { message?: string } | null;
     };
     if (error) {
-      if (!isIstMarketOpenNow()) {
-        throw new Error(marketClosedMessage());
+      if (!isIstMarketOpenNow(ex)) {
+        throw new Error(marketClosedMessage(ex));
       }
       throw new Error(friendlyBrokerMarketDataError(error.message ?? "fetch-expiry-dates failed"));
     }
     if (data && typeof data === "object" && "error" in data && data.error) {
-      if (!isIstMarketOpenNow()) {
-        throw new Error(marketClosedMessage());
+      if (!isIstMarketOpenNow(ex)) {
+        throw new Error(marketClosedMessage(ex));
       }
       throw new Error(friendlyBrokerMarketDataError(String((data as { error: unknown }).error)));
     }
@@ -574,8 +584,8 @@ export async function fetchExpiryDates(params: {
           expiries: (data as { expiries: NormalizedExpiryItem[] }).expiries,
         }
       : normalizeExpiryPayload(data ?? {}, sym, ex);
-    if (!normalized.expiries.length && !isIstMarketOpenNow()) {
-      throw new Error(marketClosedMessage());
+    if (!normalized.expiries.length && !isIstMarketOpenNow(ex)) {
+      throw new Error(marketClosedMessage(ex));
     }
     expiryCache.set(cacheKey, {
       expiresAt: Date.now() + EXPIRY_CACHE_TTL_MS,
