@@ -263,19 +263,39 @@ export function OptionsStrategyActivateDialog({
       setLoadingChain(true);
       setError(null);
       try {
-        const chain = await fetchOptionChain({
-          underlying: strategy.underlying,
-          exchange: strategy.exchange,
-          expiry_date: expiryIso,
-        });
-        if (cancelled) return;
-        // Show all CE + PE strikes — user explicitly picks the symbol at activation time
-        const list = tradableRowsFromChain(chain);
-        setRows(list);
+        const candidateExpiries = [
+          expiryIso,
+          ...expiries.map((e) => e.date).filter((d) => d && d !== expiryIso),
+        ];
+        let pickedExpiry = expiryIso;
+        let pickedList: TradableOptionRow[] = [];
+        let lastErr = "";
+        for (const exp of candidateExpiries) {
+          try {
+            const chain = await fetchOptionChain({
+              underlying: strategy.underlying,
+              exchange: strategy.exchange,
+              expiry_date: exp,
+            });
+            if (cancelled) return;
+            const list = tradableRowsFromChain(chain);
+            if (list.length > 0) {
+              pickedExpiry = exp;
+              pickedList = list;
+              break;
+            }
+            lastErr = `No tradable symbols for ${strategy.underlying} ${exp}.`;
+          } catch (e) {
+            lastErr = e instanceof Error ? e.message : String(e);
+          }
+        }
+        if (!pickedList.length) throw new Error(lastErr || "No symbols available for selected expiries.");
+        setRows(pickedList);
+        if (pickedExpiry !== expiryIso) setExpiryIso(pickedExpiry);
         const rc = strategy.risk_config as Record<string, unknown>;
         const pinned = typeof rc.explicit_options_symbol === "string" ? rc.explicit_options_symbol.trim() : "";
-        if (pinned && list.some((r) => r.symbol === pinned)) setSymbol(pinned);
-        else setSymbol(list[0]?.symbol ?? "");
+        if (pinned && pickedList.some((r) => r.symbol === pinned)) setSymbol(pinned);
+        else setSymbol(pickedList[0]?.symbol ?? "");
       } catch (e) {
         if (!cancelled) {
           setRows([]);
@@ -287,7 +307,7 @@ export function OptionsStrategyActivateDialog({
       }
     })();
     return () => { cancelled = true; };
-  }, [open, strategy, expiryIso]);
+  }, [open, strategy, expiryIso, expiries]);
 
   // Resolve contract lot size from selected symbol metadata.
   useEffect(() => {

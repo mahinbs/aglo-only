@@ -335,9 +335,9 @@ export default function BffUnderlyingChart(props: {
       if (bucket > prevSec) {
         const nw: CandlestickData = {
           time: bucket as unknown as Time,
-          open: ltp,
-          high: ltp,
-          low: ltp,
+          open: last.close,
+          high: Math.max(last.close, ltp),
+          low: Math.min(last.close, ltp),
           close: ltp,
         };
         lp.update(nw);
@@ -471,37 +471,60 @@ export default function BffUnderlyingChart(props: {
       setError(null);
       try {
         const end = istCalendarDate(new Date());
-        const lookbackDays = isOptionContract ? 1 : 7;
-        const startDt = new Date(Date.now() - lookbackDays * 86400000);
-        const start = istCalendarDate(startDt);
+        const attempts = isOptionContract
+          ? [
+              { interval: "1m", lookbackDays: 3 },
+              { interval: "5m", lookbackDays: 3 },
+              { interval: "1m", lookbackDays: 1 },
+              { interval: "5m", lookbackDays: 1 },
+            ]
+          : [
+              { interval: "1m", lookbackDays: 2 },
+              { interval: "5m", lookbackDays: 7 },
+            ];
 
-        const historyReq = bffFetch<unknown>("/api/options/history", {
-          method: "POST",
-          body: JSON.stringify({
-            symbol,
-            exchange,
-            interval: "5m",
-            start_date: start,
-            end_date: end,
-          }),
-        });
-        const timeoutReq = new Promise<never>((_, reject) => {
-          window.setTimeout(() => reject(new Error("History timeout (using live ticks).")), 12000);
-        });
-        const raw = await Promise.race([historyReq, timeoutReq]);
-
-        let bars = normalizeHistoryPayload(raw);
-        if (
-          bars.length === 0 &&
-          raw !== null &&
-          typeof raw === "object" &&
-          "data" in (raw as object)
-        ) {
-          bars = normalizeHistoryPayload((raw as { data?: unknown }).data);
+        let bars: CandleRow[] = [];
+        let lastErr = "";
+        for (const a of attempts) {
+          const startDt = new Date(Date.now() - a.lookbackDays * 86400000);
+          const start = istCalendarDate(startDt);
+          try {
+            const historyReq = bffFetch<unknown>("/api/options/history", {
+              method: "POST",
+              body: JSON.stringify({
+                symbol,
+                exchange,
+                interval: a.interval,
+                start_date: start,
+                end_date: end,
+              }),
+            });
+            const timeoutReq = new Promise<never>((_, reject) => {
+              window.setTimeout(
+                () => reject(new Error(`History timeout (${a.interval}, ${a.lookbackDays}d)`)),
+                12000,
+              );
+            });
+            const raw = await Promise.race([historyReq, timeoutReq]);
+            let parsed = normalizeHistoryPayload(raw);
+            if (
+              parsed.length === 0 &&
+              raw !== null &&
+              typeof raw === "object" &&
+              "data" in (raw as object)
+            ) {
+              parsed = normalizeHistoryPayload((raw as { data?: unknown }).data);
+            }
+            if (parsed.length > 0) {
+              bars = parsed;
+              break;
+            }
+            lastErr = `No candles for ${a.interval}/${a.lookbackDays}d`;
+          } catch (e) {
+            lastErr = e instanceof Error ? e.message : String(e);
+          }
         }
-        if (!bars.length) {
-          throw new Error("No candles returned — check broker session and symbol.");
-        }
+        if (!bars.length) throw new Error(lastErr || "No candles returned — check broker session and symbol.");
         applyBars(bars);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
