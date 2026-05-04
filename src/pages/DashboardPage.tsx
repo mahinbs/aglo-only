@@ -1296,6 +1296,7 @@ export default function DashboardPage() {
         optionsPanel={import.meta.env.VITE_OPTIONS_API_URL || bffConfigured() ? optionsPanel : null}
         onSignOut={() => void signOut()}
         userName={userProfile?.full_name || null}
+        userId={session.user.id}
         sessionAccessToken={session.access_token ?? null}
         onCancelPendingForStrategy={onCancelPendingForStrategy}
         strategyDevRequests={strategyDevRequests}

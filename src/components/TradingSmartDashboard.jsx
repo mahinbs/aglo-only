@@ -1001,6 +1001,7 @@ export default function TradingSmartDashboard(props = {}) {
     optionsPanel = null,
     onSignOut = null,
     userName = null,
+    userId = null,
     currencyMode = "INR",
     setCurrencyMode = null,
     sessionAccessToken = null,
@@ -1015,6 +1016,11 @@ export default function TradingSmartDashboard(props = {}) {
   const [uptimeSec, setUptimeSec] = useState(0);
   const [orders, setOrders] = useState([]);
   const [logs, setLogs] = useState([]);
+  const logsStorageKey = useMemo(() => {
+    const uid = String(userId || "").trim();
+    return uid ? `algo-only-system-logs-v1:${uid}` : "algo-only-system-logs-v1:anon";
+  }, [userId]);
+
   const [myStrategies, setMyStrategies] = useState([]);
   const [liveMonitorPage, setLiveMonitorPage] = useState(1);
   const [showStratForm, setShowStratForm] = useState(false);
@@ -1186,14 +1192,14 @@ export default function TradingSmartDashboard(props = {}) {
   // sessionStorage (tab-scoped) — not localStorage, to avoid long-lived data readable under XSS
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("algo-only-system-logs-v1");
+      const raw = sessionStorage.getItem(logsStorageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) setLogs(parsed.slice(-500));
     } catch {
       // ignore storage parse issues
     }
-  }, []);
+  }, [logsStorageKey]);
 
   useEffect(() => {
     if (!useChartmate || !strategyCards) return;
@@ -1432,13 +1438,13 @@ export default function TradingSmartDashboard(props = {}) {
   useEffect(() => {
     try {
       sessionStorage.setItem(
-        "algo-only-system-logs-v1",
+        logsStorageKey,
         JSON.stringify(logs.slice(-500)),
       );
     } catch {
       // ignore storage write issues
     }
-  }, [logs]);
+  }, [logs, logsStorageKey]);
 
   // Development request modal behaviors
   useEffect(() => {
