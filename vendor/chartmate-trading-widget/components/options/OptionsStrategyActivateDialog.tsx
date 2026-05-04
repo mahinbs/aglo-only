@@ -263,35 +263,17 @@ export function OptionsStrategyActivateDialog({
       setLoadingChain(true);
       setError(null);
       try {
-        const candidateExpiries = [
-          expiryIso,
-          ...expiries.map((e) => e.date).filter((d) => d && d !== expiryIso),
-        ];
-        let pickedExpiry = expiryIso;
-        let pickedList: TradableOptionRow[] = [];
-        let lastErr = "";
-        for (const exp of candidateExpiries) {
-          try {
-            const chain = await fetchOptionChain({
-              underlying: strategy.underlying,
-              exchange: strategy.exchange,
-              expiry_date: exp,
-            });
-            if (cancelled) return;
-            const list = tradableRowsFromChain(chain);
-            if (list.length > 0) {
-              pickedExpiry = exp;
-              pickedList = list;
-              break;
-            }
-            lastErr = `No tradable symbols for ${strategy.underlying} ${exp}.`;
-          } catch (e) {
-            lastErr = e instanceof Error ? e.message : String(e);
-          }
+        const chain = await fetchOptionChain({
+          underlying: strategy.underlying,
+          exchange: strategy.exchange,
+          expiry_date: expiryIso,
+        });
+        if (cancelled) return;
+        const pickedList = tradableRowsFromChain(chain);
+        if (!pickedList.length) {
+          throw new Error(`No tradable symbols for ${strategy.underlying} ${expiryIso}.`);
         }
-        if (!pickedList.length) throw new Error(lastErr || "No symbols available for selected expiries.");
         setRows(pickedList);
-        if (pickedExpiry !== expiryIso) setExpiryIso(pickedExpiry);
         const rc = strategy.risk_config as Record<string, unknown>;
         const pinned = typeof rc.explicit_options_symbol === "string" ? rc.explicit_options_symbol.trim() : "";
         if (pinned && pickedList.some((r) => r.symbol === pinned)) setSymbol(pinned);
@@ -307,7 +289,7 @@ export function OptionsStrategyActivateDialog({
       }
     })();
     return () => { cancelled = true; };
-  }, [open, strategy, expiryIso, expiries]);
+  }, [open, strategy, expiryIso]);
 
   // Resolve contract lot size from selected symbol metadata.
   useEffect(() => {
