@@ -31,7 +31,7 @@ import { OptionsStrategyBuilderDialog } from "@/components/options/OptionsStrate
 import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrategyActivateDialog";
 import YahooChartPanel from "@/components/YahooChartPanel";
 import BffUnderlyingChart from "./BffUnderlyingChart";
-import { fetchLtp } from "@/lib/optionsApi";
+import { fetchLtp, fetchOptionSymbolLotSize } from "@/lib/optionsApi";
 import { bffConfigured, bffFetch, getResolvedBffBase } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
@@ -177,11 +177,23 @@ function chartRoutingFromStrategyCard(s) {
   const isOptions =
     Boolean(s?.is_options) || strategyKindTag(s) === "options";
   if (isOptions) {
-    const und = inferUnderlying();
-    const ex = String(s?.exchange || "NFO")
+    const dep = optionDeploymentInfoFromCard(s);
+    const deployedOptionSymbol = String(dep.optionSymbol || "")
       .trim()
       .toUpperCase();
-    // For options live-view + condition rows, always route by underlying.
+    const deployedExchange = String(dep.exchange || s?.exchange || "NFO")
+      .trim()
+      .toUpperCase();
+    if (deployedOptionSymbol) {
+      // Prefer the actually deployed contract so live-view chart aligns with
+      // what is traded (e.g. CRUDEOIL..CE/PE), not just the underlying root.
+      return { symbol: deployedOptionSymbol, exchange: deployedExchange };
+    }
+    const und = inferUnderlying();
+    const ex = String(s?.exchange || dep.exchange || "NFO")
+      .trim()
+      .toUpperCase();
+    // Fallback when deployment has not resolved a specific options contract yet.
     return { symbol: und, exchange: ex };
   }
   const d = defaultsGoLiveFromCard(s);
@@ -1077,6 +1089,7 @@ export default function TradingSmartDashboard(props = {}) {
   const [liveViewTarget, setLiveViewTarget] = useState(null);
   /** Live option LTP while Live View modal open (deployment contract). */
   const [liveOptionQuote, setLiveOptionQuote] = useState({ ltp: null, fetchedAt: null });
+  const [optionContractValidation, setOptionContractValidation] = useState({});
   const [liveOptionSignal, setLiveOptionSignal] = useState({
     signal: null,
     reason: "",
@@ -1113,6 +1126,61 @@ export default function TradingSmartDashboard(props = {}) {
   });
   const devList = Array.isArray(strategyDevRequests) ? strategyDevRequests : [];
   const fileInputRef = useRef(null);
+  const optionContractValidationRef = useRef(optionContractValidation);
+
+  const optionContractKey = useCallback((symbolRaw, exchangeRaw) => {
+    const symbol = String(symbolRaw || "")
+      .trim()
+      .toUpperCase();
+    if (!symbol) return "";
+    const exchange = String(exchangeRaw || "NFO")
+      .trim()
+      .toUpperCase();
+    return `${exchange}:${symbol}`;
+  }, []);
+
+  const contractValidationStatus = useCallback(
+    (symbolRaw, exchangeRaw) => {
+      const key = optionContractKey(symbolRaw, exchangeRaw);
+      if (!key) return "missing";
+      return optionContractValidation[key]?.status || "pending";
+    },
+    [optionContractKey, optionContractValidation],
+  );
+
+  const queueOptionContractValidation = useCallback(
+    (symbolRaw, exchangeRaw) => {
+      const symbol = String(symbolRaw || "")
+        .trim()
+        .toUpperCase();
+      if (!symbol) return;
+      const exchange = String(exchangeRaw || "NFO")
+        .trim()
+        .toUpperCase();
+      const key = optionContractKey(symbol, exchange);
+      if (!key) return;
+      if (optionContractValidationRef.current[key]) return;
+      setOptionContractValidation((prev) => {
+        if (prev[key]) return prev;
+        return { ...prev, [key]: { status: "pending", lotSize: null } };
+      });
+      void (async () => {
+        const lotSize = await fetchOptionSymbolLotSize(symbol, exchange);
+        setOptionContractValidation((prev) => ({
+          ...prev,
+          [key]: {
+            status:
+              Number.isFinite(lotSize) && Number(lotSize) > 0 ? "valid" : "invalid",
+            lotSize:
+              Number.isFinite(lotSize) && Number(lotSize) > 0
+                ? Math.floor(Number(lotSize))
+                : null,
+          },
+        }));
+      })();
+    },
+    [optionContractKey],
+  );
   const devPdfFileRef = useRef(null);
   const goLiveSearchTimerRef = useRef(null);
   const goLiveSearchBoxRef = useRef(null);
@@ -1207,6 +1275,26 @@ export default function TradingSmartDashboard(props = {}) {
   }, [useChartmate, strategyCards]);
 
   useEffect(() => {
+    optionContractValidationRef.current = optionContractValidation;
+  }, [optionContractValidation]);
+
+  useEffect(() => {
+    const queueFromStrategy = (strategy) => {
+      const isOptions =
+        Boolean(strategy?.is_options) || strategyKindTag(strategy) === "options";
+      if (!isOptions) return;
+      const dep = optionDeploymentInfoFromCard(strategy);
+      if (!dep.optionSymbol) return;
+      queueOptionContractValidation(
+        dep.optionSymbol,
+        dep.exchange || strategy?.exchange || "NFO",
+      );
+    };
+    myStrategies.forEach(queueFromStrategy);
+    if (liveViewTarget) queueFromStrategy(liveViewTarget);
+  }, [myStrategies, liveViewTarget, queueOptionContractValidation]);
+
+  useEffect(() => {
     if (!useChartmate || !orderFeed) return;
     setOrders(orderFeed.length ? orderFeed : []);
   }, [useChartmate, orderFeed]);
@@ -1261,6 +1349,11 @@ export default function TradingSmartDashboard(props = {}) {
       setLiveOptionQuote({ ltp: null, fetchedAt: null });
       return undefined;
     }
+    const status = contractValidationStatus(sym, ex);
+    if (status !== "valid") {
+      setLiveOptionQuote({ ltp: null, fetchedAt: null });
+      return undefined;
+    }
     let cancelled = false;
     const tick = async () => {
       const ltp = await fetchLtp(sym, ex);
@@ -1276,7 +1369,7 @@ export default function TradingSmartDashboard(props = {}) {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [liveViewTarget]);
+  }, [liveViewTarget, contractValidationStatus]);
 
   // Realtime options condition status from options-api signal endpoint.
   useEffect(() => {
@@ -2679,10 +2772,25 @@ export default function TradingSmartDashboard(props = {}) {
                                   strategyKindTag(s) === "options";
                                 if (!isOptions) return null;
                                 const dep = optionDeploymentInfoFromCard(s);
-                                const detail = [dep.optionSymbol, dep.expiry]
-                                  .filter(Boolean)
-                                  .join(" • ");
-                                if (!detail) return null;
+                                if (!dep.optionSymbol && !dep.expiry) return null;
+                                const status = contractValidationStatus(
+                                  dep.optionSymbol,
+                                  dep.exchange || s?.exchange || "NFO",
+                                );
+                                const detail =
+                                  status === "valid"
+                                    ? [dep.optionSymbol, dep.expiry]
+                                        .filter(Boolean)
+                                        .join(" • ")
+                                    : status === "invalid"
+                                      ? "Invalid contract (reselect strategy leg)"
+                                      : "Validating contract…";
+                                const color =
+                                  status === "valid"
+                                    ? "var(--accent-cyan)"
+                                    : status === "invalid"
+                                      ? "var(--accent-red)"
+                                      : "var(--accent-yellow)";
                                 return (
                                   <span
                                     style={{
@@ -2691,7 +2799,7 @@ export default function TradingSmartDashboard(props = {}) {
                                       padding: "2px 8px",
                                       borderRadius: 6,
                                       border: "1px solid rgba(56,189,248,0.14)",
-                                      color: "var(--accent-cyan)",
+                                      color,
                                       background: "rgba(8,16,34,0.65)",
                                     }}
                                     title="Selected broker option symbol and expiry"
@@ -3747,13 +3855,34 @@ export default function TradingSmartDashboard(props = {}) {
                             {isOptions ? (
                               <div className="my-strat-flat-meta-item">
                                 <span style={{ opacity: 0.8 }}>Contract </span>
-                                <span style={{ color: "var(--accent-cyan)" }}>
+                                <span
+                                  style={{
+                                    color: (() => {
+                                      const dep = optionDeploymentInfoFromCard(s);
+                                      const status = contractValidationStatus(
+                                        dep.optionSymbol,
+                                        dep.exchange || s?.exchange || "NFO",
+                                      );
+                                      if (status === "invalid") return "var(--accent-red)";
+                                      if (status === "valid") return "var(--accent-cyan)";
+                                      return "var(--accent-yellow)";
+                                    })(),
+                                  }}
+                                >
                                   {(() => {
                                     const dep = optionDeploymentInfoFromCard(s);
+                                    if (!dep.optionSymbol) return "Not selected";
+                                    const status = contractValidationStatus(
+                                      dep.optionSymbol,
+                                      dep.exchange || s?.exchange || "NFO",
+                                    );
+                                    if (status === "invalid")
+                                      return "Invalid contract (reselect strategy leg)";
+                                    if (status !== "valid") return "Validating contract…";
                                     const txt = [dep.optionSymbol, dep.expiry]
                                       .filter(Boolean)
                                       .join(" • ");
-                                    return txt || "Not selected";
+                                    return txt || dep.optionSymbol;
                                   })()}
                                 </span>
                               </div>
@@ -5109,13 +5238,54 @@ export default function TradingSmartDashboard(props = {}) {
               const depInfo = isOptionsStrategy
                 ? optionDeploymentInfoFromCard(liveViewTarget)
                 : null;
-const isMcxUnderlying =
-                ch.exchange === "MCX" ||
-                ch.exchange === "NCDEX" ||
-                String(ch.symbol || "")
+              const depSymbol = String(depInfo?.optionSymbol || "")
+                .trim()
+                .toUpperCase();
+              const depExchange = String(
+                depInfo?.exchange || liveViewTarget?.exchange || ch.exchange || "NFO",
+              )
+                .trim()
+                .toUpperCase();
+              const depStatus = isOptionsStrategy
+                ? contractValidationStatus(depSymbol, depExchange)
+                : "valid";
+              const useDeployedContract =
+                isOptionsStrategy && depSymbol && depStatus === "valid";
+              const rawUnderlying =
+                liveViewTarget?.underlying ??
+                liveViewTarget?._raw?.underlying ??
+                liveViewTarget?.pairs ??
+                liveViewTarget?._raw?.pairs ??
+                "";
+              const fallbackSymbol = String(rawUnderlying || "")
+                .trim()
+                .toUpperCase()
+                .split(",")[0]
+                ?.trim();
+              const chartSymbol = useDeployedContract
+                ? depSymbol
+                : String(
+                    isOptionsStrategy
+                      ? fallbackSymbol || ch.symbol || "NIFTY"
+                      : ch.symbol,
+                  )
+                    .trim()
+                    .toUpperCase();
+              const chartExchange = useDeployedContract
+                ? depExchange
+                : String(
+                    isOptionsStrategy
+                      ? liveViewTarget?.exchange || depInfo?.exchange || ch.exchange || "NFO"
+                      : ch.exchange,
+                  )
+                    .trim()
+                    .toUpperCase();
+              const isMcxUnderlying =
+                chartExchange === "MCX" ||
+                chartExchange === "NCDEX" ||
+                String(chartSymbol || "")
                   .toUpperCase()
                   .startsWith("CRUDE");
-              const chartSymbol = ch.symbol;
               const lvLc = normalizeLifecycleState(
                 liveViewTarget.lifecycle_state,
                 Boolean(liveViewTarget.deployed),
@@ -5127,13 +5297,13 @@ const isMcxUnderlying =
                       {isMcxUnderlying ? (
                         <BffUnderlyingChart
                           symbol={chartSymbol}
-                          exchange={ch.exchange}
-                          displayName={ch.symbol}
+                          exchange={chartExchange}
+                          displayName={chartSymbol}
                         />
                       ) : (
                         <YahooChartPanel
                           symbol={yahooSymbolFromStrategyCard(liveViewTarget)}
-                          displayName={ch.symbol}
+                          displayName={chartSymbol}
                         />
                       )}
                     </div>
@@ -5150,7 +5320,7 @@ const isMcxUnderlying =
                           Chart data from your broker via OpenAlgo (MCX/NCDEX) in
                           INR — same feed used when orders execute. Condition &quot;
                           Live&quot; column is last engine pass for{" "}
-                          <strong>{ch.symbol}</strong>.
+                          <strong>{chartSymbol}</strong>.
                         </>
                       ) : (
                         <>
@@ -5164,6 +5334,10 @@ const isMcxUnderlying =
                       if (!isOptionsStrategy) return null;
                       const dep = depInfo;
                       if (!dep.optionSymbol && !dep.quantity) return null;
+                      const depStatus = contractValidationStatus(
+                        dep.optionSymbol,
+                        dep.exchange || liveViewTarget?.exchange || "NFO",
+                      );
 
                       const qtyNum = Number(String(dep.quantity).replace(/,/g, "")) || 0;
                       const { ltp, fetchedAt } = liveOptionQuote;
@@ -5209,13 +5383,22 @@ const isMcxUnderlying =
                           <p
                             style={{
                               fontSize: 10,
-                              color: "var(--accent-cyan)",
+                              color:
+                                depStatus === "valid"
+                                  ? "var(--accent-cyan)"
+                                  : depStatus === "invalid"
+                                    ? "var(--accent-red)"
+                                    : "var(--accent-yellow)",
                               marginTop: 0,
                               lineHeight: 1.45,
                             }}
                           >
                             <strong>Contract:</strong>{" "}
-                            {dep.optionSymbol || "selected option"}
+                            {depStatus === "valid"
+                              ? dep.optionSymbol || "selected option"
+                              : depStatus === "invalid"
+                                ? "Invalid contract (reselect strategy leg)"
+                                : "Validating contract…"}
                             {dep.expiry ? (
                               <>
                                 {" "}
