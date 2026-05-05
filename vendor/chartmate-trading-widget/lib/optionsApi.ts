@@ -11,10 +11,24 @@ import { friendlyBrokerMarketDataError } from "@/lib/brokerMarketDataErrors";
 
 // In algo-only, prefer direct options API if configured, else use BFF proxy.
 const DIRECT_OPTIONS_API_BASE = (import.meta.env.VITE_OPTIONS_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-const BFF_OPTIONS_PROXY_BASE = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const PRIMARY_BFF_OPTIONS_PROXY_BASE =
+  (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
 const EXPLICIT_OPTIONS_WS_BASE = (import.meta.env.VITE_OPTIONS_WS_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-const API_BASE = DIRECT_OPTIONS_API_BASE || BFF_OPTIONS_PROXY_BASE;
 const EXPIRY_CACHE_TTL_MS = 90_000;
+
+function resolvedBffProxyBase(): string {
+  let routed = "";
+  try {
+    routed = String(sessionStorage.getItem("algo-only-active-bff-v1") || "").trim().replace(/\/$/, "");
+  } catch {
+    routed = "";
+  }
+  return routed || PRIMARY_BFF_OPTIONS_PROXY_BASE;
+}
+
+function getApiBase(): string {
+  return DIRECT_OPTIONS_API_BASE || resolvedBffProxyBase();
+}
 
 function wsServiceBase(): string {
   if (EXPLICIT_OPTIONS_WS_BASE) {
@@ -26,7 +40,7 @@ function wsServiceBase(): string {
   // WS endpoint is hosted on options API, not the BFF proxy.
   if (DIRECT_OPTIONS_API_BASE) return DIRECT_OPTIONS_API_BASE;
   try {
-    const bff = BFF_OPTIONS_PROXY_BASE;
+    const bff = resolvedBffProxyBase();
     if (!bff) return "";
     const u = new URL(bff);
     if (u.hostname.startsWith("algoapi.")) {
@@ -50,15 +64,15 @@ const expiryInFlight = new Map<string, Promise<ExpiryResponse>>();
 
 /** True when the app should call the hosted FastAPI service for options (full E2E). */
 export function isOptionsApiConfigured(): boolean {
-  return API_BASE.length > 0;
+  return getApiBase().length > 0;
 }
 
 export function getOptionsApiBaseUrl(): string {
-  return API_BASE;
+  return getApiBase();
 }
 
 function requireOptionsBackendConfigured(): void {
-  if (!API_BASE) {
+  if (!getApiBase()) {
     throw new Error(
       "Options backend is not configured. Set VITE_ALGO_ONLY_BFF_URL (or VITE_OPTIONS_API_URL).",
     );
@@ -103,9 +117,10 @@ async function apiFetch<T = unknown>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  if (!API_BASE) throw new Error("Options API URL not configured (VITE_OPTIONS_API_URL)");
+  const base = getApiBase();
+  if (!base) throw new Error("Options API URL not configured (VITE_OPTIONS_API_URL)");
   const token = await getToken();
-  const url = `${API_BASE}${path}`;
+  const url = `${base}${path}`;
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), 15000);
   const res = await fetch(url, {
@@ -536,7 +551,7 @@ export async function fetchLtp(
   symbol: string,
   exchange: string
 ): Promise<number | null> {
-  if (!API_BASE) return null;
+  if (!getApiBase()) return null;
   try {
     const raw = await apiFetch<Record<string, unknown>>("/api/options/quotes", {
       method: "POST",
@@ -557,7 +572,7 @@ export async function fetchOptionSymbolLotSize(
   symbol: string,
   exchange: string
 ): Promise<number | null> {
-  if (!API_BASE || !symbol?.trim()) return null;
+  if (!getApiBase() || !symbol?.trim()) return null;
   try {
     const raw = await apiFetch<Record<string, unknown>>("/api/options/symbol-meta", {
       method: "POST",
@@ -626,7 +641,7 @@ export async function generateStrategySignal(
   strategy_type: StrategyType,
   params: Record<string, unknown>
 ) {
-  if (!API_BASE) throw new Error("Options API URL not configured (VITE_OPTIONS_API_URL)");
+  if (!getApiBase()) throw new Error("Options API URL not configured (VITE_OPTIONS_API_URL)");
   return apiFetch("/api/options/strategies/signal", {
     method: "POST",
     body: JSON.stringify({ strategy_type, params }),
@@ -639,7 +654,7 @@ export async function executeStrategy(
   is_paper = true,
   strategy_id?: string
 ) {
-  if (!API_BASE) throw new Error("Options API URL not configured");
+  if (!getApiBase()) throw new Error("Options API URL not configured");
   const qs = new URLSearchParams({
     is_paper: String(is_paper),
     ...(strategy_id ? { strategy_id } : {}),
