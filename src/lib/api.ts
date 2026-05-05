@@ -1,4 +1,5 @@
 import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
+import { supabase } from "@/lib/supabase";
 
 const PRIMARY_BFF = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
 const SECONDARY_BFF = (import.meta.env.VITE_ALGO_ONLY_BFF_URL_SECONDARY ?? "").replace(/\/$/, "");
@@ -122,6 +123,22 @@ async function parseRes<T>(res: Response): Promise<T> {
   return data;
 }
 
+async function withAuthHeaders(initHeaders?: HeadersInit): Promise<Headers> {
+  const headers = new Headers(initHeaders);
+  if (!headers.has("Authorization")) {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = String(session?.access_token || "").trim();
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+    } catch {
+      // ignore auth header enrichment errors
+    }
+  }
+  return headers;
+}
+
 /** One-time: Supabase access_token → HttpOnly vapt_session cookie */
 export async function bffAuthExchange(accessToken: string): Promise<void> {
   const claims = parseJwtClaims(accessToken);
@@ -159,19 +176,21 @@ export async function bffMe(): Promise<{
   role?: string;
 } | null> {
   if (!bffConfigured()) return null;
-  const res = await fetch(`${bffBase()}/api/auth/me`, { credentials: "include" });
+  const headers = await withAuthHeaders();
+  const res = await fetch(`${bffBase()}/api/auth/me`, { credentials: "include", headers });
   if (!res.ok) return null;
   return res.json();
 }
 
 export async function bffGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${bffBase()}${path}`, { credentials: "include" });
+  const headers = await withAuthHeaders();
+  const res = await fetch(`${bffBase()}${path}`, { credentials: "include", headers });
   return parseRes<T>(res);
 }
 
 export async function bffFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
-  const headers = new Headers(init.headers);
+  const headers = await withAuthHeaders(init.headers);
   if (method !== "GET" && method !== "HEAD" && init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -185,10 +204,11 @@ export async function bffFetch<T>(path: string, init: RequestInit = {}): Promise
 
 /** POST onboarding-style payloads — BFF validates service-side; cookie optional. */
 export async function bffPostPublic<T>(path: string, body: unknown): Promise<T> {
+  const headers = await withAuthHeaders({ "Content-Type": "application/json" });
   const res = await fetch(`${bffBase()}${path}`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
   return parseRes<T>(res);
