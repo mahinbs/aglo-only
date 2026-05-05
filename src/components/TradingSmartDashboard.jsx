@@ -32,7 +32,7 @@ import { OptionsStrategyActivateDialog } from "@/components/options/OptionsStrat
 import YahooChartPanel from "@/components/YahooChartPanel";
 import BffUnderlyingChart from "./BffUnderlyingChart";
 import { fetchLtp } from "@/lib/optionsApi";
-import { bffConfigured, bffFetch } from "@/lib/api";
+import { bffConfigured, bffFetch, getResolvedBffBase } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 import { StrategyConditionPanel } from "./StrategyConditionPanel";
 import { lifecycleLabel, normalizeLifecycleState } from "../lib/lifecycle";
@@ -310,7 +310,7 @@ function inferOptionsSignalRequestFromCard(s) {
 function deriveDirectOptionsApiBase() {
   const explicit = String(import.meta.env?.VITE_OPTIONS_API_URL || "").trim().replace(/\/$/, "");
   if (explicit) return explicit;
-  const bff = String(import.meta.env?.VITE_ALGO_ONLY_BFF_URL || "").trim().replace(/\/$/, "");
+  const bff = String(getResolvedBffBase() || "").trim().replace(/\/$/, "");
   if (!bff) return "";
   try {
     const u = new URL(bff);

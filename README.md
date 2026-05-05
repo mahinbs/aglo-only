@@ -45,6 +45,19 @@ npm run dev             # http://127.0.0.1:5174
 
 Optional: run [`chartmate-algo-only-bff`](../chartmate-algo-only-bff) and set `VITE_ALGO_ONLY_BFF_URL=http://127.0.0.1:8010` for aggregated `/api/dashboard/summary` and proxied options/broker calls.
 
+### Dual-BFF routing (shared frontend, client-specific backend stacks)
+
+You can keep one frontend build and route users to a secondary BFF by identity:
+
+- `VITE_ALGO_ONLY_BFF_URL` (primary BFF)
+- `VITE_ALGO_ONLY_BFF_URL_SECONDARY` (secondary BFF)
+- one or more match lists:
+  - `VITE_ALGO_ONLY_BFF_SECONDARY_USER_IDS`
+  - `VITE_ALGO_ONLY_BFF_SECONDARY_USER_EMAILS`
+  - `VITE_ALGO_ONLY_BFF_SECONDARY_EMAIL_DOMAINS`
+
+When a signed-in user matches any secondary list, frontend auth/session/broker/options calls use the secondary BFF.
+
 ## Production subdomain
 
 1. Build: `npm run build` and host static files on `https://algo.yourdomain.com`.

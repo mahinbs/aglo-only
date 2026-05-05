@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getResolvedBffBase } from "@/lib/api";
 
 function httpBaseToWs(base: string): string {
   const b = base.replace(/\/$/, "");
@@ -20,7 +21,7 @@ function normalizeBaseOrigin(raw: string): string {
 }
 
 function deriveOptionsWsFromBff(): string {
-  const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+  const bff = String(getResolvedBffBase() || "").replace(/\/$/, "");
   if (!bff) return "";
   try {
     const u = new URL(bff);

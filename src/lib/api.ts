@@ -1,14 +1,113 @@
 import { toUserFacingErrorMessage } from "@/lib/userFacingErrors";
 
-const bff = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
+const PRIMARY_BFF = (import.meta.env.VITE_ALGO_ONLY_BFF_URL ?? "").replace(/\/$/, "");
+const SECONDARY_BFF = (import.meta.env.VITE_ALGO_ONLY_BFF_URL_SECONDARY ?? "").replace(/\/$/, "");
+const SECONDARY_USER_IDS = new Set(
+  String(import.meta.env.VITE_ALGO_ONLY_BFF_SECONDARY_USER_IDS ?? "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean),
+);
+const SECONDARY_USER_EMAILS = new Set(
+  String(import.meta.env.VITE_ALGO_ONLY_BFF_SECONDARY_USER_EMAILS ?? "")
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean),
+);
+const SECONDARY_EMAIL_DOMAINS = new Set(
+  String(import.meta.env.VITE_ALGO_ONLY_BFF_SECONDARY_EMAIL_DOMAINS ?? "")
+    .split(",")
+    .map((x) => x.trim().toLowerCase().replace(/^@/, ""))
+    .filter(Boolean),
+);
+const ACTIVE_BFF_KEY = "algo-only-active-bff-v1";
+
+type JwtClaims = {
+  sub?: string;
+  email?: string;
+};
+
+function configuredBffs(): string[] {
+  const out: string[] = [];
+  if (PRIMARY_BFF) out.push(PRIMARY_BFF);
+  if (SECONDARY_BFF && SECONDARY_BFF !== PRIMARY_BFF) out.push(SECONDARY_BFF);
+  return out;
+}
+
+function readActiveBff(): string {
+  try {
+    return String(sessionStorage.getItem(ACTIVE_BFF_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function writeActiveBff(url: string): void {
+  try {
+    if (!url) {
+      sessionStorage.removeItem(ACTIVE_BFF_KEY);
+      return;
+    }
+    sessionStorage.setItem(ACTIVE_BFF_KEY, url);
+  } catch {
+    // ignore storage write issues
+  }
+}
+
+function parseJwtClaims(accessToken: string): JwtClaims {
+  try {
+    const token = String(accessToken || "");
+    const payload = token.split(".")[1] || "";
+    if (!payload) return {};
+    const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(padded);
+    const data = JSON.parse(json) as JwtClaims;
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+function routeBffForIdentity(userId?: string, email?: string): string {
+  const uid = String(userId || "").trim();
+  const em = String(email || "").trim().toLowerCase();
+  const domain = em.includes("@") ? em.split("@")[1] : "";
+  if (
+    SECONDARY_BFF &&
+    (SECONDARY_USER_IDS.has(uid) ||
+      SECONDARY_USER_EMAILS.has(em) ||
+      (domain && SECONDARY_EMAIL_DOMAINS.has(domain)))
+  ) {
+    return SECONDARY_BFF;
+  }
+  return PRIMARY_BFF || SECONDARY_BFF;
+}
+
+export function setActiveBffForIdentity(userId?: string, email?: string): string {
+  const base = routeBffForIdentity(userId, email);
+  writeActiveBff(base);
+  return base;
+}
 
 export function bffConfigured(): boolean {
-  return bff.length > 0;
+  return configuredBffs().length > 0;
 }
 
 function bffBase(): string {
-  if (!bff) throw new Error(toUserFacingErrorMessage("VITE_ALGO_ONLY_BFF_URL not set"));
-  return bff;
+  const active = readActiveBff();
+  if (active) return active;
+  const fallback = PRIMARY_BFF || SECONDARY_BFF;
+  if (!fallback) throw new Error(toUserFacingErrorMessage("BFF URL not set"));
+  return fallback;
+}
+
+export function getResolvedBffBase(): string {
+  try {
+    return bffBase();
+  } catch {
+    return "";
+  }
 }
 
 async function parseRes<T>(res: Response): Promise<T> {
@@ -25,7 +124,10 @@ async function parseRes<T>(res: Response): Promise<T> {
 
 /** One-time: Supabase access_token → HttpOnly vapt_session cookie */
 export async function bffAuthExchange(accessToken: string): Promise<void> {
-  const res = await fetch(`${bffBase()}/api/auth/exchange`, {
+  const claims = parseJwtClaims(accessToken);
+  const selected = setActiveBffForIdentity(claims.sub, claims.email);
+  const base = selected || bffBase();
+  const res = await fetch(`${base}/api/auth/exchange`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -37,8 +139,16 @@ export async function bffAuthExchange(accessToken: string): Promise<void> {
 }
 
 export async function bffLogout(): Promise<void> {
-  if (!bff) return;
-  await fetch(`${bff}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+  const targets = new Set<string>(configuredBffs());
+  const active = readActiveBff();
+  if (active) targets.add(active);
+  if (!targets.size) return;
+  await Promise.all(
+    Array.from(targets).map((base) =>
+      fetch(`${base}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {}),
+    ),
+  );
+  writeActiveBff("");
 }
 
 export async function bffMe(): Promise<{
@@ -48,8 +158,8 @@ export async function bffMe(): Promise<{
   approval_status?: string;
   role?: string;
 } | null> {
-  if (!bff) return null;
-  const res = await fetch(`${bff}/api/auth/me`, { credentials: "include" });
+  if (!bffConfigured()) return null;
+  const res = await fetch(`${bffBase()}/api/auth/me`, { credentials: "include" });
   if (!res.ok) return null;
   return res.json();
 }
