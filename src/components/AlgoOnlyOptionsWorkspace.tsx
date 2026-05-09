@@ -381,24 +381,48 @@ export function AlgoOnlyOptionsWorkspace(props?: {
 
                   <CardContent className="pt-0">
                     {/* Quick stats */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
-                      <div className="rounded bg-muted/40 px-2 py-1.5">
-                        <p className="text-muted-foreground/70">Strike</p>
-                        <p className="font-semibold">{s.strike_selection}</p>
-                      </div>
-                      <div className="rounded bg-muted/40 px-2 py-1.5">
-                        <p className="text-muted-foreground/70">Expiry</p>
-                        <p className="font-semibold capitalize">{s.expiry_type}</p>
-                      </div>
-                      <div className="rounded bg-muted/40 px-2 py-1.5">
-                        <p className="text-muted-foreground/70">SL %</p>
-                        <p className="font-semibold text-[var(--accent-red)]">{(s.exit_rules as any)?.sl_pct ?? 30}%</p>
-                      </div>
-                      <div className="rounded bg-muted/40 px-2 py-1.5">
-                        <p className="text-muted-foreground/70">TP %</p>
-                        <p className="font-semibold text-[var(--accent-green)]">{(s.exit_rules as any)?.tp_pct ?? 50}%</p>
-                      </div>
-                    </div>
+                    {(() => {
+                      const ec = s.entry_conditions as any;
+                      const isEma920 = String(ec?.strategy_type || "").toLowerCase() === "ema_9_20_setup";
+                      const slBuf = ec?.sl_buffer_points ?? ec?.slBuffer ?? 10;
+                      const tpRR = ec?.tp_rr ?? ec?.tpRR ?? 3;
+                      const tpPartial = ec?.tp_partial_rr ?? ec?.tpPartialRR ?? 2;
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs mb-3">
+                          <div className="rounded bg-muted/40 px-2 py-1.5">
+                            <p className="text-muted-foreground/70">Strike</p>
+                            <p className="font-semibold">{s.strike_selection}</p>
+                          </div>
+                          <div className="rounded bg-muted/40 px-2 py-1.5">
+                            <p className="text-muted-foreground/70">Expiry</p>
+                            <p className="font-semibold capitalize">{s.expiry_type}</p>
+                          </div>
+                          {isEma920 ? (
+                            <>
+                              <div className="rounded bg-muted/40 px-2 py-1.5">
+                                <p className="text-muted-foreground/70">SL Buffer</p>
+                                <p className="font-semibold text-[var(--accent-red)]">{slBuf} pts</p>
+                              </div>
+                              <div className="rounded bg-muted/40 px-2 py-1.5">
+                                <p className="text-muted-foreground/70">RR (partial→full)</p>
+                                <p className="font-semibold text-[var(--accent-green)]">1:{tpPartial}→1:{tpRR}</p>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="rounded bg-muted/40 px-2 py-1.5">
+                                <p className="text-muted-foreground/70">SL %</p>
+                                <p className="font-semibold text-[var(--accent-red)]">{(s.exit_rules as any)?.sl_pct ?? 30}%</p>
+                              </div>
+                              <div className="rounded bg-muted/40 px-2 py-1.5">
+                                <p className="text-muted-foreground/70">TP %</p>
+                                <p className="font-semibold text-[var(--accent-green)]">{(s.exit_rules as any)?.tp_pct ?? 50}%</p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Expandable details */}
                     {expandedId === s.id && (
