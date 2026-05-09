@@ -96,6 +96,7 @@ type Summary = {
     lifecycle_updated_at?: string | null;
     market_type?: string | null;
     is_options?: boolean;
+    isEma920?: boolean;
     _raw?: Record<string, unknown>;
   }>;
   active_strategies_table?: Array<{
@@ -319,6 +320,12 @@ function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
       s.exit_rules && typeof s.exit_rules === "object"
         ? (s.exit_rules as Record<string, unknown>)
         : {};
+    const entryConditions =
+      s.entry_conditions && typeof s.entry_conditions === "object"
+        ? (s.entry_conditions as Record<string, unknown>)
+        : {};
+    const isEma920 =
+      String(entryConditions.strategy_type ?? "").toLowerCase() === "ema_9_20_setup";
     const lcState = normalizeLifecycleState(s.lifecycle_state, Boolean(s.is_active));
     const und = inferUnderlying(s);
     const exRaw = String((s.exchange as string | undefined) ?? "").trim().toUpperCase();
@@ -332,8 +339,9 @@ function mapOptionsStrategyCards(rows: Record<string, unknown>[]) {
       underlying: und,
       timeframe: "5m",
       riskPerTrade: "1%",
-      stopLoss: `${Number(exitRules.sl_pct ?? 30)}%`,
-      takeProfit: `${Number(exitRules.tp_pct ?? 50)}%`,
+      stopLoss: isEma920 ? "10 pts SL" : `${Number(exitRules.sl_pct ?? 30)}%`,
+      takeProfit: isEma920 ? "1:2→1:3 RR" : `${Number(exitRules.tp_pct ?? 50)}%`,
+      isEma920,
       maxPositions: "1",
       deployed: Boolean(s.is_active),
       is_intraday: true,

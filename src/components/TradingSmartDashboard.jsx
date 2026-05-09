@@ -3896,13 +3896,13 @@ export default function TradingSmartDashboard(props = {}) {
                               </span>
                             </div>
                             <div className="my-strat-flat-meta-item">
-                              <span style={{ opacity: 0.8 }}>SL </span>
+                              <span style={{ opacity: 0.8 }}>{s.isEma920 ? "SL " : "SL "}</span>
                               <span style={{ color: "var(--accent-red)" }}>
                                 {s.stopLoss || "1.7%"}
                               </span>
                             </div>
                             <div className="my-strat-flat-meta-item">
-                              <span style={{ opacity: 0.8 }}>TP </span>
+                              <span style={{ opacity: 0.8 }}>{s.isEma920 ? "RR " : "TP "}</span>
                               <span style={{ color: "var(--accent-green)" }}>
                                 {s.takeProfit || "2.4%"}
                               </span>
